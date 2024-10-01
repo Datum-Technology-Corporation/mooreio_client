@@ -1,14 +1,18 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-
+from pydantic import BaseModel
 
 from mio_client.core.phase import Phase
-from mio_client.core.root import Root
-from mio_client.core.model import Model
+from mio_client.core.root import RootManager
+from mio_client.core.model import FileModel
 
 
-class Command(Model):
+class CommandHistory(FileModel):
+    pass
+
+
+class Command(BaseModel):
     def __init__(self, name):
         """
         Constructor for initializing command object.
@@ -17,6 +21,7 @@ class Command(Model):
         self._name = name
         self._root = None
         self._parsed_cli_arguments = None
+        self._current_phase = None
 
     @property
     def name(self):
@@ -38,7 +43,7 @@ class Command(Model):
         :param value: The new root object
         :return: None
         """
-        if not isinstance(value, Root):
+        if not isinstance(value, RootManager):
             raise TypeError("root must be an instance of Root")
         self._root = value
 
@@ -58,6 +63,14 @@ class Command(Model):
         """
         self._parsed_cli_arguments = value
 
+    @property
+    def current_phase(self):
+        """
+        Read-only property to get the current phase.
+        :return: The current phase.
+        """
+        return self._current_phase
+    
     def add_to_subparsers(self, subparsers):
         """
         Add parser(s) to the CLI argument subparsers.
@@ -84,6 +97,7 @@ class Command(Model):
         """
         if not isinstance(phase, Phase):
             raise TypeError("phase must be an instance of Phase")
+        self._current_phase = phase
 
     def do_phase_init(self, phase):
         """
@@ -256,6 +270,24 @@ class Command(Model):
         self.check_phase(phase)
         self.phase_post_validate_configuration_space(phase)
 
+    def do_phase_pre_scheduler_discovery(self, phase):
+        """
+        Dispatcher for Pre-scheduler Discovery Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_pre_scheduler_discovery(phase)
+
+    def do_phase_post_scheduler_discovery(self, phase):
+        """
+        Dispatcher for Post-scheduler Discovery Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_post_scheduler_discovery(phase)
+
     def do_phase_pre_service_discovery(self, phase):
         """
         Dispatcher for Pre-service Discovery Phase; called by Root.
@@ -274,23 +306,23 @@ class Command(Model):
         self.check_phase(phase)
         self.phase_post_service_discovery(phase)
 
-    def do_phase_pre_scan_for_ip(self, phase):
+    def do_phase_pre_ip_discovery(self, phase):
         """
-        Dispatcher for Pre-scan for IP Phase; called by Root.
+        Dispatcher for Pre-IP Discovery Phase; called by Root.
         :param phase: handle to phase object
         :return:
         """
         self.check_phase(phase)
-        self.phase_pre_scan_for_ip(phase)
+        self.phase_pre_ip_discovery(phase)
 
-    def do_phase_post_scan_for_ip(self, phase):
+    def do_phase_post_ip_discovery(self, phase):
         """
-        Dispatcher for Post-scan for IP Phase; called by Root.
+        Dispatcher for Post-IP Discovery Phase; called by Root.
         :param phase: handle to phase object
         :return:
         """
         self.check_phase(phase)
-        self.phase_post_scan_for_ip(phase)
+        self.phase_post_ip_discovery(phase)
 
     def do_phase_pre_create_common_files_and_directories(self, phase):
         """
@@ -633,6 +665,22 @@ class Command(Model):
         """
         pass
 
+    def phase_pre_scheduler_discovery(self, phase):
+        """
+        Pre-scheduler discovery phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
+    def phase_post_scheduler_discovery(self, phase):
+        """
+        Post-scheduler discovery phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
     def phase_pre_service_discovery(self, phase):
         """
         Pre-service discovery phase. To be overridden by subclasses.
@@ -649,17 +697,17 @@ class Command(Model):
         """
         pass
 
-    def phase_pre_scan_for_ip(self, phase):
+    def phase_pre_ip_discovery(self, phase):
         """
-        Pre-scan for IP phase. To be overridden by subclasses.
+        Pre-IP Discovery phase. To be overridden by subclasses.
         :param phase: handle to phase object
         :return: None
         """
         pass
 
-    def phase_post_scan_for_ip(self, phase):
+    def phase_post_ip_discovery(self, phase):
         """
-        Post-scan for IP phase. To be overridden by subclasses.
+        Post-IP Discovery phase. To be overridden by subclasses.
         :param phase: handle to phase object
         :return: None
         """

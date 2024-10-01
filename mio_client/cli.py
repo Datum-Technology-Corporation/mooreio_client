@@ -1,8 +1,6 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-
-
 import argparse
 import pathlib
 
@@ -32,7 +30,7 @@ def main():
     command = next((cmd for cmd in commands if cmd.name() == args.command), None)
     if not command:
         raise ValueError(f"Invalid command '{command}' specified.")
-    mio_root = root.DefaultRoot("Moore.io Client Root Service", args.wd)
+    mio_root = root.DefaultRootManager("Moore.io Client Root Service", args.wd)
     command.parsed_cli_arguments = args
     mio_root.run(command)
 
