@@ -1,7 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-# Makefile for development of mio_cli
+# Makefile for development of mio_client
 
 
 #######################################################################################################################
@@ -41,14 +41,14 @@ PIP            := pip
 COVERAGE       := coverage3
 TWINE          := twine
 FLAKE8         := flake8
-SPHINX_BUILD   := sphinx-build
 SPHINX_API_DOC := sphinx-apidoc
+SPHINX_BUILD   := sphinx-build
 
 
 #######################################################################################################################
 # Phonies
 #######################################################################################################################
-.PHONY: all venv test lint docs build clean publish
+.PHONY: all venv test lint docs build clean publish help
 
 
 #######################################################################################################################
@@ -72,22 +72,48 @@ test:
 	$(call print_banner, Running all pytest tests)
 	$(COVERAGE) pytest --parallel $(DJANGO_TESTS_NUM_PARALLEL_JOBS)
 
+# Lints codebase
 lint:
+	$(call print_banner, Linting codebase)
 	$(FLAKE8) mio_cli
 
+# Generates documentation
 docs:
-    $(SPHINX_API_DOC) -o docs/source .
+	$(call print_banner, Generating documentation)
+	$(SPHINX_API_DOC) -o docs/source .
 	$(SPHINX_BUILD) -b html docs/source docs/build
 
+# Builds package for PyPI
 build:
+	$(call print_banner, Building package)
 	$(PYTHON) setup.py sdist bdist_wheel
 
+# Cleans up all build files
 clean:
+	$(call print_banner, Cleaning up build files)
 	rm -rf docs/build
 	rm -rf build
 	rm -rf dist
 	rm -rf *.egg-info
 	find . -name '__pycache__' -exec rm -rf {} +
 
+# Publishes package to PyPI
 publish: clean build
+	$(call print_banner, Publishing package)
 	$(TWINE) upload dist/*
+
+# Prints User Manual
+help:
+	$(call print_banner, Help)
+	@echo "Usage: make [target]"
+	@echo
+	@echo "Targets:"
+	@echo "  all     : Sets up the virtual environment, runs tests, lints code, generates docs, and builds the package"
+	@echo "  venv    : Sets up a virtual environment and installs dependencies"
+	@echo "  test    : Runs all pytest test suites"
+	@echo "  lint    : Lints codebase with flake8"
+	@echo "  docs    : Generates Sphinx documentation"
+	@echo "  build   : Builds package for PyPI"
+	@echo "  clean   : Cleans up build artifacts and caches"
+	@echo "  publish : Cleans, builds, and publishes the package to PyPI"
+
