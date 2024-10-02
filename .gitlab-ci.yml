@@ -1,0 +1,25 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+
+image: python:3.11
+
+stages:
+  - test
+  - build
+
+before_script:
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
+
+test:
+  stage: test
+  script:
+    - make test
+
+docs:
+  stage: build
+  script:
+    - make docs
+

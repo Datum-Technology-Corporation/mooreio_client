@@ -1,0 +1,24 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+---
+version: 2
+plan:
+  project-key: PROJECT_KEY
+  key: PLAN_KEY
+  name: "Build and Test Plan"
+  stages:
+    - Build and Test:
+        jobs:
+          - job:
+              key: JOB_KEY
+              name: "Build and Test"
+              tasks:
+                - script:
+                    interpreter: SHELL
+                    scripts:
+                      - pip install -r requirements.txt
+                      - pip install -r requirements-dev.txt
+                      - make test
+                      - make docs
+

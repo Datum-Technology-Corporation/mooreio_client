@@ -1,0 +1,14 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+
+language: python
+python:
+  - "3.11"
+install:
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
+script:
+  - make test
+  - make docs

@@ -1,0 +1,19 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+
+# Define your build pipeline
+- type: parallel
+  steps:
+    - name: install
+      service: app
+      command: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    - name: test
+      service: app
+      command: make test
+    - name: docs
+      service: app
+      command: make docs

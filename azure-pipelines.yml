@@ -1,0 +1,30 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+
+trigger:
+- '*'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: BuildAndTest
+  displayName: 'Build and Test'
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.11'
+      addToPath: true
+  - script: |
+      pip install -r requirements.txt
+      pip install -r requirements-dev.txt
+    displayName: 'Install dependencies'
+  - script: |
+      make test
+    displayName: 'Run tests'
+  - script: |
+      make docs
+    displayName: 'Build documentation'
+
