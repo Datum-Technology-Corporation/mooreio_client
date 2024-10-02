@@ -80,7 +80,7 @@ lint:
 # Generates documentation
 docs:
 	$(call print_banner, Generating documentation)
-	$(SPHINX_API_DOC) -o docs/source .
+	$(SPHINX_API_DOC) -o docs/source/api .
 	$(SPHINX_BUILD) -b html docs/source docs/build
 
 # Builds package for PyPI

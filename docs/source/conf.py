@@ -11,11 +11,6 @@ from docutils.parsers.rst import Directive
 
 
 #######################################################################################################################
-sys.path.insert(0, os.path.abspath('../../mio_cli'))
-#######################################################################################################################
-
-
-#######################################################################################################################
 # Project information
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 #######################################################################################################################
@@ -32,7 +27,7 @@ release = '2.0.0'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
 ]
 templates_path = ['_templates']
@@ -43,23 +38,14 @@ exclude_patterns = []
 # Options for HTML output
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 #######################################################################################################################
-html_theme = 'furo'
+#html_theme = 'furo'
+html_theme = 'alabaster'
+html_logo = 'mio_logo.png'
+html_theme_options = {
+    'logo_only': True,
+}
+html_css_files = [
+    'custom.css',
+]
 html_static_path = ['_static']
-
-
-#######################################################################################################################
-# Sync with help text from source
-#######################################################################################################################
-# Function to include help text
-def extract_help_text():
-    from mio_client.cli import HELP_TEXT
-    return HELP_TEXT
-# Custom directive to insert help text
-def setup(app):
-    app.add_config_value('cli_help_text', '', 'html')
-    app.add_directive('cli_help_text', CLIHelpTextDirective)
-class CLIHelpTextDirective(Directive):
-    def run(self):
-        paragraph_node = nodes.paragraph(text=extract_help_text())
-        return [paragraph_node]
 

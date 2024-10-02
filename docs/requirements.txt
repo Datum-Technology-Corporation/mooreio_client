@@ -1,0 +1,12 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+sphinx==4.1.2
+sphinx-autobuild
+sphinx-rtd-theme
+sphinx.ext.autodoc
+sphinx.ext.viewcode
+sphinx.ext.napoleon
+sphinx.ext.autosectionlabel
+
