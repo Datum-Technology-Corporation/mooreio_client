@@ -1,6 +1,8 @@
-# mio_client
+# Moore.io Client
 
-mio_client is an open-source CLI tool designed to automate Electronic Design Automation (EDA) tasks encountered during the development of ASICs (Application Specific Integrated Circuits), FPGAs, and UVM (Universal Verification Methodology) IP. This tool also serves as a client for mio_web (the Moore.io Web Server), providing functionalities such as installing package dependencies and publishing.
+The Moore.io Client is an open-source CLI tool designed to automate Electronic Design Automation (EDA) tasks encountered
+during the development of ASICs, FPGAs and UVM IP. This tool also serves as a client for the Moore.io Web Server,
+providing functionalities such as installing package dependencies and publishing.
 
 ## Features
 
@@ -22,6 +24,7 @@ pip install mio_client
 
 ```sh
 mio <command> [<args>]
+mio help <command>
 ```
 
 For complete list of commands and options, you can use:
@@ -50,9 +53,9 @@ Comprehensive documentation is available on [Read the Docs](https://readthedocs.
     cd mooreio_client
     ```
 
-2. Install dependencies:
+2. Set up Virtual Environment and install Dependencies:
     ```sh
-    pip install -r requirements.txt
+    make venv
     ```
 
 3. Run tests:
