@@ -21,13 +21,13 @@ pip install mio_client
 ## Usage
 
 ```sh
-mio_client <command> [<args>]
+mio <command> [<args>]
 ```
 
 For complete list of commands and options, you can use:
 
 ```sh
-mio_client --help
+mio --help
 ```
 
 ## Documentation
