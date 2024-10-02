@@ -27,6 +27,7 @@ class State(Enum):
     ERROR = 'error'
 
 
+# TODO Turn this into a pydantic model and use a FileModel to store phase info to disk for performance data
 class Phase:
     """
     Initialize a Phase object.
@@ -41,6 +42,8 @@ class Phase:
         self._init_timestamp = datetime.now()
         self._start_timestamp = None
         self._end_timestamp = None
+        self._error = None
+        self._end_process = False
 
     def __str__(self):
         return self.name
@@ -84,6 +87,40 @@ class Phase:
         :rtype: datetime
         """
         return self._end_timestamp
+    
+    @property
+    def error(self) -> Exception:
+        """
+        :return: The error which occurred in the phase, if any.
+        :rtype: Exception
+        """
+        return self._error
+
+    @error.setter
+    def error(self, error: Exception):
+        """
+        :param error: The error which occurred in the phase.
+        :type error: Exception
+        """
+        self._error = error
+        if self._error:
+            self._state = State.ERROR
+    
+    @property
+    def end_process(self) -> bool:
+        """
+        :return: A flag indicating whether the process must end.
+        :rtype: bool
+        """
+        return self._end_process
+
+    @end_process.setter
+    def end_process(self, end_process: bool):
+        """
+        :param end_process: A flag indicating whether the process must end.
+        :type end_process: bool
+        """
+        self._end_process = end_process
 
     def next(self):
         """
@@ -98,7 +135,6 @@ class Phase:
             self._end_timestamp = datetime.now()
         else:
             self._state = State.ERROR
-            raise Exception(f"An error occurred in phase: {self._name}")
         return self.state
 
     def has_finished(self):

@@ -198,23 +198,23 @@ class Command(BaseModel):
         self.check_phase(phase)
         self.phase_post_locate_project_file(phase)
 
-    def do_phase_pre_validate_project_file(self, phase):
+    def do_phase_pre_load_project_configuration(self, phase):
         """
-        Dispatcher for Pre-validate Project File Phase; called by Root.
+        Dispatcher for Pre-load Project Configuration Phase; called by Root.
         :param phase: handle to phase object
         :return:
         """
         self.check_phase(phase)
-        self.phase_pre_validate_project_file(phase)
+        self.phase_pre_load_project_configuration(phase)
 
-    def do_phase_post_validate_project_file(self, phase):
+    def do_phase_post_load_project_configuration(self, phase):
         """
-        Dispatcher for Post-validate Project File Phase; called by Root.
+        Dispatcher for Post-load Project Configuration Phase; called by Root.
         :param phase: handle to phase object
         :return:
         """
         self.check_phase(phase)
-        self.phase_post_validate_project_file(phase)
+        self.phase_post_load_project_configuration(phase)
 
     def do_phase_pre_load_user_configuration(self, phase):
         """
@@ -233,24 +233,6 @@ class Command(BaseModel):
         """
         self.check_phase(phase)
         self.phase_post_load_user_configuration(phase)
-
-    def do_phase_pre_load_project_configuration(self, phase):
-        """
-        Dispatcher for Pre-load Project Configuration Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_pre_load_project_configuration(phase)
-
-    def do_phase_post_load_project_configuration(self, phase):
-        """
-        Dispatcher for Post-load Project Configuration Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_post_load_project_configuration(phase)
 
     def do_phase_pre_validate_configuration_space(self, phase):
         """

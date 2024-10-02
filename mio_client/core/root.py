@@ -2,7 +2,14 @@
 # All rights reserved.
 #######################################################################################################################
 import os
+from configparser import Error
+import requests
+from pydantic import ValidationError, BaseModel
 import service
+import os
+import getpass
+from mio_client.models.configuration import Configuration
+from mio_client.models.user import User
 from phase import Phase
 from mio_client.models.command import Command
 
@@ -21,8 +28,17 @@ class RootManager:
         self._name = name
         self._wd = wd
         self._command = None
+        self._install_path = None
+        self._user_data_file_path = None
         self._user = None
-        self._config = None
+        self._default_configuration_path = None
+        self._user_configuration_path = None
+        self._project_configuration_path = None
+        self._default_configuration = None
+        self._user_configuration = None
+        self._project_configuration = None
+        self._cli_configuration = None
+        self._configuration = None
         self._scheduler_database = None
         self._service_database = None
         self._ip_database = None
@@ -67,11 +83,11 @@ class RootManager:
         return self._user
 
     @property
-    def config(self):
+    def configuration(self):
         """
         :return: The configuration space.
         """
-        return self._config
+        return self._configuration
 
     @property
     def scheduler_database(self):
@@ -141,9 +157,8 @@ class RootManager:
         self.do_phase_authenticate()
         self.do_phase_save_user_data()
         self.do_phase_locate_project_file()
-        self.do_phase_validate_project_file()
-        self.do_phase_load_user_configuration()
         self.do_phase_load_project_configuration()
+        self.do_phase_load_user_configuration()
         self.do_phase_validate_configuration_space()
         self.do_phase_scheduler_discovery()
         self.do_phase_service_discovery()
@@ -186,6 +201,17 @@ class RootManager:
         """
         if not phase.has_finished():
             raise RuntimeError(f"Phase '{phase}' has not finished properly")
+    
+    def file_exists(self, path):
+        """
+        Check if a file exists at the specified path.
+        :param path: Path to the file.
+        :return: True if the file exists, False otherwise.
+        :raises ValueError: if the path is None or empty.
+        """
+        if not path:
+            raise ValueError("Path must not be None or empty")
+        return os.path.isfile(path)
     
     def create_file(self, path):
         """
@@ -417,25 +443,24 @@ class RootManager:
         current_phase.next()
         self.check_phase_finished(current_phase)
 
-    def do_phase_validate_project_file(self):
+    def do_phase_load_project_configuration(self):
         """
-        Check that the project file is valid, but do not load its data yet.
-
+        Load project configuration space from disk.
         :return: None
         """
-        current_phase = self.create_phase('pre_validate_project_file')
+        current_phase = self.create_phase('pre_load_project_configuration')
         current_phase.next()
-        self.command.do_phase_pre_validate_project_file(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('validate_project_file')
-        current_phase.next()
-        self.phase_validate_project_file(current_phase)
+        self.command.do_phase_pre_load_project_configuration(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('post_validate_project_file')
+        current_phase = self.create_phase('load_project_configuration')
         current_phase.next()
-        self.command.do_phase_post_validate_project_file(current_phase)
+        self.phase_load_project_configuration(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('post_load_project_configuration')
+        current_phase.next()
+        self.command.do_phase_post_load_project_configuration(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
 
@@ -460,27 +485,6 @@ class RootManager:
         current_phase.next()
         self.check_phase_finished(current_phase)
 
-    def do_phase_load_project_configuration(self):
-        """
-        Load project configuration space from disk.
-        :return: None
-        """
-        current_phase = self.create_phase('pre_load_project_configuration')
-        current_phase.next()
-        self.command.do_phase_pre_load_project_configuration(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('load_project_configuration')
-        current_phase.next()
-        self.phase_load_project_configuration(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('post_load_project_configuration')
-        current_phase.next()
-        self.command.do_phase_post_load_project_configuration(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-
     def do_phase_validate_configuration_space(self):
         """
         Merge & validate the configuration space.
@@ -493,7 +497,6 @@ class RootManager:
         self.check_phase_finished(current_phase)
         current_phase = self.create_phase('validate_configuration_space')
         current_phase.next()
-        self.phase_merge_configuration_space(current_phase)
         self.phase_validate_configuration_space(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
@@ -875,45 +878,105 @@ class RootManager:
         raise NotImplementedError("Must be implemented by subclass")
 
 
-
-
 class DefaultRootManager(RootManager):
     """
     Stock implementation of Root's pure virtual methods.
     """
-
     def phase_init(self, phase):
-        pass
+        self._install_path = os.path.dirname(os.path.realpath(__file__)) / '..'
     
     def phase_load_default_configuration(self, phase):
-        pass
+        self._default_configuration_path = self._install_path / 'data' / 'defaults.toml'
+        try:
+            self._default_configuration = Configuration.load(self._default_configuration_path)
+        except ValidationError as e:
+            phase.error(e)
+            raise Exception(f"Failed to load default configuration at '{self._default_configuration_path}': {e}")
     
     def phase_load_user_data(self, phase):
-        pass
+        self._user_data_file_path = os.path.expanduser("~/.mio/user.yml")
+        if self.file_exists(self._user_data_file_path):
+            try:
+                self._user = User.load(self._user_data_file_path)
+            except ValidationError as e:
+                phase.error(e)
+                raise Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
+        else:
+            self._user = User(self._user_data_file_path)
 
     def phase_authenticate(self, phase):
-        pass
-
+        if not self._user.authenticated:
+            authenticate_url = 'https://mooreio.com/api/authenticate/'
+            if self._user.username == "":
+                self._user.username = input("Enter your username: ")
+            try:
+                password = getpass.getpass("Enter your password: ")
+            except Exception as e:
+                phase.error(e)
+                raise Error(f"An error occurred during authentication: {e}")
+            credentials = {
+                'username': self._user.username,
+                'password': password,
+            }
+            try:
+                response = requests.post(authenticate_url, json=credentials)
+                response.raise_for_status()  # Raise an error for bad status codes
+                data = response.json()
+                self._user.token = data.get('token')  # Assuming API returns the token in 'token' field
+                self._user.authenticated = True  # Assuming you have a way to mark the user as authenticated
+            except requests.RequestException as e:
+                phase.error(e)
+                raise Exception(f"An error occurred during authentication: {e}")
+    
     def phase_save_user_data(self, phase):
-        pass
+        try:
+            self.create_file(self._user_data_file_path)
+            self._user.to_yaml()
+        except Exception as e:
+            phase.error(e)
+            raise Error(f"Failed to save User Data at '{self._user_data_file_path}': {e}")
 
     def phase_locate_project_file(self, phase):
-        pass
-
-    def phase_validate_project_file(self, phase):
-        pass
-
-    def phase_load_user_configuration(self, phase):
-        pass
+        current_path = self._wd
+        try:
+            while current_path != os.path.dirname(current_path):  # Stop if we're at the root directory
+                candidate_path = os.path.join(current_path, 'mio.toml')
+                if self.file_exists(candidate_path):
+                    self._project_configuration_path = candidate_path
+                    return
+                # Move up one directory
+                current_path = os.path.dirname(current_path)
+        except Exception as e:
+            phase.error(e)
+            raise Exception(f"Could not locate Project 'mio.toml': {e}")
 
     def phase_load_project_configuration(self, phase):
-        pass
+        try:
+            self._project_configuration = Configuration.load(self._project_configuration_path)
+        except ValidationError as e:
+            phase.error(e)
+            raise Exception(f"Failed to load Project configuration at '{self._project_configuration_path}': {e}")
 
-    def phase_merge_configuration_space(self, phase):
-        pass
+    def phase_load_user_configuration(self, phase):
+        self._user_configuration_path = os.path.expanduser("~/.mio/mio.toml")
+        if self.file_exists(self._user_configuration_path):
+            try:
+                self._user_configuration = Configuration.load(self._user_configuration_path)
+            except ValidationError as e:
+                phase.error(e)
+                raise Exception(f"Failed to load User configuration at '{self._user_configuration_path}': {e}")
+        else:
+            self.create_file(self._user_configuration_path)
+            self._user_configuration = Configuration(self._user_configuration_path)
 
     def phase_validate_configuration_space(self, phase):
-        pass
+        default_configuration_dict = self._default_configuration.model_dump()
+        user_configuration_dict = self._user_configuration.model_dump()
+        project_configuration_dict = self._project_configuration.model_dump()
+        default_plus_user_configuration_dict = {**default_configuration_dict, **user_configuration_dict}
+        default_plus_user_plus_project_configuration_dict = {**default_plus_user_configuration_dict, **project_configuration_dict}
+        self._configuration = Configuration(default_plus_user_plus_project_configuration_dict)
+        self._configuration.check()
 
     def phase_scheduler_discovery(self, phase):
         pass
