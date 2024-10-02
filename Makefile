@@ -36,11 +36,11 @@ endef
 #######################################################################################################################
 # Binaries
 #######################################################################################################################
-PYTHON         := python3
-PIP            := pip
-COVERAGE       := coverage3
+PYTHON         := venv/bin/python3
+PIP            := venv/bin/pip
+COVERAGE       := venv/bin/coverage3
 TWINE          := twine
-FLAKE8         := flake8
+FLAKE8         := venv/bin/flake8
 SPHINX_API_DOC := sphinx-apidoc
 SPHINX_BUILD   := sphinx-build
 
@@ -75,7 +75,7 @@ test:
 # Lints codebase
 lint:
 	$(call print_banner, Linting codebase)
-	$(FLAKE8) mio_cli
+	$(FLAKE8) mio_client
 
 # Generates documentation
 docs:

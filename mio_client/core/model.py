@@ -4,6 +4,9 @@
 from pydantic import BaseModel, Field, ValidationError
 
 
+class Model(BaseModel):
+    pass
+
 class FileModel(BaseModel):
     """
     Base model class.

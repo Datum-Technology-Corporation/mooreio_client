@@ -27,6 +27,7 @@ class RootManager:
         """
         self._name = name
         self._wd = wd
+        self._md = wd / ".mio"
         self._command = None
         self._install_path = None
         self._user_data_file_path = None
@@ -67,6 +68,13 @@ class RootManager:
         :return: Working directory.
         """
         return self._wd
+
+    @property
+    def md(self):
+        """
+        :return: Moore.io work (hidden) directory.
+        """
+        return self._md
 
     @property
     def command(self) -> Command:

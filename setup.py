@@ -12,7 +12,7 @@ def parse_requirements(filename):
 
 setup(
     name="mio_client",
-    version="0.1.0",
+    version="2.0.0",
     description="CLI tool to automate EDA tasks for ASICs, FPGAs, and UVM IP.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
