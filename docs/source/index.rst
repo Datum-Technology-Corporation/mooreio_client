@@ -19,12 +19,3 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-
-.. _cli-help-text:
-
-CLI Help Text
-=============
-
-.. cli_help_text::
-
-

@@ -42,7 +42,6 @@ exclude_patterns = []
 html_theme = 'alabaster'
 html_logo = 'mio_logo.png'
 html_theme_options = {
-    'logo_only': True,
 }
 html_css_files = [
     'custom.css',
