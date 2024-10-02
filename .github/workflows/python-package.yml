@@ -1,0 +1,36 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+
+name: Python Package
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Test
+        run: make test
+
+      - name: Build Docs
+        run: make docs
+

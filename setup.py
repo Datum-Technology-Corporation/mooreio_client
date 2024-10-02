@@ -5,6 +5,11 @@
 
 from setuptools import setup, find_packages
 
+
+def parse_requirements(filename):
+    with open(filename, 'r') as file:
+        return [line.strip() for line in file if line.strip() and not line.startswith('#')]
+
 setup(
     name="mio_client",
     version="0.1.0",
@@ -16,15 +21,10 @@ setup(
     author_email="info@datumtc.ca",
     license="MIT",
     packages=find_packages(),
-    install_requires=[
-        "Jinja2",
-        "PyYAML",
-        "docutils",
-        "pycrypto",
-        "pyparsing",
-        "requests",
-        "six",
-    ],
+    install_requires=parse_requirements('requirements.txt'),
+    extras_require={
+        'dev': parse_requirements('requirements-dev.txt')
+    },
     classifiers=[
         "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
