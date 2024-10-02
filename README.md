@@ -1,3 +1,5 @@
+![Moore.io Client Logo](docs/source/_static/mio_logo.png)
+
 # Moore.io Client
 
 The Moore.io Client is an open-source CLI tool designed to automate Electronic Design Automation (EDA) tasks encountered
