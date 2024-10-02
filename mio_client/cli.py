@@ -3,7 +3,6 @@
 #######################################################################################################################
 import argparse
 import pathlib
-
 from core import root
 from commands import eda, ip, misc, project, team, user, web
 
@@ -87,7 +86,7 @@ def main():
     command = next((cmd for cmd in commands if cmd.name() == args.command), None)
     if not command:
         raise ValueError(f"Invalid command '{command}' specified.")
-    mio_root = root.DefaultRootManager("Moore.io Client Root Service", args.wd)
+    mio_root = root.DefaultRootManager("Moore.io Client Root Manager", args.wd)
     command.parsed_cli_arguments = args
     mio_root.run(command)
 

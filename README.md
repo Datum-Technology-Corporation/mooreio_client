@@ -91,6 +91,7 @@ hesitate to contribute your tweaks!
 - GitHub Actions
 - GitLab CI/CD
 - Jenkins
+- TeamCity
 - Travis CI
 
 ## Contributing
