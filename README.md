@@ -73,6 +73,11 @@ Comprehensive documentation is available on [Read the Docs](https://readthedocs.
     make build
     ```
 
+6. Print Makefile User Manual:
+    ```sh
+    make build
+    ```
+
 ## Contributing
 
 We welcome contributions! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute.
