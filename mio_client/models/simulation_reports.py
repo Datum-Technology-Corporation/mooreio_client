@@ -2,11 +2,19 @@
 # All rights reserved.
 #######################################################################################################################
 from abc import ABC
+from typing import List
 from mio_client.core.model import Model
 
 
 class LogicSimulatorReport(Model, ABC):
-    pass
+    name: str
+    success: bool
+    num_errors: int
+    num_warnings: int
+    num_fatals: int
+    errors: List[int]
+    warnings: List[int]
+    fatals: List[int]
 
 
 class LibraryCreationReport(LogicSimulatorReport):
@@ -30,7 +38,8 @@ class CompilationAndElaborationReport(LogicSimulatorReport):
 
 
 class SimulationReport(LogicSimulatorReport):
-    pass
+    test_name: str
+    seed: int
 
 
 class RegressionReport(LogicSimulatorReport):
