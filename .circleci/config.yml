@@ -14,14 +14,16 @@ jobs:
       - checkout
 
       - run:
-          name: Install dependencies
-          command: |
-            pip install -r requirements.txt
-            pip install -r requirements-dev.txt
+          name: Setup Virtual Environment and Install Dependencies
+          command: make venv
 
       - run:
           name: Run tests
           command: make test
+
+      - run:
+          name: Build package
+          command: make build
 
       - run:
           name: Build documentation

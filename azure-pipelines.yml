@@ -17,13 +17,14 @@ jobs:
     inputs:
       versionSpec: '3.11'
       addToPath: true
-  - script: |
-      pip install -r requirements.txt
-      pip install -r requirements-dev.txt
-    displayName: 'Install dependencies'
+  - script: make venv
+    displayName: 'Setup Virtual Environment and install Dependencies'
   - script: |
       make test
     displayName: 'Run tests'
+  - script: |
+      make build
+    displayName: 'Build package'
   - script: |
       make docs
     displayName: 'Build documentation'

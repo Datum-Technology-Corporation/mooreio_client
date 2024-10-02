@@ -23,6 +23,11 @@ pipeline {
                 sh 'make test'
             }
         }
+        stage('Build Package') {
+            steps {
+                sh 'make build'
+            }
+        }
         stage('Build Documentation') {
             steps {
                 sh 'make docs'
@@ -31,11 +36,6 @@ pipeline {
         stage('Archive Docs') {
             steps {
                 archiveArtifacts artifacts: 'docs/_build/html/**/*', allowEmptyArchive: true
-            }
-        }
-        stage('Build Package') {
-            steps {
-                sh 'make build'
             }
         }
     }

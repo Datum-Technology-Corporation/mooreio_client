@@ -10,8 +10,7 @@ stages:
   - build
 
 before_script:
-  - pip install -r requirements.txt
-  - pip install -r requirements-dev.txt
+  - make venv
 
 test:
   stage: test
@@ -21,5 +20,6 @@ test:
 docs:
   stage: build
   script:
+    - make build
     - make docs
 

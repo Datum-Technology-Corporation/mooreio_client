@@ -23,13 +23,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+      - name: Setup Virtual Environment and Install Dependencies
+        run: make venv
       
       - name: Test
         run: make test
+
+      - name: Build Package
+        run: make build
 
       - name: Build Docs
         run: make docs
