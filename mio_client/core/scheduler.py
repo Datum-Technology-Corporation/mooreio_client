@@ -188,20 +188,30 @@ class TaskScheduler(ABC):
         pass
 
 
+class LocalProcessSchedulerConfiguration(TaskSchedulerConfiguration):
+    pass
+
+
 class LocalProcessScheduler(TaskScheduler):
     def init(self):
         pass
 
-    def dispatch_task(self, task: Task, configuration: TaskSchedulerConfiguration):
+    def dispatch_task(self, task: Task, configuration: LocalProcessSchedulerConfiguration):
         task.timestamp_start = datetime.now()
         command_str = [task.binary] + task.arguments
         result = run(args=command_str, cwd=task.wd, shell=True)
         task.timestamp_end = datetime.now()
         task.return_code = result.returncode
 
-    def dispatch_task_set(self, task_set: TaskSet, configuration: TaskSchedulerConfiguration):
+    def dispatch_task_set(self, task_set: TaskSet, configuration: LocalProcessSchedulerConfiguration):
         pass
         # TODO IMPLEMENT
+
+
+
+# TODO IMPLEMENT!
+class LsfSchedulerConfiguration(TaskSchedulerConfiguration):
+    pass
 
 
 # TODO IMPLEMENT!
@@ -209,11 +219,16 @@ class LsfScheduler(TaskScheduler):
     def init(self):
         pass
 
-    def dispatch_task(self, task: Task, configuration: TaskSchedulerConfiguration):
+    def dispatch_task(self, task: Task, configuration: LsfSchedulerConfiguration):
         pass
 
-    def dispatch_task_set(self, task_set: TaskSet, configuration: TaskSchedulerConfiguration):
+    def dispatch_task_set(self, task_set: TaskSet, configuration: LsfSchedulerConfiguration):
         pass
+
+
+# TODO IMPLEMENT!
+class GridEngineSchedulerConfiguration(TaskSchedulerConfiguration):
+    pass
 
 
 # TODO IMPLEMENT!
@@ -221,9 +236,9 @@ class GridEngineScheduler(TaskScheduler):
     def init(self):
         pass
 
-    def dispatch_task(self, task: Task, configuration: TaskSchedulerConfiguration):
+    def dispatch_task(self, task: Task, configuration: GridEngineSchedulerConfiguration):
         pass
 
-    def dispatch_task_set(self, task_set: TaskSet, configuration: TaskSchedulerConfiguration):
+    def dispatch_task_set(self, task_set: TaskSet, configuration: GridEngineSchedulerConfiguration):
         pass
 
