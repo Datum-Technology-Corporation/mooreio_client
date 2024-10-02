@@ -36,12 +36,13 @@ endef
 #######################################################################################################################
 # Binaries
 #######################################################################################################################
-PYTHON       := python3
-PIP          := pip
-COVERAGE     := coverage3
-TWINE        := twine
-FLAKE8       := flake8
-SPHINX_BUILD := sphinx-build
+PYTHON         := python3
+PIP            := pip
+COVERAGE       := coverage3
+TWINE          := twine
+FLAKE8         := flake8
+SPHINX_BUILD   := sphinx-build
+SPHINX_API_DOC := sphinx-apidoc
 
 
 #######################################################################################################################
@@ -75,6 +76,7 @@ lint:
 	$(FLAKE8) mio_cli
 
 docs:
+    $(SPHINX_API_DOC) -o docs/source .
 	$(SPHINX_BUILD) -b html docs/source docs/build
 
 build:
