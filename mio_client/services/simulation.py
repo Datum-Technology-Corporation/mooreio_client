@@ -2,6 +2,7 @@
 # All rights reserved.
 #######################################################################################################################
 from pathlib import Path
+from typing import List, Pattern
 
 from mio_client.core.root import RootManager
 from mio_client.core.service import Service, ServiceType
@@ -36,7 +37,7 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
 
 
 class LogicSimulator(Service, ABC):
-    def __init__(self, rmh: RootManager, name: str, full_name: str):
+    def __init__(self, rmh: RootManager, vendor_name: str, name: str, full_name: str):
         super().__init__(rmh, name)
         self._type = ServiceType.LOGIC_SIMULATION
         self._work_root_path = self.rmh.md / "logic_simulation"
@@ -129,50 +130,193 @@ class LogicSimulator(Service, ABC):
     def create_files(self):
         pass
 
-    @abstractmethod
     def create_library(self, command: Command, config: LogicSimulatorLibraryCreationConfiguration, ip: Ip) -> LibraryCreationReport:
-        pass
+        log_path = self.do_create_library(command, config, ip)
+        return self.parse_library_creation_log(command, config, ip, log_path)
 
-    @abstractmethod
     def delete_library(self, command: Command, config: LogicSimulatorLibraryDeletionConfiguration, ip: Ip):
+        self.do_delete_library(command, config, ip)
+
+    def compile(self, command: Command, config: LogicSimulatorCompilationConfiguration, ip: Ip) -> CompilationReport:
+        log_path = self.do_compile(command, config, ip)
+        return self.parse_compilation_log(command, config, ip, log_path)
+
+    def elaborate(self, command: Command, config: LogicSimulatorElaborationConfiguration, ip: Ip) -> ElaborationReport:
+        log_path = self.do_elaborate(command, config, ip)
+        return self.parse_elaboration_log(command, config, ip, log_path)
+
+    def compile_and_elaborate(self, command: Command, config: LogicSimulatorElaborationAndCompilationConfiguration, ip: Ip) -> CompilationAndElaborationReport:
+        log_path = self.do_compile_and_elaborate(command, config, ip)
+        return self.parse_compilation_and_elaboration_log(command, config, ip, log_path)
+
+    def simulate(self, command: Command, config: LogicSimulatorSimulationConfiguration, ip: Ip) -> SimulationReport:
+        results_directory_path = self.do_simulate(command, config, ip)
+        return self.parse_simulation_logs(command, config, ip, results_directory_path)
+
+    def parse_library_creation_log(self, command: Command, config: LogicSimulatorLibraryCreationConfiguration, ip: Ip, log_path: Path) -> LibraryCreationReport:
+        errors = self.rmh.search_file_for_patterns(log_path, self.library_creation_error_patterns)
+        warnings = self.rmh.search_file_for_patterns(log_path, self.library_creation_warning_patterns)
+        report = LibraryCreationReport(command, config, ip, errors, warnings)
+        return report
+
+    def parse_compilation_log(self, command: Command, config: LogicSimulatorCompilationConfiguration, ip: Ip, log_path: Path) -> CompilationReport:
+        errors = self.rmh.search_file_for_patterns(log_path, self.compilation_error_patterns)
+        warnings = self.rmh.search_file_for_patterns(log_path, self.compilation_warning_patterns)
+        report = CompilationReport(command, config, ip, errors, warnings)
+        return report
+
+    def parse_elaboration_log(self, command: Command, config: LogicSimulatorElaborationConfiguration, ip: Ip, log_path: Path) -> ElaborationReport:
+        errors = self.rmh.search_file_for_patterns(log_path, self.elaboration_error_patterns)
+        warnings = self.rmh.search_file_for_patterns(log_path, self.elaboration_warning_patterns)
+        report = ElaborationReport(command, config, ip, errors, warnings)
+        return report
+
+    def parse_compilation_and_elaboration_log(self, command: Command, config: LogicSimulatorElaborationAndCompilationConfiguration, ip: Ip, log_path: Path) -> CompilationAndElaborationReport:
+        errors = self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_error_patterns)
+        warnings = self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_warning_patterns)
+        report = CompilationAndElaborationReport(command, config, ip, errors, warnings)
+        return report
+
+    def parse_simulation_logs(self, command: Command, config: LogicSimulatorSimulationConfiguration, ip: Ip, log_path: Path) -> SimulationReport:
+        errors = self.rmh.search_file_for_patterns(log_path, self.simulation_error_patterns)
+        warnings = self.rmh.search_file_for_patterns(log_path, self.simulation_warning_patterns)
+        report = SimulationReport(command, config, ip, errors, warnings)
+        return report
+    
+    @property
+    @abstractmethod
+    def library_creation_error_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def library_creation_warning_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def compilation_error_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def compilation_warning_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def elaboration_error_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def elaboration_warning_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def compilation_and_elaboration_error_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def compilation_and_elaboration_warning_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def simulation_error_patterns(self) -> List[str]:
+        pass
+    
+    @property
+    @abstractmethod
+    def simulation_warning_patterns(self) -> List[str]:
+        pass
+    
+    @abstractmethod
+    def do_create_library(self, command: Command, config: LogicSimulatorLibraryCreationConfiguration, ip: Ip) -> Path:
         pass
 
     @abstractmethod
-    def compile_ip(self, command: Command, config: LogicSimulatorCompilationConfiguration, ip: Ip) -> CompilationReport:
+    def do_delete_library(self, command: Command, config: LogicSimulatorLibraryDeletionConfiguration, ip: Ip):
         pass
 
     @abstractmethod
-    def elaborate_ip(self, command: Command, config: LogicSimulatorElaborationConfiguration, ip: Ip) -> ElaborationReport:
+    def do_compile(self, command: Command, config: LogicSimulatorCompilationConfiguration, ip: Ip) -> Path:
         pass
 
     @abstractmethod
-    def compile_and_elaborate_ip(self, command: Command, config: LogicSimulatorElaborationAndCompilationConfiguration, ip: Ip) -> CompilationAndElaborationReport:
+    def do_elaborate(self, command: Command, config: LogicSimulatorElaborationConfiguration, ip: Ip) -> Path:
         pass
 
     @abstractmethod
-    def simulate_ip(self, command: Command, config: LogicSimulatorSimulationConfiguration, ip: Ip) -> SimulationReport:
+    def do_compile_and_elaborate(self, command: Command, config: LogicSimulatorElaborationAndCompilationConfiguration, ip: Ip) -> Path:
+        pass
+
+    @abstractmethod
+    def do_simulate(self, command: Command, config: LogicSimulatorSimulationConfiguration, ip: Ip) -> Path:
         pass
 
 
 class SimulatorMetricsDSim(LogicSimulator):
-    def __init__(self, rmh: RootManager, name: str, full_name: str):
-        super().__init__(rmh, name, full_name)
+    def __init__(self, rmh: RootManager):
+        super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim")
 
-    def create_library(self, command: Command, config: LogicSimulatorLibraryCreationConfiguration, ip: Ip) -> LibraryCreationReport:
+    @property
+    def library_creation_error_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def library_creation_warning_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def compilation_error_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def compilation_warning_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def elaboration_error_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def elaboration_warning_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def compilation_and_elaboration_error_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def compilation_and_elaboration_warning_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def simulation_error_patterns(self) -> List[str]:
+        return []
+
+    @property
+    def simulation_warning_patterns(self) -> List[str]:
+        return []
+    
+    def do_create_library(self, command: Command, config: LogicSimulatorLibraryCreationConfiguration, ip: Ip) -> Path:
         pass
 
-    def delete_library(self, command: Command, config: LogicSimulatorLibraryDeletionConfiguration, ip: Ip):
+    def do_delete_library(self, command: Command, config: LogicSimulatorLibraryDeletionConfiguration, ip: Ip):
         pass
 
-    def compile_ip(self, command: Command, config: LogicSimulatorCompilationConfiguration, ip: Ip) -> CompilationReport:
+    def do_compile(self, command: Command, config: LogicSimulatorCompilationConfiguration, ip: Ip) -> Path:
         pass
 
-    def elaborate_ip(self, command: Command, config: LogicSimulatorElaborationConfiguration, ip: Ip) -> ElaborationReport:
+    def do_elaborate(self, command: Command, config: LogicSimulatorElaborationConfiguration, ip: Ip) -> Path:
         pass
 
-    def compile_and_elaborate_ip(self, command: Command, config: LogicSimulatorElaborationAndCompilationConfiguration,
-                                 ip: Ip) -> CompilationAndElaborationReport:
+    def do_compile_and_elaborate(self, command: Command, config: LogicSimulatorElaborationAndCompilationConfiguration,
+                                 ip: Ip) -> Path:
         pass
 
-    def simulate_ip(self, command: Command, config: LogicSimulatorSimulationConfiguration, ip: Ip) -> SimulationReport:
+    def do_simulate(self, command: Command, config: LogicSimulatorSimulationConfiguration, ip: Ip) -> Path:
         pass

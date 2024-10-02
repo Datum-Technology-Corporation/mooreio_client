@@ -19,9 +19,9 @@ class ProjectConfiguration(Model):
 
 class SimulationConfiguration(Model):
     root_path: Path
-    regression_directory: DirectoryPath
-    results_directory: DirectoryPath
-    logs_directory: DirectoryPath
+    regression_directory: str
+    results_directory: str
+    logs_directory: str
     test_result_path_template: Jinja2.Template
     uvm_version: semantic_version.Version
 

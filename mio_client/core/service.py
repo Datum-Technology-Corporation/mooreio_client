@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 import semantic_version
+from semantic_version import Version
 
 from mio_client.core.root import RootManager
 
@@ -28,9 +29,10 @@ class ServiceType(Enum):
 
 
 class Service(ABC):
-    def __init__(self, rmh: RootManager, name: str, full_name: str):
+    def __init__(self, rmh: RootManager, vendor_name: str, name: str, full_name: str):
         self._rmh = rmh
         self._name = name
+        self._vendor_name = vendor_name
         self._full_name = full_name
         self._type = ServiceType.UNKNOWN
         self._version = semantic_version.Version()
@@ -44,12 +46,20 @@ class Service(ABC):
         return self._name
 
     @property
+    def vendor_name(self) -> str:
+        return self._vendor_name
+
+    @property
     def full_name(self) -> str:
         return self._full_name
 
     @property
     def type(self) -> ServiceType:
         return self._type
+
+    @property
+    def version(self) -> Version:
+        return self._version
 
     @abstractmethod
     def create_directory_structure(self):

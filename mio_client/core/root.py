@@ -2,7 +2,12 @@
 # All rights reserved.
 #######################################################################################################################
 import os
+import re
 from configparser import Error
+from pathlib import Path
+from re import Match
+from typing import List, Pattern
+
 import requests
 from pydantic import ValidationError, BaseModel
 import service
@@ -331,7 +336,24 @@ class RootManager:
             shutil.rmtree(path)
         except OSError as e:
             print(f"An error occurred while removing directory '{path}': {e}")
-    
+
+    def search_file_for_patterns(self, file_path: Path, patterns: List[str]) -> List[str]:
+        """
+        Searches a file at file_path for regular expressions in patterns.
+        :param file_path: Path to file being searched
+        :param patterns: List of patterns to be found
+        :return: List of found strings
+        """
+        try:
+            with open(file_path, 'r') as file_searched:
+                file_content = file_searched.read()
+            regex_patterns = []
+            for pattern in patterns:
+                regex_patterns.append(re.compile(pattern))
+            return [match.group() for pattern in regex_patterns for match in pattern.finditer(file_content)]
+        except OSError as e:
+            print(f"An error occurred while searching file '{file_path}': {e}")
+            return []
     
     def do_phase_init(self):
         """
