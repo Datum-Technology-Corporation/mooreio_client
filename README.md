@@ -75,7 +75,7 @@ Comprehensive documentation is available on [Read the Docs](https://readthedocs.
 
 6. Print Makefile User Manual:
     ```sh
-    make build
+    make help
     ```
 
 ## Contributing
