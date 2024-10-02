@@ -78,6 +78,21 @@ Comprehensive documentation is available on [Read the Docs](https://readthedocs.
     make help
     ```
 
+## Continuous Integration
+Most popular CI/CD tools are supported out-of-the-box. Some systems are better fleshed out than others; please don't
+hesitate to contribute your tweaks!
+
+### Supported Continuous Integration Tools
+- Azure Pipelines
+- Bamboo
+- Bitbucket Pipelines
+- CircleCI
+- Codeship
+- GitHub Actions
+- GitLab CI/CD
+- Jenkins
+- Travis CI
+
 ## Contributing
 
 We welcome contributions! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute.
