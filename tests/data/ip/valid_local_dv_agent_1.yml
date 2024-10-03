@@ -1,0 +1,23 @@
+synced: false
+type: dv_agent
+owner: "acme"
+name: "uvma_abc"
+full_name: "Duis aute irure dolor in "
+version: "1.0.0"
+description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+block_diagram: "docs/agent_block_diagram.svg"
+
+dependencies:
+  "datron/xyz": ">=1.2"
+  "gigamicro/jkl": "5.1"
+
+structure:
+  scripts_path : "bin"
+  docs_path    : "docs"
+  examples_path: "examples"
+  src_path     : "src"
+
+hdl_src:
+  directories: [".", "comps", "obj", "seq"]
+  top_files: ["uvma_cvmcu_cpi_pkg.sv"]
+  so_libs: []

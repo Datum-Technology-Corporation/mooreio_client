@@ -8,7 +8,7 @@ import jinja2
 import semantic_version
 import yaml
 from pydantic import BaseModel, AnyUrl, constr
-from semantic_version import Spec
+from semantic_version import Spec, Version
 
 from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX
 from mio_client.core.root import RootManager
@@ -33,17 +33,6 @@ class DutType(Enum):
     MIO_IP = "ip"
     FUSE_SOC = "fsoc"
     VIVADO = "vivado"
-
-
-class IpSection(Model):
-    synced: bool
-    sync_id: Optional[int]
-    type: Optional[IpType]
-    owner: Optional[str]
-    name: Optional[constr(regex=VALID_NAME_REGEX)]
-    full_name: Optional[str]
-    block_diagram: Optional[Path]
-    description: Optional[str]
 
 
 class Structure(Model):
@@ -76,7 +65,15 @@ class Target(Model):
 
 
 class Ip(Model):
-    ip: IpSection
+    synced: bool
+    sync_id: Optional[int]
+    type: Optional[IpType]
+    owner: Optional[str]
+    name: Optional[constr(regex=VALID_NAME_REGEX)]
+    full_name: Optional[str]
+    version: Optional[Version]
+    block_diagram: Optional[Path]
+    description: Optional[str]
     dependencies: Optional[dict[constr(regex=VALID_IP_OWNER_NAME_REGEX), Spec]]
     structure: Structure
     hdl_src: HdlSource
