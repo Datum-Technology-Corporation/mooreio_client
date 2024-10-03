@@ -3,12 +3,14 @@
 #######################################################################################################################
 import os
 import re
+from abc import ABC, abstractmethod
 from configparser import Error
 from pathlib import Path
 from re import Match
 from typing import List, Pattern
 
 import requests
+import toml
 from pydantic import ValidationError, BaseModel
 import service
 import os
@@ -24,7 +26,7 @@ from phase import Phase
 from mio_client.models.command import Command
 
 
-class RootManager:
+class RootManager(ABC):
     """
     Abstract component which performs all vital tasks and executes phases.
     """
@@ -46,10 +48,10 @@ class RootManager:
         self._default_configuration_path = None
         self._user_configuration_path = None
         self._project_configuration_path = None
-        self._default_configuration = None
-        self._user_configuration = None
-        self._project_configuration = None
-        self._cli_configuration = None
+        self._default_configuration = {}
+        self._user_configuration = {}
+        self._project_configuration = {}
+        self._cli_configuration = {}
         self._configuration = None
         self._scheduler_database = None
         self._service_database = None
@@ -107,6 +109,27 @@ class RootManager:
         :return: The Project root path.
         """
         return self._project_root_path
+
+    @property
+    def default_configuration_path(self) -> Path:
+        """
+        :return: Path to default configuration file.
+        """
+        return self._default_configuration_path
+
+    @property
+    def user_configuration_path(self) -> Path:
+        """
+        :return: Path to User configuration file.
+        """
+        return self._user_configuration_path
+
+    @property
+    def project_configuration_path(self) -> Path:
+        """
+        :return: Path to Project configuration file.
+        """
+        return self._project_configuration_path
 
     @property
     def configuration(self) -> Configuration:
@@ -367,6 +390,17 @@ class RootManager:
         except OSError as e:
             print(f"An error occurred while searching file '{file_path}': {e}")
             return []
+
+    def merge_dictionaries(self,d1: dict, d2: dict) -> dict:
+        """
+           Merge two dictionaries, d2 will overwrite d1 where keys overlap
+        """
+        for key, value in d2.items():
+            if key in d1 and isinstance(d1[key], dict) and isinstance(value, dict):
+                d1[key] = self.merge_dictionaries(d1[key], value)
+            else:
+                d1[key] = value
+        return d1
     
     def do_phase_init(self):
         """
@@ -772,9 +806,10 @@ class RootManager:
         :return: None
         """
         raise NotImplementedError("Must be implemented by subclass")
-    
+
+    @abstractmethod
     def phase_load_default_configuration(self, phase):
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
     def phase_load_user_data(self, phase):
         """
@@ -923,7 +958,7 @@ class RootManager:
 
 class DefaultRootManager(RootManager):
     """
-    Stock implementation of Root's pure virtual methods.
+    Stock implementation of RootManager's pure virtual methods.
     """
     def phase_init(self, phase):
         self._install_path = os.path.dirname(os.path.realpath(__file__)) / '..'
@@ -931,10 +966,11 @@ class DefaultRootManager(RootManager):
     def phase_load_default_configuration(self, phase):
         self._default_configuration_path = self._install_path / 'data' / 'defaults.toml'
         try:
-            self._default_configuration = Configuration.load(self._default_configuration_path)
+            with open(self.default_configuration_path, 'r') as f:
+                self._default_configuration = toml.load(f)
         except ValidationError as e:
             phase.error(e)
-            raise Exception(f"Failed to load default configuration at '{self._default_configuration_path}': {e}")
+            raise Exception(f"Failed to load default configuration file at '{self.default_configuration_path}': {e}")
     
     def phase_load_user_data(self, phase):
         self._user_data_file_path = os.path.expanduser("~/.mio/user.yml")
@@ -998,16 +1034,18 @@ class DefaultRootManager(RootManager):
 
     def phase_load_project_configuration(self, phase):
         try:
-            self._project_configuration = Configuration.load(self._project_configuration_path)
+            with open(self.project_configuration_path, 'r') as f:
+                self._project_configuration = toml.load(f)
         except ValidationError as e:
             phase.error(e)
-            raise Exception(f"Failed to load Project configuration at '{self._project_configuration_path}': {e}")
+            raise Exception(f"Failed to load Project configuration file at '{self.project_configuration_path}': {e}")
 
     def phase_load_user_configuration(self, phase):
         self._user_configuration_path = os.path.expanduser("~/.mio/mio.toml")
         if self.file_exists(self._user_configuration_path):
             try:
-                self._user_configuration = Configuration.load(self._user_configuration_path)
+                with open(self.user_configuration_path, 'r') as f:
+                    self._user_configuration = toml.load(f)
             except ValidationError as e:
                 phase.error(e)
                 raise Exception(f"Failed to load User configuration at '{self._user_configuration_path}': {e}")
@@ -1016,13 +1054,14 @@ class DefaultRootManager(RootManager):
             self._user_configuration = Configuration(self._user_configuration_path)
 
     def phase_validate_configuration_space(self, phase):
-        default_configuration_dict = self._default_configuration.model_dump()
-        user_configuration_dict = self._user_configuration.model_dump()
-        project_configuration_dict = self._project_configuration.model_dump()
-        default_plus_user_configuration_dict = {**default_configuration_dict, **user_configuration_dict}
-        default_plus_user_plus_project_configuration_dict = {**default_plus_user_configuration_dict, **project_configuration_dict}
-        self._configuration = Configuration(default_plus_user_plus_project_configuration_dict)
-        self._configuration.check()
+        merged_configuration = self.merge_dictionaries(self._default_configuration, self._user_configuration)
+        merged_configuration = self.merge_dictionaries(merged_configuration, self._project_configuration)
+        try:
+            self._configuration = Configuration(merged_configuration)
+        except ValidationError as e:
+            phase.error(e)
+            raise Exception(f"Failed to validate Configuration Space: {e}")
+        self.configuration.check()
 
     def phase_scheduler_discovery(self, phase):
         self._scheduler_database = TaskSchedulerDatabase(self)

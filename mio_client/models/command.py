@@ -12,7 +12,7 @@ class CommandHistory(FileModel):
     pass
 
 
-class Command(BaseModel):
+class Command:
     def __init__(self, name):
         """
         Constructor for initializing command object.
