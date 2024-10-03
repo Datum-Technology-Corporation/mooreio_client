@@ -24,6 +24,7 @@ class SimulationConfiguration(Model):
     logs_directory: str
     test_result_path_template: Jinja2.Template
     uvm_version: semantic_version.Version
+    metrics_dsim_installation_path: Path
 
 
 class Configuration(FileModel):

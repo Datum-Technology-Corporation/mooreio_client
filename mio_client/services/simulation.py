@@ -37,8 +37,9 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
 
 
 class LogicSimulator(Service, ABC):
-    def __init__(self, rmh: RootManager, vendor_name: str, name: str, full_name: str):
+    def __init__(self, rmh: RootManager, vendor_name: str, name: str, full_name: str, installation_path: Path):
         super().__init__(rmh, name)
+        self._installation_path = installation_path
         self._type = ServiceType.LOGIC_SIMULATION
         self._work_root_path = self.rmh.md / "logic_simulation"
         self._work_path = self.work_root_path / self.name
@@ -54,6 +55,10 @@ class LogicSimulator(Service, ABC):
         self._compilation_results_path = self.simulation_logs_path / "compilation"
         self._elaboration_results_path = self.simulation_logs_path / "elaboration"
         self._compilation_and_elaboration_results_path = self.simulation_logs_path / "compilation_and_elaboration"
+
+    @property
+    def installation_path(self) -> Path:
+        return self._installation_path
 
     @property
     def work_root_path(self) -> Path:
@@ -329,65 +334,51 @@ class LogicSimulator(Service, ABC):
 
 
 class SimulatorMetricsDSim(LogicSimulator):
-    def __init__(self, rmh: RootManager):
-        super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim")
+    def __init__(self, rmh: RootManager, installation_path: Path):
+        super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim", installation_path)
 
     @property
     def library_creation_error_patterns(self) -> List[str]:
-        return []
-
+        return [r'^.*=E:.*$']
     @property
     def library_creation_warning_patterns(self) -> List[str]:
-        return []
-
+        return [r'^.*=W:.*$']
     @property
     def library_creation_fatal_patterns(self) -> List[str]:
-        return []
-
+        return [r'^.*=F:.*$']
     @property
     def compilation_error_patterns(self) -> List[str]:
         return [r'^.*=E:.*$']
-
     @property
     def compilation_warning_patterns(self) -> List[str]:
         return [r'^.*=W:.*$']
-
     @property
     def compilation_fatal_patterns(self) -> List[str]:
         return [r'^.*=F:.*$']
-
     @property
     def elaboration_error_patterns(self) -> List[str]:
         return [r'^.*=E:.*$']
-
     @property
     def elaboration_warning_patterns(self) -> List[str]:
         return [r'^.*=W:.*$']
-
     @property
     def elaboration_fatal_patterns(self) -> List[str]:
         return [r'^.*=F:.*$']
-
     @property
     def compilation_and_elaboration_error_patterns(self) -> List[str]:
         return [r'^.*=E:.*$']
-
     @property
     def compilation_and_elaboration_warning_patterns(self) -> List[str]:
         return [r'^.*=W:.*$']
-
     @property
     def compilation_and_elaboration_fatal_patterns(self) -> List[str]:
         return [r'^.*=F:.*$']
-
     @property
     def simulation_error_patterns(self) -> List[str]:
         return [r'^.*=E:.*$', r'^.*UVM_ERROR.*$']
-
     @property
     def simulation_warning_patterns(self) -> List[str]:
         return [r'^.*=W:.*$', r'^.*UVM_WARNING.*$']
-
     @property
     def simulation_fatal_patterns(self) -> List[str]:
         return [r'^.*=F:.*$', r'^.*UVM_FATAL.*$']

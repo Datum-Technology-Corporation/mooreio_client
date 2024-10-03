@@ -138,9 +138,12 @@ class TaskSchedulerDatabase:
     def __init__(self, rmh: RootManager):
         self._rmh = rmh
         self._task_schedulers = []
+
     def add_task_scheduler(self, task_scheduler: 'TaskScheduler'):
         task_scheduler.db = self
         self._task_schedulers.append(task_scheduler)
+        task_scheduler.init()
+
     def get_task_scheduler(self, name: str) -> 'TaskScheduler':
         for task_scheduler in self._task_schedulers:
             if task_scheduler.name == name:
@@ -149,20 +152,15 @@ class TaskSchedulerDatabase:
 
 
 class TaskScheduler(ABC):
-    def __init__(self, rmh: RootManager, name: str, binary: Path):
+    def __init__(self, rmh: RootManager, name: str):
         self._rmh = rmh
         self._name = name
-        self._binary = binary
         self._version = None
         self._db = None
     
     @property
     def name(self) -> str:
         return self._name
-    
-    @property
-    def binary(self) -> Path:
-        return self._binary
     
     @property
     def version(self) -> Version:
@@ -193,6 +191,9 @@ class LocalProcessSchedulerConfiguration(TaskSchedulerConfiguration):
 
 
 class LocalProcessScheduler(TaskScheduler):
+    def __init__(self, rmh: RootManager):
+        super().__init__(rmh, "Local process")
+
     def init(self):
         pass
 
@@ -216,6 +217,9 @@ class LsfSchedulerConfiguration(TaskSchedulerConfiguration):
 
 # TODO IMPLEMENT!
 class LsfScheduler(TaskScheduler):
+    def __init__(self, rmh: RootManager):
+        super().__init__(rmh, "LSF")
+
     def init(self):
         pass
 
@@ -233,6 +237,9 @@ class GridEngineSchedulerConfiguration(TaskSchedulerConfiguration):
 
 # TODO IMPLEMENT!
 class GridEngineScheduler(TaskScheduler):
+    def __init__(self, rmh: RootManager):
+        super().__init__(rmh, "GRID Engine")
+
     def init(self):
         pass
 

@@ -61,6 +61,9 @@ class Service(ABC):
     def version(self) -> Version:
         return self._version
 
+    def init(self):
+        pass
+
     @abstractmethod
     def create_directory_structure(self):
         pass
@@ -74,9 +77,12 @@ class ServiceDataBase:
     def __init__(self, rmh: RootManager):
         self._rmh = rmh
         self._services = []
+
     def add_service(self, service: Service):
         service.db = self
         self._services.append(service)
+        service.init()
+
     def get_service(self, service_type: ServiceType, name: str) -> Service:
         for service in self._services:
             if (service.type == service_type) and (service.name == name):

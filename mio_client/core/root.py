@@ -13,8 +13,12 @@ from pydantic import ValidationError, BaseModel
 import service
 import os
 import getpass
+
+from mio_client.core.scheduler import LocalProcessScheduler, TaskSchedulerDatabase
+from mio_client.core.service import ServiceDataBase
 from mio_client.models.configuration import Configuration
 from mio_client.models.user import User
+from mio_client.services.simulation import SimulatorMetricsDSim
 from phase import Phase
 from mio_client.models.command import Command
 
@@ -1009,10 +1013,16 @@ class DefaultRootManager(RootManager):
         self._configuration.check()
 
     def phase_scheduler_discovery(self, phase):
-        pass
+        self._scheduler_database = TaskSchedulerDatabase(self)
+        self._scheduler_database.add_task_scheduler(LocalProcessScheduler(self))
+        # TODO Implement proper discovery once another TaskScheduler implementation other than LocalProcessScheduler is implemented
 
     def phase_service_discovery(self, phase):
-        pass
+        self._service_database = ServiceDataBase(self)
+        if self.configuration.simulation.metrics_dsim_installation_path != "":
+            dsim_simulator = SimulatorMetricsDSim(self, self.configuration.simulation.metrics_dsim_installation_path)
+            self.service_database.add_service(dsim_simulator)
+        # TODO Add other logic simulators
 
     def phase_ip_discovery(self, phase):
         pass
