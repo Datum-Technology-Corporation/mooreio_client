@@ -17,6 +17,7 @@ import getpass
 from mio_client.core.scheduler import LocalProcessScheduler, TaskSchedulerDatabase
 from mio_client.core.service import ServiceDataBase
 from mio_client.models.configuration import Configuration
+from mio_client.models.ip import IpDataBase, Ip
 from mio_client.models.user import User
 from mio_client.services.simulation import SimulatorMetricsDSim
 from phase import Phase
@@ -41,6 +42,7 @@ class RootManager:
         self._install_path = None
         self._user_data_file_path = None
         self._user = None
+        self._project_root_path = None
         self._default_configuration_path = None
         self._user_configuration_path = None
         self._project_configuration_path = None
@@ -93,42 +95,49 @@ class RootManager:
         return self._command
 
     @property
-    def user(self):
+    def user(self) -> User:
         """
         :return: The User model.
         """
         return self._user
 
     @property
-    def configuration(self):
+    def project_root_path(self) -> Path:
+        """
+        :return: The Project root path.
+        """
+        return self._project_root_path
+
+    @property
+    def configuration(self) -> Configuration:
         """
         :return: The configuration space.
         """
         return self._configuration
 
     @property
-    def scheduler_database(self):
+    def scheduler_database(self) -> TaskSchedulerDatabase:
         """
         :return: The task scheduler database.
         """
         return self._scheduler_database
 
     @property
-    def service_database(self):
+    def service_database(self) -> ServiceDataBase:
         """
         :return: The Service database.
         """
         return self._service_database
 
     @property
-    def ip_database(self):
+    def ip_database(self) -> IpDataBase:
         """
         :return: The IP database.
         """
         return self._ip_database
 
     @property
-    def current_phase(self):
+    def current_phase(self) -> Phase:
         """
         :return: The current phase.
         """
@@ -150,6 +159,7 @@ class RootManager:
         - phase_authenticate
         - phase_save_user_data
         - phase_locate_project_file
+        - phase_create_common_files_and_directories
         - phase_validate_project_file
         - phase_load_user_configuration
         - phase_load_project_configuration
@@ -157,7 +167,6 @@ class RootManager:
         - phase_scheduler_discovery
         - phase_service_discovery
         - phase_ip_discovery
-        - phase_create_common_files_and_directories
         - phase_main
         - phase_check
         - phase_report
@@ -174,13 +183,13 @@ class RootManager:
         self.do_phase_authenticate()
         self.do_phase_save_user_data()
         self.do_phase_locate_project_file()
+        self.do_phase_create_common_files_and_directories()
         self.do_phase_load_project_configuration()
         self.do_phase_load_user_configuration()
         self.do_phase_validate_configuration_space()
         self.do_phase_scheduler_discovery()
         self.do_phase_service_discovery()
         self.do_phase_ip_discovery()
-        self.do_phase_create_common_files_and_directories()
         self.do_phase_main()
         self.do_phase_check()
         self.do_phase_report()
@@ -477,6 +486,28 @@ class RootManager:
         current_phase.next()
         self.check_phase_finished(current_phase)
 
+    def do_phase_create_common_files_and_directories(self):
+        """
+        Create files and directories needed for proper Moore.io Client and command operation.
+        :return: None
+        """
+        current_phase = self.create_phase('pre_create_common_files_and_directories')
+        current_phase.next()
+        self.command.do_phase_pre_create_common_files_and_directories(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('create_common_files_and_directories')
+        current_phase.next()
+        self.phase_create_common_files_and_directories(current_phase)
+        self.command.do_phase_create_common_files_and_directories(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('post_create_common_files_and_directories')
+        current_phase.next()
+        self.command.do_phase_post_create_common_files_and_directories(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+
     def do_phase_load_project_configuration(self):
         """
         Load project configuration space from disk.
@@ -600,28 +631,6 @@ class RootManager:
         current_phase = self.create_phase('post_ip_discovery')
         current_phase.next()
         self.command.do_phase_post_ip_discovery(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-
-    def do_phase_create_common_files_and_directories(self):
-        """
-        Create files and directories needed for proper Moore.io Client and command operation.
-        :return: None
-        """
-        current_phase = self.create_phase('pre_create_common_files_and_directories')
-        current_phase.next()
-        self.command.do_phase_pre_create_common_files_and_directories(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('create_common_files_and_directories')
-        current_phase.next()
-        self.phase_create_common_files_and_directories(current_phase)
-        self.command.do_phase_create_common_files_and_directories(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('post_create_common_files_and_directories')
-        current_phase.next()
-        self.command.do_phase_post_create_common_files_and_directories(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
 
@@ -799,6 +808,14 @@ class RootManager:
         """
         raise NotImplementedError("Must be implemented by subclass")
 
+    def phase_create_common_files_and_directories(self, phase):
+        """
+        This method is a placeholder and must be implemented by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        raise NotImplementedError("Must be implemented by subclass")
+
     def phase_validate_project_file(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
@@ -856,14 +873,6 @@ class RootManager:
         raise NotImplementedError("Must be implemented by subclass")
 
     def phase_ip_discovery(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        raise NotImplementedError("Must be implemented by subclass")
-
-    def phase_create_common_files_and_directories(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
@@ -984,6 +993,9 @@ class DefaultRootManager(RootManager):
             phase.error(e)
             raise Exception(f"Could not locate Project 'mio.toml': {e}")
 
+    def phase_create_common_files_and_directories(self, phase):
+        self.create_directory(self.md)
+
     def phase_load_project_configuration(self, phase):
         try:
             self._project_configuration = Configuration.load(self._project_configuration_path)
@@ -1025,10 +1037,27 @@ class DefaultRootManager(RootManager):
         # TODO Add other logic simulators
 
     def phase_ip_discovery(self, phase):
-        pass
-
-    def phase_create_common_files_and_directories(self, phase):
-        pass
+        """
+        Discover and load all 'ip.yml' files in the directory specified by self.project_root_path.
+        :param phase: handle to phase object
+        :return: None
+        """
+        self._ip_database = IpDataBase(self)
+        ip_files = []
+        for root, dirs, files in os.walk(self.project_root_path):
+            for file in files:
+                if file == 'ip.yml':
+                    ip_files.append(os.path.join(root, file))
+        if not ip_files:
+            raise Exception("No 'ip.yml' files found in the project directory.")
+        else:
+            for file in ip_files:
+                try:
+                    ip_model = Ip(self, file)
+                except Exception as e:
+                    print(f"Skipping IP definition at '{file}': {e}")
+                else:
+                    self.ip_database.add_ip(ip_model)
 
     def phase_check(self, phase):
         pass

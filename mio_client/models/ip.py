@@ -4,6 +4,7 @@
 import yaml
 from pydantic import BaseModel
 from mio_client.core.model import FileModel
+from mio_client.core.root import RootManager
 
 
 class Ip(FileModel):
@@ -38,4 +39,9 @@ class IpDependency(BaseModel):
 
 
 class IpDataBase():
-    pass
+    def __init__(self, rmh: RootManager):
+        self._rmh = rmh
+        self._ip_list = []
+
+    def add_ip(self, ip: Ip):
+        self._ip_list.append(ip)

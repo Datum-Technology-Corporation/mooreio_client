@@ -198,6 +198,33 @@ class Command(BaseModel):
         self.check_phase(phase)
         self.phase_post_locate_project_file(phase)
 
+    def do_phase_pre_create_common_files_and_directories(self, phase):
+        """
+        Dispatcher for Pre-create Common Files and Directories Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_pre_create_common_files_and_directories(phase)
+
+    def do_phase_create_common_files_and_directories(self, phase):
+        """
+        Dispatcher for Create Common Files and Directories Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_create_common_files_and_directories(phase)
+
+    def do_phase_post_create_common_files_and_directories(self, phase):
+        """
+        Dispatcher for Post-create Common Files and Directories Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_post_create_common_files_and_directories(phase)
+
     def do_phase_pre_load_project_configuration(self, phase):
         """
         Dispatcher for Pre-load Project Configuration Phase; called by Root.
@@ -305,33 +332,6 @@ class Command(BaseModel):
         """
         self.check_phase(phase)
         self.phase_post_ip_discovery(phase)
-
-    def do_phase_pre_create_common_files_and_directories(self, phase):
-        """
-        Dispatcher for Pre-create Common Files and Directories Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_pre_create_common_files_and_directories(phase)
-
-    def do_phase_create_common_files_and_directories(self, phase):
-        """
-        Dispatcher for Create Common Files and Directories Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_create_common_files_and_directories(phase)
-
-    def do_phase_post_create_common_files_and_directories(self, phase):
-        """
-        Dispatcher for Post-create Common Files and Directories Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_post_create_common_files_and_directories(phase)
 
     def do_phase_pre_main(self, phase):
         """
@@ -583,6 +583,30 @@ class Command(BaseModel):
         """
         pass
 
+    def phase_pre_create_common_files_and_directories(self, phase):
+        """
+        Pre-create common files and directories phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
+    def phase_create_common_files_and_directories(self, phase):
+        """
+        Create common files and directories phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
+    def phase_post_create_common_files_and_directories(self, phase):
+        """
+        Post-create common files and directories phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
     def phase_pre_validate_project_file(self, phase):
         """
         Pre-validate project file phase. To be overridden by subclasses.
@@ -690,30 +714,6 @@ class Command(BaseModel):
     def phase_post_ip_discovery(self, phase):
         """
         Post-IP Discovery phase. To be overridden by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    def phase_pre_create_common_files_and_directories(self, phase):
-        """
-        Pre-create common files and directories phase. To be overridden by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    def phase_create_common_files_and_directories(self, phase):
-        """
-        Create common files and directories phase. To be overridden by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    def phase_post_create_common_files_and_directories(self, phase):
-        """
-        Post-create common files and directories phase. To be overridden by subclasses.
         :param phase: handle to phase object
         :return: None
         """

@@ -62,7 +62,8 @@ class Service(ABC):
         return self._version
 
     def init(self):
-        pass
+        self.create_directory_structure()
+        self.create_files()
 
     @abstractmethod
     def create_directory_structure(self):
