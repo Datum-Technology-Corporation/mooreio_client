@@ -1070,8 +1070,8 @@ class DefaultRootManager(RootManager):
 
     def phase_service_discovery(self, phase):
         self._service_database = ServiceDataBase(self)
-        if self.configuration.simulation.metrics_dsim_installation_path != "":
-            dsim_simulator = SimulatorMetricsDSim(self, self.configuration.simulation.metrics_dsim_installation_path)
+        if self.configuration.simulation.metrics_dsim_path != "":
+            dsim_simulator = SimulatorMetricsDSim(self, self.configuration.simulation.metrics_dsim_path)
             self.service_database.add_service(dsim_simulator)
         # TODO Add other logic simulators
 

@@ -48,8 +48,8 @@ class LogicSimulator(Service, ABC):
         self._work_elaboration_path = self.work_path / "elaboration_output"
         self._work_compilation_and_elaboration_path = self.work_path / "compilation_and_elaboration_output"
         self._simulation_root_path = self.rmh.wd / self.rmh.configuration.simulation.root_path
-        self._simulation_results_path = self.simulation_root_path / self.rmh.configuration.simulation.results_directory
-        self._regression_root_path = self.simulation_root_path / self.rmh.configuration.simulation.regression_directory
+        self._simulation_results_path = self.simulation_root_path / self.rmh.configuration.simulation.results_directory_name
+        self._regression_root_path = self.simulation_root_path / self.rmh.configuration.simulation.regression_directory_name
         self._simulation_logs_path = self.simulation_root_path / self.rmh.configuration.simulation.logs_directory
         self._library_results_path = self.simulation_logs_path / "library"
         self._compilation_results_path = self.simulation_logs_path / "compilation"
