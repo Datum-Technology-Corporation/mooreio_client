@@ -57,7 +57,7 @@ class HdlSource(Model):
     top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     tests_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
     tests_name_template: Optional[jinja2.Template] = "UNDEFINED"
-    so_libs: Optional[List[FilePath]] = []
+    so_libs: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
 
 
 class DesignUnderTest(Model):
