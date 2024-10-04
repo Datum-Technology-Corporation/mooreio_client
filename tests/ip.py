@@ -23,26 +23,30 @@ def get_fixture_data(file: Path) -> Dict:
 @pytest.fixture(scope="session")
 def valid_local_dv_agent_1_data():
     return get_fixture_data(Path("data/ip/valid_local_dv_agent_1.yml"))
+@pytest.fixture(scope="session")
+def valid_local_dv_tb_fsoc_1_data():
+    return get_fixture_data(Path("data/ip/valid_local_dv_tb_fsoc_1.yml"))
 
 
 class TestIp:
     @pytest.fixture(autouse=True)
-    def setup(self, valid_local_dv_agent_1_data):
+    def setup(self, valid_local_dv_agent_1_data, valid_local_dv_tb_fsoc_1_data):
         self.valid_local_dv_agent_1_data = valid_local_dv_agent_1_data
+        self.valid_local_dv_tb_fsoc_1_data = valid_local_dv_tb_fsoc_1_data
 
     def test_agent_instance_creation(self):
         ip_instance = Ip(**self.valid_local_dv_agent_1_data)
         assert isinstance(ip_instance, Ip)
 
-    def test_ip_instance_required_fields(self):
+    def test_ip_agent_instance_required_fields(self):
         ip_instance = Ip(**self.valid_local_dv_agent_1_data)
         assert hasattr(ip_instance, 'ip')
         assert hasattr(ip_instance, 'structure')
         assert hasattr(ip_instance, 'hdl_src')
         assert hasattr(ip_instance.ip, 'sync')
 
-    def test_agent_instance_has_all_fields(self):
-        ip_instance = Ip(**self.valid_local_dv_agent_1_data)
+    def test_tb_instance_has_all_fields(self):
+        ip_instance = Ip(**self.valid_local_dv_tb_fsoc_1_data)
         assert hasattr(ip_instance, 'ip')
         assert hasattr(ip_instance.ip, 'sync')
         assert hasattr(ip_instance.ip, 'type')
@@ -50,6 +54,10 @@ class TestIp:
         assert hasattr(ip_instance.ip, 'name')
         assert hasattr(ip_instance.ip, 'full_name')
         assert hasattr(ip_instance.ip, 'version')
+        assert hasattr(ip_instance, 'dut')
+        assert hasattr(ip_instance.dut, 'type')
+        assert hasattr(ip_instance.dut, 'name')
+        assert hasattr(ip_instance.dut, 'target')
         assert hasattr(ip_instance, 'dependencies')
         assert 'datron/xyz' in ip_instance.dependencies
         assert 'gigamicro/jkl' in ip_instance.dependencies
@@ -67,13 +75,11 @@ class TestIp:
         assert 'abc' in ip_instance.targets
         assert 'xyz' in ip_instance.targets
         assert hasattr(ip_instance.targets['default'], 'cmp')
-        assert hasattr(ip_instance.targets['default'], 'elab')
         assert hasattr(ip_instance.targets['default'], 'sim')
         assert hasattr(ip_instance.targets['abc'], 'elab')
-        assert hasattr(ip_instance.targets['xyz'], 'cmp')
         assert hasattr(ip_instance.targets['xyz'], 'sim')
 
-    def test_agent_invalid_dependencies_name(self):
+    def test_tb_invalid_dependencies_name(self):
         invalid_data = self.valid_local_dv_agent_1_data.copy()
         invalid_data['dependencies'] = {
             "invalid name": Spec(">1.0")

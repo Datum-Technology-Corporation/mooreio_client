@@ -59,8 +59,7 @@ class HdlSource(Model):
 
 class DesignUnderTest(Model):
     type: DutType
-    name: constr(pattern=VALID_NAME_REGEX)
-    fsoc_namepace: Optional[constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = "_"
+    name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = "_"
     target: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
 
 
