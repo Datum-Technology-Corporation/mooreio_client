@@ -34,7 +34,7 @@ at a high-end Semiconductor engineering firm AND all the best features from Soft
 ## How much does it cost?
 The EDA Automation and Package management is Free & Open-Source. Some commands, such as UVM Code Generation, require a
 Moore.io User Account (which can be created at www.mooreio.com/register) and a license for Datum UVMx. However, the tool
-operates independently of the site in all other regards and can be used without any authentication. 
+operates independently of the site in all other regards and can be used without authentication. 
 
 
 ## Features
