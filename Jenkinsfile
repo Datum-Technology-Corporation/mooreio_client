@@ -42,6 +42,7 @@ pipeline {
     post {
         always {
             junit 'reports/*.xml'
+            cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'reports/coverage.xml'
         }
     }
 }

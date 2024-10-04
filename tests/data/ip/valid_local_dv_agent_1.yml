@@ -1,11 +1,10 @@
-synced: false
-type: dv_agent
-owner: "acme"
-name: "uvma_abc"
-full_name: "Duis aute irure dolor in "
-version: "1.0.0"
-description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
-block_diagram: "docs/agent_block_diagram.svg"
+ip:
+  sync: false
+  type: dv_agent
+  owner: "acme"
+  name: "uvma_abc"
+  full_name: "Duis aute irure dolor in "
+  version: "1.0.0"
 
 dependencies:
   "datron/xyz": ">=1.2"
@@ -21,3 +20,23 @@ hdl_src:
   directories: [".", "comps", "obj", "seq"]
   top_files: ["uvma_cvmcu_cpi_pkg.sv"]
   so_libs: []
+
+targets:
+  default:
+    cmp:
+      ABC_NUMBER: 150
+      XYZ: true
+    elab: {}
+    sim:
+      NUM_PKTS: 10
+      PKT_MAX_SIZE: 1024
+      PKT_MIN_SIZE: 32
+  abc:
+    elab:
+      BIT_WIDTH: 32
+  xyz:
+    cmp:
+      XYZ: false
+    sim:
+      PKT_MAX_SIZE: 128
+      PKT_MIN_SIZE: 64

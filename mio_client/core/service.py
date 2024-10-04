@@ -7,7 +7,6 @@ from enum import Enum
 import semantic_version
 from semantic_version import Version
 
-from mio_client.core.root import RootManager
 
 
 class ServiceType(Enum):
@@ -29,7 +28,7 @@ class ServiceType(Enum):
 
 
 class Service(ABC):
-    def __init__(self, rmh: RootManager, vendor_name: str, name: str, full_name: str):
+    def __init__(self, rmh: 'RootManager', vendor_name: str, name: str, full_name: str):
         self._rmh = rmh
         self._name = name
         self._vendor_name = vendor_name
@@ -38,7 +37,7 @@ class Service(ABC):
         self._version = semantic_version.Version()
 
     @property
-    def rmh(self) -> RootManager:
+    def rmh(self) -> 'RootManager':
         return self._rmh
 
     @property
@@ -75,7 +74,7 @@ class Service(ABC):
 
 
 class ServiceDataBase:
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         self._rmh = rmh
         self._services = []
 

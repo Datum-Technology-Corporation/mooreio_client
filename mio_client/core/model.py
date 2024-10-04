@@ -13,5 +13,7 @@ VALID_LOGIC_SIMULATION_TIMESCALE_REGEX= re.compile(r'^\d+(ms|us|ns|ps|fs)/\d+(ms
 
 
 class Model(BaseModel):
-    pass
+    model_config = {
+        'arbitrary_types_allowed': True
+    }
 

@@ -15,7 +15,7 @@ import semantic_version
 class Project(Model):
     synced: bool
     sync_id: Optional[int]
-    name: Optional[constr(regex=VALID_NAME_REGEX)]
+    name: Optional[constr(pattern=VALID_NAME_REGEX)]
     full_name: Optional[str]
     description: Optional[str]
 
@@ -27,7 +27,7 @@ class LogicSimulation(Model):
     logs_directory: Path
     test_result_path_template: jinja2.Template
     uvm_version: semantic_version.Version
-    timescale: constr(regex=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
+    timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
     metrics_dsim_path: Optional[Path]
     xilinx_vivado_path: Optional[Path]
     synopsys_vcs_path: Optional[Path]

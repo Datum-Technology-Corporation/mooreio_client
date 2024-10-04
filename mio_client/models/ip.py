@@ -2,18 +2,20 @@
 # All rights reserved.
 #######################################################################################################################
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import jinja2
-import semantic_version
 import yaml
 from pydantic import BaseModel, AnyUrl, constr
-from semantic_version import Spec, Version
+from pydantic_extra_types import semantic_version
+from semantic_version import Spec
 
 from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX
-from mio_client.core.root import RootManager
+#from mio_client.core.root import RootManager
 
 from enum import Enum
+
+from mio_client.core.version import SemanticVersion, SemanticVersionSpec
 
 
 class IpType(Enum):
@@ -34,6 +36,10 @@ class DutType(Enum):
     FUSE_SOC = "fsoc"
     VIVADO = "vivado"
 
+class ParameterType(Enum):
+    INT = "int"
+    BOOL = "bool"
+
 
 class Structure(Model):
     scripts_path: Path
@@ -45,44 +51,55 @@ class Structure(Model):
 class HdlSource(Model):
     directories: List[Path]
     top_files: List[Path]
-    top_modules: Optional[List[constr(regex=VALID_NAME_REGEX)]]
-    tests_path: Optional[Path]
-    tests_name_template: Optional[jinja2.Template]
-    so_libs: Optional[List[Path]]
+    top_modules: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
+    tests_path: Optional[Path] = Path()
+    tests_name_template: Optional[jinja2.Template] = ""
+    so_libs: Optional[List[Path]] = []
 
 
 class DesignUnderTest(Model):
     type: DutType
-    name: constr(regex=VALID_NAME_REGEX)
-    fsoc_namepace: Optional[constr(regex=VALID_FSOC_NAMESPACE_REGEX)]
-    target: Optional[constr(regex=VALID_NAME_REGEX)]
+    name: constr(pattern=VALID_NAME_REGEX)
+    fsoc_namepace: Optional[constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = "_"
+    target: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
+
+
+class Parameter(Model):
+    type: ParameterType
+    min: Optional[int] = 0
+    max: Optional[int] = 0
+    default: Union[int, bool]
 
 
 class Target(Model):
-    cmp: Optional[dict[constr(regex=VALID_NAME_REGEX), int]]
-    elab: Optional[dict[constr(regex=VALID_NAME_REGEX), int]]
-    sim: Optional[dict[constr(regex=VALID_NAME_REGEX), int]]
+    cmp: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
 
+    elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
+
+    sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
+
+
+
+class About(Model):
+    sync: bool
+    sync_id: Optional[int] = 0
+    type: Optional[IpType]
+    owner: Optional[str] = "_"
+    name: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
+    full_name: Optional[str] = ""
+    version: Optional[SemanticVersion]
 
 class Ip(Model):
-    synced: bool
-    sync_id: Optional[int]
-    type: Optional[IpType]
-    owner: Optional[str]
-    name: Optional[constr(regex=VALID_NAME_REGEX)]
-    full_name: Optional[str]
-    version: Optional[Version]
-    block_diagram: Optional[Path]
-    description: Optional[str]
-    dependencies: Optional[dict[constr(regex=VALID_IP_OWNER_NAME_REGEX), Spec]]
+    ip: About
+    dependencies: Optional[dict[constr(pattern=VALID_IP_OWNER_NAME_REGEX), SemanticVersionSpec]] = {}
     structure: Structure
     hdl_src: HdlSource
-    dut: Optional[DesignUnderTest]
-    targets: Optional[dict[constr(regex=VALID_NAME_REGEX), Target]]
+    dut: Optional[DesignUnderTest] = None
+    targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
 
 
 class IpDataBase():
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         self._rmh = rmh
         self._ip_list = []
 

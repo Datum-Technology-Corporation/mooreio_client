@@ -9,12 +9,13 @@ from datetime import datetime
 import semantic_version
 from semantic_version import Version
 from subprocess import run
-from mio_client.core.root import RootManager
+
+#from mio_client.core.root import RootManager
 from mio_client.models.command import Command
 
 
 class Task:
-    def __init__(self, rmh: RootManager, command: Command, wd: Path, name: str, binary: Path, arguments: List[str]):
+    def __init__(self, rmh: 'RootManager', command: 'Command', wd: Path, name: str, binary: Path, arguments: List[str]):
         self._rmh = rmh
         self._command = command
         self._wd = wd
@@ -91,14 +92,14 @@ class Task:
     
 
 class TaskSet:
-    def __init__(self, rmh: RootManager, command: Command, name: str):
+    def __init__(self, rmh: 'RootManager', command: Command, name: str):
         self._rmh = rmh
         self._command = command
         self._name = name
         self._tasks = []
 
     @property
-    def rmh(self) -> RootManager:
+    def rmh(self) -> 'RootManager':
         return self._rmh
 
     @property
@@ -115,7 +116,7 @@ class TaskSet:
 
 
 class TaskSchedulerConfiguration:
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         self._output_to_terminal = False
         self._max_number_of_parallel_processes = 1
 
@@ -135,7 +136,7 @@ class TaskSchedulerConfiguration:
 
 
 class TaskSchedulerDatabase:
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         self._rmh = rmh
         self._task_schedulers = []
 
@@ -152,7 +153,7 @@ class TaskSchedulerDatabase:
 
 
 class TaskScheduler(ABC):
-    def __init__(self, rmh: RootManager, name: str):
+    def __init__(self, rmh: 'RootManager', name: str):
         self._rmh = rmh
         self._name = name
         self._version = None
@@ -191,7 +192,7 @@ class LocalProcessSchedulerConfiguration(TaskSchedulerConfiguration):
 
 
 class LocalProcessScheduler(TaskScheduler):
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "Local process")
 
     def init(self):
@@ -217,7 +218,7 @@ class LsfSchedulerConfiguration(TaskSchedulerConfiguration):
 
 # TODO IMPLEMENT!
 class LsfScheduler(TaskScheduler):
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "LSF")
 
     def init(self):
@@ -237,7 +238,7 @@ class GridEngineSchedulerConfiguration(TaskSchedulerConfiguration):
 
 # TODO IMPLEMENT!
 class GridEngineScheduler(TaskScheduler):
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "GRID Engine")
 
     def init(self):

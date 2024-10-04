@@ -37,8 +37,8 @@ endef
 # Binaries
 #######################################################################################################################
 PYTHON         := venv/bin/python3
-PIP            := venv/bin/pip
-COVERAGE       := venv/bin/coverage3
+PIP            := venv/bin/pip3
+PYTEST         := pytest
 TWINE          := twine
 FLAKE8         := venv/bin/flake8
 SPHINX_API_DOC := sphinx-apidoc
@@ -70,7 +70,7 @@ venv:
 # Run all pytest test suites
 test:
 	$(call print_banner, Running all pytest tests)
-	$(COVERAGE) pytest --parallel $(DJANGO_TESTS_NUM_PARALLEL_JOBS)
+	$(PYTEST) --junitxml=reports/report.xml --cov=mio_client -cov-report=xml:reports/coverage.xml -n auto ./tests/
 
 # Lints codebase
 lint:

@@ -3,12 +3,11 @@
 #######################################################################################################################
 from pydantic import BaseModel
 
+from mio_client.core.model import Model
 from mio_client.core.phase import Phase
-from mio_client.core.root import RootManager
-from mio_client.core.model import FileModel
 
 
-class CommandHistory(FileModel):
+class CommandHistory(Model):
     pass
 
 
@@ -43,7 +42,7 @@ class Command:
         :param value: The new root object
         :return: None
         """
-        if not isinstance(value, RootManager):
+        if not isinstance(value, 'RootManager'):
             raise TypeError("root must be an instance of Root")
         self._root = value
 

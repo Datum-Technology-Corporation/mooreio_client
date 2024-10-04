@@ -12,7 +12,6 @@ from typing import List, Pattern
 import requests
 import toml
 from pydantic import ValidationError, BaseModel
-import service
 import os
 import getpass
 
