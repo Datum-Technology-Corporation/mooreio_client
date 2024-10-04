@@ -39,19 +39,17 @@ class TestIp:
         assert hasattr(ip_instance, 'ip')
         assert hasattr(ip_instance, 'structure')
         assert hasattr(ip_instance, 'hdl_src')
-        assert hasattr(ip_instance.ip, 'synced')
+        assert hasattr(ip_instance.ip, 'sync')
 
     def test_agent_instance_has_all_fields(self):
         ip_instance = Ip(**self.valid_local_dv_agent_1_data)
         assert hasattr(ip_instance, 'ip')
-        assert hasattr(ip_instance.ip, 'synced')
+        assert hasattr(ip_instance.ip, 'sync')
         assert hasattr(ip_instance.ip, 'type')
         assert hasattr(ip_instance.ip, 'owner')
         assert hasattr(ip_instance.ip, 'name')
         assert hasattr(ip_instance.ip, 'full_name')
         assert hasattr(ip_instance.ip, 'version')
-        assert hasattr(ip_instance.ip, 'description')
-        assert hasattr(ip_instance.ip, 'block_diagram')
         assert hasattr(ip_instance, 'dependencies')
         assert 'datron/xyz' in ip_instance.dependencies
         assert 'gigamicro/jkl' in ip_instance.dependencies

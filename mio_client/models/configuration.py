@@ -14,10 +14,10 @@ import semantic_version
 
 class Project(Model):
     synced: bool
-    sync_id: Optional[int]
-    name: Optional[constr(pattern=VALID_NAME_REGEX)]
-    full_name: Optional[str]
-    description: Optional[str]
+    sync_id: Optional[int] = 0
+    name: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
+    full_name: Optional[str] = "_"
+    description: Optional[str] = ""
 
 
 class LogicSimulation(Model):
@@ -28,13 +28,13 @@ class LogicSimulation(Model):
     test_result_path_template: jinja2.Template
     uvm_version: semantic_version.Version
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
-    metrics_dsim_path: Optional[Path]
-    xilinx_vivado_path: Optional[Path]
-    synopsys_vcs_path: Optional[Path]
-    siemens_questa_path: Optional[Path]
-    cadence_xcelium_path: Optional[Path]
-    aldec_riviera_pro_path: Optional[Path]
-    default_simulator: Optional[str]
+    metrics_dsim_path: Optional[Path] = Path("")
+    xilinx_vivado_path: Optional[Path] = Path("")
+    synopsys_vcs_path: Optional[Path] = Path("")
+    siemens_questa_path: Optional[Path] = Path("")
+    cadence_xcelium_path: Optional[Path] = Path("")
+    aldec_riviera_pro_path: Optional[Path] = Path("")
+    default_simulator: Optional[str] = ""
 
 
 class Synthesis(Model):
@@ -55,12 +55,12 @@ class Docs(Model):
 
 
 class Encryption(Model):
-    metrics_dsim_key_path: Optional[Path]
-    xilinx_vivado_key_path: Optional[Path]
-    synopsys_vcs_key_path: Optional[Path]
-    siemens_questa_key_path: Optional[Path]
-    cadence_xcelium_key_path: Optional[Path]
-    aldec_riviera_pro_key_path: Optional[Path]
+    metrics_dsim_key_path: Optional[Path] = Path("")
+    xilinx_vivado_key_path: Optional[Path] = Path("")
+    synopsys_vcs_key_path: Optional[Path] = Path("")
+    siemens_questa_key_path: Optional[Path] = Path("")
+    cadence_xcelium_key_path: Optional[Path] = Path("")
+    aldec_riviera_pro_key_path: Optional[Path] = Path("")
 
 
 class Configuration(Model):

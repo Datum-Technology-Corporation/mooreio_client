@@ -73,9 +73,7 @@ class Parameter(Model):
 
 class Target(Model):
     cmp: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
-
     elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
-
     sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
 
 
