@@ -9,8 +9,8 @@ providing functionalities such as installing IP dependencies, generating HDL cod
 ## Why?
 The EDA (Electronic Design Automation) field clearly lags behind in terms of Free & Open-Source (FOS) developer tools
 when compared to the software and web worlds. While commonplace for decades, there is no FOS tool that can drive the
-various commercial software and provide the automation needed to produce commercial-grade FPGA and ASIC designs.
-Instead, homebrewed (and seldome shared) Makefiles and shell scripts rule the field of Dev Ops in semiconductors.
+various CAD software and provide the automation needed to produce commercial-grade FPGA and ASIC designs. Instead,
+homebrewed (and seldom shared) Makefiles and Shell scripts rule the field of Dev Ops in semiconductors.
 
 ### The Problem
 Writing a Makefile/shell script that can perform all the tasks required is a fool's errand, since these languages
