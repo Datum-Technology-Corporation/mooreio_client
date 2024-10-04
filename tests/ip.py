@@ -13,19 +13,18 @@ from mio_client.models.ip import Ip, Spec, Structure, HdlSource, DesignUnderTest
 from pydantic import constr, BaseModel
 
 
-def get_fixture_data(file: Path) -> Dict:
-    file_path = os.path.join(os.path.dirname(__file__), file)
+def get_fixture_data(file: str) -> Dict:
+    file_path = os.path.join(os.path.dirname(__file__), "data", "ip", file) + ".yml"
     with open(file_path, "r") as file:
         return yaml.safe_load(file)
 
 
-
 @pytest.fixture(scope="session")
 def valid_local_dv_agent_1_data():
-    return get_fixture_data(Path("data/ip/valid_local_dv_agent_1.yml"))
+    return get_fixture_data("valid_local_dv_agent_1")
 @pytest.fixture(scope="session")
 def valid_local_dv_tb_fsoc_1_data():
-    return get_fixture_data(Path("data/ip/valid_local_dv_tb_fsoc_1.yml"))
+    return get_fixture_data("valid_local_dv_tb_fsoc_1")
 
 
 class TestIp:

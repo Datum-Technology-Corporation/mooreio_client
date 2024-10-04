@@ -11,13 +11,25 @@ from pathlib import Path
 from pydantic import DirectoryPath
 import semantic_version
 
+from mio_client.core.version import SemanticVersion
+
+from enum import Enum
+
+
+class UvmVersions(Enum):
+    V_1_2 = "1.2"
+    V_1_1d = "1.1d"
+    V_1_1c = "1.1c"
+    V_1_1b = "1.1b"
+    V_1_1a = "1.1a"
+    V_1_0 = "1.0"
+
 
 class Project(Model):
-    synced: bool
+    sync: bool
     sync_id: Optional[int] = 0
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
     full_name: Optional[str] = "_"
-    description: Optional[str] = ""
 
 
 class LogicSimulation(Model):
@@ -25,8 +37,8 @@ class LogicSimulation(Model):
     regression_directory_name: Path
     results_directory_name: Path
     logs_directory: Path
-    test_result_path_template: jinja2.Template
-    uvm_version: semantic_version.Version
+    test_result_path_template: str
+    uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
     metrics_dsim_path: Optional[Path] = Path("")
     xilinx_vivado_path: Optional[Path] = Path("")
@@ -46,8 +58,8 @@ class Linting(Model):
 
 
 class Ip(Model):
-    global_paths: List[Path]
-    local_paths: List[Path]
+    global_paths: Optional[List[Path]] = []
+    local_paths: [List[Path]]
 
 
 class Docs(Model):
