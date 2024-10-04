@@ -33,9 +33,9 @@ managers:
  * A feature-driven Test Suite schema for specifying Regressions in UVM Test Benches, and the ability to run these Regressions on Job Schedulers (LSF, GRID Engine, etc.)
 
 ## How much does it cost?
-The EDA Automation and Package management is Free & Open-Source. Some commands, such as UVM Code Generation "phone home"
-to the Moore.io Server and therefore require a User Account (which can be created at www.mooreio.com/register) and a
-license for Datum UVMx. However, the tool operates independently of the site in all other regards and can be used
+The EDA Automation and Package management is Free & Open-Source. Some commands, such as UVM Code Generation, "phone
+home" to the Moore.io Server and therefore require a User Account (which can be created at www.mooreio.com/register) and
+a license for Datum UVMx. However, the tool operates independently of the site in all other regards and can be used
 without authentication to build a Chip from start to finish. 
 
 
