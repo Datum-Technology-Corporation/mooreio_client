@@ -21,7 +21,6 @@ from mio_client.models.configuration import Configuration
 from mio_client.models.ip import IpDataBase, Ip
 from mio_client.models.user import User
 from mio_client.services.simulation import SimulatorMetricsDSim
-from phase import Phase
 from mio_client.models.command import Command
 
 
@@ -159,7 +158,7 @@ class RootManager(ABC):
         return self._ip_database
 
     @property
-    def current_phase(self) -> Phase:
+    def current_phase(self) -> 'Phase':
         """
         :return: The current phase.
         """
@@ -238,7 +237,7 @@ class RootManager(ABC):
         :param name: A string representing the name of the phase.
         :return: A `Phase` object representing the newly created phase.
         """
-        self._current_phase = Phase(self, name)
+        self._current_phase = 'Phase'(self, name)
         return self._current_phase
     
     def check_phase_finished(self, phase):

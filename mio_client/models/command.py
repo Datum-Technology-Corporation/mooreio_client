@@ -1,6 +1,8 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+from abc import abstractmethod
+
 from pydantic import BaseModel
 
 from mio_client.core.model import Model
@@ -69,15 +71,17 @@ class Command:
         :return: The current phase.
         """
         return self._current_phase
-    
-    def add_to_subparsers(self, subparsers):
+
+    @staticmethod
+    @abstractmethod
+    def add_to_subparsers(subparsers):
         """
         Add parser(s) to the CLI argument subparsers.
         This method is a placeholder and must be implemented by subclasses.
         :param subparsers: The subparsers object to add the current command to.
         :return: None
         """
-        raise NotImplementedError("Subclasses must implement this method.")
+        pass
 
     def needs_authentication(self):
         """

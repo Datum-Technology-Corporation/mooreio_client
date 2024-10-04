@@ -1,16 +1,9 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import sys
 
+from mio_client.cli import main
 
-from mio_client.models.command import Command
-
-
-def get_commands():
-    return [Simulate]
-
-
-class Simulate(Command):
-    @staticmethod
-    def add_to_subparser(subparsers):
-        pass
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

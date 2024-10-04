@@ -4,7 +4,6 @@
 from pathlib import Path
 from typing import List, Pattern
 
-from mio_client.core.root import RootManager
 from mio_client.core.scheduler import TaskScheduler
 from mio_client.core.service import Service, ServiceType
 from abc import ABC, abstractmethod, abstractproperty
@@ -38,7 +37,7 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
 
 
 class LogicSimulator(Service, ABC):
-    def __init__(self, rmh: RootManager, vendor_name: str, name: str, full_name: str, installation_path: Path):
+    def __init__(self, rmh: 'RootManager', vendor_name: str, name: str, full_name: str, installation_path: Path):
         super().__init__(rmh, name)
         self._installation_path = installation_path
         self._type = ServiceType.LOGIC_SIMULATION
@@ -335,7 +334,7 @@ class LogicSimulator(Service, ABC):
 
 
 class SimulatorMetricsDSim(LogicSimulator):
-    def __init__(self, rmh: RootManager, installation_path: Path):
+    def __init__(self, rmh: 'RootManager', installation_path: Path):
         super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim", installation_path)
 
     @property
