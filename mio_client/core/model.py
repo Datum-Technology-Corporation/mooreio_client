@@ -6,7 +6,7 @@ import re
 
 
 VALID_POSIX_DIR_NAME_REGEX = re.compile(r"[\w\-.]+$")
-VALID_POSIX_PATH_REGEX = re.compile(r"^~?/?([\w\-.]+/)*[\w\-.]+/?$")
+VALID_POSIX_PATH_REGEX = re.compile(r"^(~|.)?/?([\w\-.]+/)*[\w\-.]+/?$")
 VALID_NAME_REGEX = re.compile(r"^\w+$")
 VALID_IP_OWNER_NAME_REGEX = re.compile(r"^(?:(\w+)/)?(\w+)$")
 VALID_FSOC_NAME_REGEX = re.compile(r"^[\w\-]+$")

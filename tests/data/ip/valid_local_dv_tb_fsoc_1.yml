@@ -22,7 +22,7 @@ structure:
   src_path     : "src/"
 
 hdl_src:
-  directories: ["./", "comps/", "obj/", "seq/"]
+  directories: [".", "comps", "obj", "seq"]
   top_sv_files: ["uvmt_cvmcu_cpi_pkg.sv"]
   top: ["uvmt_cvmcu_chip_tb", "uvmx_sim_summary"]
   tests_path: "tests"

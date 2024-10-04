@@ -44,14 +44,14 @@ class ParameterType(Enum):
 
 
 class Structure(Model):
-    scripts_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
-    docs_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
-    examples_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
-    src_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
+    scripts_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    docs_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    examples_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
 
 
 class HdlSource(Model):
-    directories: List[constr(pattern=VALID_POSIX_DIR_NAME_REGEX)]
+    directories: List[constr(pattern=VALID_POSIX_PATH_REGEX)]
     top_sv_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
     top_vhdl_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
     top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []

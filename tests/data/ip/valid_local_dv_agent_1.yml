@@ -16,7 +16,7 @@ structure:
   examples_path: "examples"
   src_path     : "src"
 
-hdl-src:
+hdl_src:
   directories: [".", "comps", "obj", "seq"]
   top_sv_files: ["uvma_cvmcu_cpi_pkg.sv"]
   so_libs: []
