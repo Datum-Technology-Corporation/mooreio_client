@@ -1,12 +1,13 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+from mio_client.commands import web
 from mio_client.core.phase import Phase
 from mio_client.models.command import Command
 
 
 ALL_COMMANDS = [
-    "help"
+    "help", "login"
 ]
 
 HELP_TEXT = """Moore.io Help Command
@@ -27,11 +28,11 @@ def get_commands():
 class Help(Command):
     @staticmethod
     def name() -> str:
-        return "Help"
+        return "help"
 
     @staticmethod
     def add_to_subparsers(subparsers):
-        parser_help = subparsers.add_parser('help', description="Provides documentation on specific command")
+        parser_help = subparsers.add_parser('help', description="Provides documentation on specific command", add_help=False)
         parser_help.add_argument("cmd", help='Command whose documentation to print', choices=ALL_COMMANDS)
 
     def print_text_and_exit(self, phase: Phase, text: str):
@@ -41,4 +42,9 @@ class Help(Command):
     def phase_init(self, phase):
         if self.parsed_cli_arguments.cmd == "help":
             self.print_text_and_exit(phase, HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "login":
+            self.print_text_and_exit(phase, web.LOGIN_HELP_TEXT)
+
+    def authenticate(self):
+        return False
 

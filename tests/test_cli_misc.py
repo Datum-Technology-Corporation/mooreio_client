@@ -54,10 +54,20 @@ class TestCliMisc:
     def test_cli_help_command_help(self, capsys):
         result = self.run_cmd(capsys, ['help', 'help'])
         assert result.return_code == 0
-        assert "Moore.io Help Command" in result.text
+        assert "Moore.io" in result.text
+        assert "Help Command" in result.text
         assert "User Manual" in result.text
         assert "https://mio-client.readthedocs.io" in result.text
         assert "Usage" in result.text
+        assert "Examples" in result.text
+
+    def test_cli_help_command_login(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'login'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "User Login Command" in result.text
+        assert "Usage" in result.text
+        assert "Options" in result.text
         assert "Examples" in result.text
 
 

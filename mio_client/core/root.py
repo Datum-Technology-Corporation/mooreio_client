@@ -196,7 +196,6 @@ class RootManager(ABC):
         - phase_save_user_data
         - phase_locate_project_file
         - phase_create_common_files_and_directories
-        - phase_validate_project_file
         - phase_load_user_configuration
         - phase_load_project_configuration
         - phase_validate_configuration_space
@@ -824,161 +823,162 @@ class RootManager(ABC):
         current_phase.next()
         self.check_phase_finished(current_phase)
 
+    @abstractmethod
     def phase_init(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
     @abstractmethod
     def phase_load_default_configuration(self, phase):
         pass
 
+    @abstractmethod
     def phase_load_user_data(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_authenticate(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_save_user_data(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_locate_project_file(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_create_common_files_and_directories(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
-    def phase_validate_project_file(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        raise NotImplementedError("Must be implemented by subclass")
-
+    @abstractmethod
     def phase_load_user_configuration(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_load_project_configuration(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
-    def phase_merge_configuration_space(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        raise NotImplementedError("Must be implemented by subclass")
-
+    @abstractmethod
     def phase_validate_configuration_space(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_scheduler_discovery(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_service_discovery(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_ip_discovery(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_check(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_report(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_cleanup(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_shutdown(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
+    @abstractmethod
     def phase_final(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
         :return: None
         """
-        raise NotImplementedError("Must be implemented by subclass")
+        pass
 
 
 class DefaultRootManager(RootManager):
@@ -1009,7 +1009,7 @@ class DefaultRootManager(RootManager):
                 phase.error(e)
                 raise Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
         else:
-            self._user = User(self._user_data_file_path)
+            self._user = User()
 
     def phase_authenticate(self, phase):
         if not self._user.authenticated:
