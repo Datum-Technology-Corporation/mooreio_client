@@ -55,8 +55,8 @@ class SemanticVersionSpec:
         _source_type: Any,
         _handler: Callable[[Any], core_schema.CoreSchema],
     ) -> core_schema.CoreSchema:
-        def validate_from_str(value: str) -> semver.Spec:
-            return semver.Spec.parse(value)
+        def validate_from_str(value: str) -> semver.SimpleSpec:
+            return semver.SimpleSpec.parse(value)
 
         from_str_schema = core_schema.chain_schema(
             [
@@ -69,7 +69,7 @@ class SemanticVersionSpec:
             json_schema=from_str_schema,
             python_schema=core_schema.union_schema(
                 [
-                    core_schema.is_instance_schema(semver.Spec),
+                    core_schema.is_instance_schema(semver.SimpleSpec),
                     from_str_schema,
                 ]
             ),

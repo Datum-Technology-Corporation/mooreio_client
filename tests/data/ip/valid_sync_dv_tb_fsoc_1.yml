@@ -1,10 +1,7 @@
 ip:
-  sync: false
-  type: dv_tb
-  owner: "acme"
-  name: "uvmt_abc"
-  full_name: "Duis aute irure dolor in "
-  version: "1.0.0"
+  sync: true
+  sync_id: 1238940
+  version: "5.6"
 
 dut:
   type: fsoc

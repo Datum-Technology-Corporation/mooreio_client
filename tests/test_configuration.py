@@ -23,19 +23,23 @@ def get_fixture_data(file: str) -> Dict:
 @pytest.fixture(scope="session")
 def valid_local_1_data():
     return get_fixture_data("valid_local_1")
+@pytest.fixture(scope="session")
+def valid_sync_1_data():
+    return get_fixture_data("valid_sync_1")
 
 
 class TestConfiguration:
     @pytest.fixture(autouse=True)
-    def setup(self, valid_local_1_data):
+    def setup(self, valid_local_1_data, valid_sync_1_data):
         self.valid_local_1_data = valid_local_1_data
+        self.valid_sync_1_data = valid_sync_1_data
 
     def test_agent_instance_creation(self):
         config_instance = Configuration(**self.valid_local_1_data)
         assert isinstance(config_instance, Configuration)
 
     def test_configuration_agent_instance_required_fields(self):
-        config_instance = Configuration(**self.valid_local_1_data)
+        config_instance = Configuration(**self.valid_sync_1_data)
         assert hasattr(config_instance, 'project')
         assert hasattr(config_instance, 'logic_simulation')
         assert hasattr(config_instance, 'synthesis')

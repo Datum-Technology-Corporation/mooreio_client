@@ -6,11 +6,13 @@ from typing import Optional, List, Union
 
 import jinja2
 import yaml
-from pydantic import BaseModel, AnyUrl, constr
+from pydantic import BaseModel, AnyUrl, constr, FilePath, PositiveInt
+from pydantic import DirectoryPath
 from pydantic_extra_types import semantic_version
-from semantic_version import Spec
+from semantic_version import Spec, SimpleSpec
 
-from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX
+from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
+    VALID_POSIX_DIR_NAME_REGEX, VALID_POSIX_PATH_REGEX
 #from mio_client.core.root import RootManager
 
 from enum import Enum
@@ -42,25 +44,26 @@ class ParameterType(Enum):
 
 
 class Structure(Model):
-    scripts_path: Path
-    docs_path: Path
-    examples_path: Path
-    src_path: Path
+    scripts_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
+    docs_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
+    examples_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
+    src_path: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
 
 
 class HdlSource(Model):
-    directories: List[Path]
-    top_files: List[Path]
-    top_modules: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
-    tests_path: Optional[Path] = Path()
-    tests_name_template: Optional[jinja2.Template] = ""
-    so_libs: Optional[List[Path]] = []
+    directories: List[constr(pattern=VALID_POSIX_DIR_NAME_REGEX)]
+    top_sv_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
+    top_vhdl_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
+    top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
+    tests_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
+    tests_name_template: Optional[jinja2.Template] = "UNDEFINED"
+    so_libs: Optional[List[FilePath]] = []
 
 
 class DesignUnderTest(Model):
     type: DutType
-    name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = "_"
-    target: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
+    name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = "UNDEFINED"
+    target: Optional[constr(pattern=VALID_NAME_REGEX)] = "UNDEFINED"
 
 
 class Parameter(Model):
@@ -71,15 +74,15 @@ class Parameter(Model):
 
 
 class Target(Model):
-    cmp: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
-    elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
-    sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[int, bool]]] = {}
+    cmp: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
+    elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
+    sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
 
 
 
 class About(Model):
     sync: bool
-    sync_id: Optional[int] = 0
+    sync_id: Optional[PositiveInt] = 0
     type: Optional[IpType]
     owner: Optional[str] = "_"
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
@@ -103,7 +106,7 @@ class IpDataBase():
     def add_ip(self, ip: Ip):
         self._ip_list.append(ip)
 
-    def find_ip(self, name: str, owner: str = "*", version: Spec = Spec("*")) -> Ip:
+    def find_ip(self, name: str, owner: str = "*", version: SimpleSpec = SimpleSpec("*")) -> Ip:
         for ip in self._ip_list:
             if ip.ip.name == name and (owner == "*" or ip.ip.owner == owner) and version.match(ip.version):
                 return ip

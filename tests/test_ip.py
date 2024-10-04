@@ -8,6 +8,7 @@ from typing import Optional, Dict
 
 import pytest
 import yaml
+from semantic_version import SimpleSpec
 
 from mio_client.models.ip import Ip, Spec, Structure, HdlSource, DesignUnderTest, Target
 from pydantic import constr, BaseModel
@@ -67,7 +68,8 @@ class TestIp:
         assert hasattr(ip_instance.structure, 'src_path')
         assert hasattr(ip_instance, 'hdl_src')
         assert hasattr(ip_instance.hdl_src, 'directories')
-        assert hasattr(ip_instance.hdl_src, 'top_files')
+        assert hasattr(ip_instance.hdl_src, 'top_sv_files')
+        assert hasattr(ip_instance.hdl_src, 'top_vhdl_files')
         assert hasattr(ip_instance.hdl_src, 'so_libs')
         assert hasattr(ip_instance, 'targets')
         assert 'default' in ip_instance.targets
@@ -81,7 +83,7 @@ class TestIp:
     def test_tb_invalid_dependencies_name(self):
         invalid_data = self.valid_local_dv_agent_1_data.copy()
         invalid_data['dependencies'] = {
-            "invalid name": Spec(">1.0")
+            "invalid name": SimpleSpec(">1.0")
         }
         with pytest.raises(ValueError):
             Ip(**invalid_data)
