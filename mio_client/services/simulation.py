@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import List, Pattern
 
-from mio_client.core.scheduler import TaskScheduler
+from mio_client.core.scheduler import JobScheduler
 from mio_client.core.service import Service, ServiceType
 from abc import ABC, abstractmethod, abstractproperty
 
@@ -134,7 +134,7 @@ class LogicSimulator(Service, ABC):
     def create_files(self):
         pass
 
-    def create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, scheduler: TaskScheduler) -> LibraryCreationReport:
+    def create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, scheduler: JobScheduler) -> LibraryCreationReport:
         log_path = self.do_create_library(config, ip)
         return self.parse_library_creation_log(ip, config, log_path)
 

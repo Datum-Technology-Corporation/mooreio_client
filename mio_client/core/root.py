@@ -17,7 +17,7 @@ import os
 import getpass
 
 from mio_client.core.phase import Phase
-from mio_client.core.scheduler import LocalProcessScheduler, TaskSchedulerDatabase
+from mio_client.core.scheduler import LocalProcessScheduler, JobSchedulerDatabase
 from mio_client.core.service import ServiceDataBase
 from mio_client.models.configuration import Configuration
 from mio_client.models.ip import IpDataBase, Ip
@@ -152,7 +152,7 @@ class RootManager(ABC):
         return self._configuration
 
     @property
-    def scheduler_database(self) -> TaskSchedulerDatabase:
+    def scheduler_database(self) -> JobSchedulerDatabase:
         """
         :return: The task scheduler database.
         """
@@ -1079,7 +1079,7 @@ class DefaultRootManager(RootManager):
                 raise Exception(f"Failed to load User configuration at '{self._user_configuration_path}': {e}")
         else:
             self.create_file(self._user_configuration_path)
-            self._user_configuration = Configuration(self._user_configuration_path)
+            self._user_configuration = Configuration()
 
     def phase_validate_configuration_space(self, phase):
         merged_configuration = self.merge_dictionaries(self._default_configuration, self._user_configuration)
@@ -1092,7 +1092,7 @@ class DefaultRootManager(RootManager):
         self.configuration.check()
 
     def phase_scheduler_discovery(self, phase):
-        self._scheduler_database = TaskSchedulerDatabase(self)
+        self._scheduler_database = JobSchedulerDatabase(self)
         self._scheduler_database.add_task_scheduler(LocalProcessScheduler(self))
         # TODO Implement proper discovery once another TaskScheduler implementation other than LocalProcessScheduler is implemented
 

@@ -45,6 +45,6 @@ class Help(Command):
         if self.parsed_cli_arguments.cmd == "login":
             self.print_text_and_exit(phase, user.LOGIN_HELP_TEXT)
 
-    def authenticate(self):
+    def needs_authentication(self) -> bool:
         return False
 

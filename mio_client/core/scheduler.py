@@ -12,7 +12,7 @@ from subprocess import run
 
 
 
-class Task:
+class Job:
     def __init__(self, rmh: 'RootManager', command: 'Command', wd: Path, name: str, binary: Path, arguments: List[str]):
         self._rmh = rmh
         self._command = command
@@ -89,7 +89,7 @@ class Task:
         self._parent_set = value
     
 
-class TaskSet:
+class JobSet:
     def __init__(self, rmh: 'RootManager', command: 'Command', name: str):
         self._rmh = rmh
         self._command = command
@@ -108,12 +108,12 @@ class TaskSet:
     def name(self) -> str:
         return self._name
 
-    def add_task(self, task: Task):
+    def add_task(self, task: Job):
         task.parent_set = self
         self._tasks.append(task)
 
 
-class TaskSchedulerConfiguration:
+class JobSchedulerConfiguration:
     def __init__(self, rmh: 'RootManager'):
         self._output_to_terminal = False
         self._max_number_of_parallel_processes = 1
@@ -133,24 +133,24 @@ class TaskSchedulerConfiguration:
         self._max_number_of_parallel_processes = value
 
 
-class TaskSchedulerDatabase:
+class JobSchedulerDatabase:
     def __init__(self, rmh: 'RootManager'):
         self._rmh = rmh
         self._task_schedulers = []
 
-    def add_task_scheduler(self, task_scheduler: 'TaskScheduler'):
+    def add_task_scheduler(self, task_scheduler: 'JobScheduler'):
         task_scheduler.db = self
         self._task_schedulers.append(task_scheduler)
         task_scheduler.init()
 
-    def get_task_scheduler(self, name: str) -> 'TaskScheduler':
+    def get_task_scheduler(self, name: str) -> 'JobScheduler':
         for task_scheduler in self._task_schedulers:
             if task_scheduler.name == name:
                 return task_scheduler
         raise Exception(f"No Task Scheduler '{name}' exists in the Task Scheduler Database")
 
 
-class TaskScheduler(ABC):
+class JobScheduler(ABC):
     def __init__(self, rmh: 'RootManager', name: str):
         self._rmh = rmh
         self._name = name
@@ -166,10 +166,10 @@ class TaskScheduler(ABC):
         return self._version
     
     @property
-    def db(self) -> TaskSchedulerDatabase:
+    def db(self) -> JobSchedulerDatabase:
         return self._db
     @db.setter
-    def db(self, value: TaskSchedulerDatabase):
+    def db(self, value: JobSchedulerDatabase):
         self._db = value
     
     @abstractmethod
@@ -177,74 +177,74 @@ class TaskScheduler(ABC):
         pass
     
     @abstractmethod
-    def dispatch_task(self, task: Task, configuration: TaskSchedulerConfiguration):
+    def dispatch_task(self, task: Job, configuration: JobSchedulerConfiguration):
         pass
     
     @abstractmethod
-    def dispatch_task_set(self, task_set: TaskSet, configuration: TaskSchedulerConfiguration):
+    def dispatch_task_set(self, task_set: JobSet, configuration: JobSchedulerConfiguration):
         pass
 
 
-class LocalProcessSchedulerConfiguration(TaskSchedulerConfiguration):
+class LocalProcessSchedulerConfiguration(JobSchedulerConfiguration):
     pass
 
 
-class LocalProcessScheduler(TaskScheduler):
+class LocalProcessScheduler(JobScheduler):
     def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "Local process")
 
     def init(self):
         pass
 
-    def dispatch_task(self, task: Task, configuration: LocalProcessSchedulerConfiguration):
+    def dispatch_task(self, task: Job, configuration: LocalProcessSchedulerConfiguration):
         task.timestamp_start = datetime.now()
         command_str = [task.binary] + task.arguments
         result = run(args=command_str, cwd=task.wd, shell=True)
         task.timestamp_end = datetime.now()
         task.return_code = result.returncode
 
-    def dispatch_task_set(self, task_set: TaskSet, configuration: LocalProcessSchedulerConfiguration):
+    def dispatch_task_set(self, task_set: JobSet, configuration: LocalProcessSchedulerConfiguration):
         pass
         # TODO IMPLEMENT
 
 
 
 # TODO IMPLEMENT!
-class LsfSchedulerConfiguration(TaskSchedulerConfiguration):
+class LsfSchedulerConfiguration(JobSchedulerConfiguration):
     pass
 
 
 # TODO IMPLEMENT!
-class LsfScheduler(TaskScheduler):
+class LsfScheduler(JobScheduler):
     def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "LSF")
 
     def init(self):
         pass
 
-    def dispatch_task(self, task: Task, configuration: LsfSchedulerConfiguration):
+    def dispatch_task(self, task: Job, configuration: LsfSchedulerConfiguration):
         pass
 
-    def dispatch_task_set(self, task_set: TaskSet, configuration: LsfSchedulerConfiguration):
+    def dispatch_task_set(self, task_set: JobSet, configuration: LsfSchedulerConfiguration):
         pass
 
 
 # TODO IMPLEMENT!
-class GridEngineSchedulerConfiguration(TaskSchedulerConfiguration):
+class GridEngineSchedulerConfiguration(JobSchedulerConfiguration):
     pass
 
 
 # TODO IMPLEMENT!
-class GridEngineScheduler(TaskScheduler):
+class GridEngineScheduler(JobScheduler):
     def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "GRID Engine")
 
     def init(self):
         pass
 
-    def dispatch_task(self, task: Task, configuration: GridEngineSchedulerConfiguration):
+    def dispatch_task(self, task: Job, configuration: GridEngineSchedulerConfiguration):
         pass
 
-    def dispatch_task_set(self, task_set: TaskSet, configuration: GridEngineSchedulerConfiguration):
+    def dispatch_task_set(self, task_set: JobSet, configuration: GridEngineSchedulerConfiguration):
         pass
 

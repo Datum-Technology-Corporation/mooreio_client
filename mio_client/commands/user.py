@@ -34,15 +34,17 @@ class Login(Command):
         parser_login.add_argument('-u', "--username", help='Moore.io IP Marketplace username', required=False)
         parser_login.add_argument('-p', "--password", help='Moore.io IP Marketplace password', required=False)
 
-    def authenticate(self):
-        return True
-
-    def phase_post_load_user_data(self, phase):
+    def phase_init(self, phase):
         if self.parsed_cli_arguments.username and not self.parsed_cli_arguments.password:
             phase.error(Exception("Specified a username but not a password."))
         elif not self.parsed_cli_arguments.username and self.parsed_cli_arguments.password:
             phase.error(Exception("Specified a password but not a username."))
-        elif self.parsed_cli_arguments.username and self.parsed_cli_arguments.password:
+
+    def needs_authentication(self) -> bool:
+        return True
+
+    def phase_post_load_user_data(self, phase):
+        if self.parsed_cli_arguments.username and self.parsed_cli_arguments.password:
             self.rmh.user.authenticated = False
             self.rmh.user.token = ""
             self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.trim().lower()
