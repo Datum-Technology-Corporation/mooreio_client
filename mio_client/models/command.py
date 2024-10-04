@@ -14,39 +14,39 @@ class CommandHistory(Model):
 
 
 class Command:
-    def __init__(self, name):
+    def __init__(self):
         """
         Constructor for initializing command object.
         :param name: The name of the command.
         """
-        self._name = name
-        self._root = None
+        self._rmh = None
         self._parsed_cli_arguments = None
         self._current_phase = None
 
-    @property
-    def name(self):
+    @staticmethod
+    @abstractmethod
+    def name() -> str:
         """
         :return: The name of the command.
         """
-        return self._name
+        pass
 
     @property
-    def root(self):
+    def rmh(self) -> 'RootManager':
         """
         :return: The current root object.
         """
-        return self._root
+        return self._rmh
 
-    @root.setter
-    def root(self, value):
+    @rmh.setter
+    def rmh(self, value: 'RootManager'):
         """
         :param value: The new root object
         :return: None
         """
         if not isinstance(value, 'RootManager'):
             raise TypeError("root must be an instance of Root")
-        self._root = value
+        self._rmh = value
 
     @property
     def parsed_cli_arguments(self):

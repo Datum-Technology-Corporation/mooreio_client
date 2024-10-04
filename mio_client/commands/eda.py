@@ -7,10 +7,10 @@ from mio_client.models.command import Command
 
 
 def get_commands():
-    return [Simulate]
+    return []
 
 
 class Simulate(Command):
     @staticmethod
-    def add_to_subparser(subparsers):
+    def add_to_subparsers(subparsers):
         pass

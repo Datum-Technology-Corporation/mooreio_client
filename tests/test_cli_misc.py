@@ -1,7 +1,6 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,8 +21,6 @@ class TestCliMisc:
         pass
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        cwd = Path(__file__).parent.parent.absolute()
-        #subprocess.run(['python3', "-m mio_client"] + args, capture_output=True, text=True, cwd=cwd)
         return_code = cli.main(args)
         text = capsys.readouterr().out.rstrip()
         return OutputCapture(return_code, text)
@@ -38,6 +35,7 @@ class TestCliMisc:
         assert result.return_code == 0
         assert "Moore.io" in result.text
         assert "Client" in result.text
+        assert "https://mio-client.readthedocs.io" in result.text
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Full Command List" in result.text
@@ -52,4 +50,14 @@ class TestCliMisc:
         assert result.return_code == 0
         assert "Moore.io Client" in result.text
         assert mio_client.cli.VERSION in result.text
+
+    def test_cli_help_command_help(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'help'])
+        assert result.return_code == 0
+        assert "Moore.io Help Command" in result.text
+        assert "User Manual" in result.text
+        assert "https://mio-client.readthedocs.io" in result.text
+        assert "Usage" in result.text
+        assert "Examples" in result.text
+
 

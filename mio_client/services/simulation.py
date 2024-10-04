@@ -8,7 +8,6 @@ from mio_client.core.scheduler import TaskScheduler
 from mio_client.core.service import Service, ServiceType
 from abc import ABC, abstractmethod, abstractproperty
 
-from mio_client.models.command import Command
 from mio_client.models.ip import Ip
 from mio_client.models.simulation_reports import LibraryCreationReport, CompilationReport, SimulationReport, \
     CompilationAndElaborationReport, ElaborationReport

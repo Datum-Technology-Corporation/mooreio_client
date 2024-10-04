@@ -3,6 +3,7 @@
 #######################################################################################################################
 import os
 import re
+import sys
 from abc import ABC, abstractmethod
 from configparser import Error
 from pathlib import Path
@@ -15,6 +16,7 @@ from pydantic import ValidationError, BaseModel
 import os
 import getpass
 
+from mio_client.core.phase import Phase
 from mio_client.core.scheduler import LocalProcessScheduler, TaskSchedulerDatabase
 from mio_client.core.service import ServiceDataBase
 from mio_client.models.configuration import Configuration
@@ -22,6 +24,19 @@ from mio_client.models.ip import IpDataBase, Ip
 from mio_client.models.user import User
 from mio_client.services.simulation import SimulatorMetricsDSim
 from mio_client.models.command import Command
+
+
+class PhaseEndProcessException(Exception):
+    def __init__(self, message: str = ""):
+        self.message = message
+    def __str__(self):
+        return self.message
+    @property
+    def message(self) -> str:
+        return self._message
+    @message.setter
+    def message(self, message: str):
+        self._message = message
 
 
 class RootManager(ABC):
@@ -37,7 +52,7 @@ class RootManager(ABC):
         """
         self._name = name
         self._wd = wd
-        self._md = wd / ".mio"
+        self._md = self.wd / ".mio"
         self._command = None
         self._install_path = None
         self._user_data_file_path = None
@@ -165,7 +180,7 @@ class RootManager(ABC):
         return self._current_phase
     
     
-    def run(self, command):
+    def run(self, command: Command) -> int:
         """
         The `run` method is responsible for executing a series of phases to complete a command.
 
@@ -194,29 +209,37 @@ class RootManager(ABC):
         - phase_cleanup
         - phase_shutdown
         - phase_final
-
-        Note that this method does not return any value.
         """
-        self.set_command(command)
-        self.do_phase_init()
-        self.do_phase_load_default_configuration()
-        self.do_phase_load_user_data()
-        self.do_phase_authenticate()
-        self.do_phase_save_user_data()
-        self.do_phase_locate_project_file()
-        self.do_phase_create_common_files_and_directories()
-        self.do_phase_load_project_configuration()
-        self.do_phase_load_user_configuration()
-        self.do_phase_validate_configuration_space()
-        self.do_phase_scheduler_discovery()
-        self.do_phase_service_discovery()
-        self.do_phase_ip_discovery()
-        self.do_phase_main()
-        self.do_phase_check()
-        self.do_phase_report()
-        self.do_phase_cleanup()
-        self.do_phase_shutdown()
-        self.do_phase_final()
+        try:
+            self.set_command(command)
+            self.do_phase_init()
+            self.do_phase_load_default_configuration()
+            self.do_phase_load_user_data()
+            self.do_phase_authenticate()
+            self.do_phase_save_user_data()
+            self.do_phase_locate_project_file()
+            self.do_phase_create_common_files_and_directories()
+            self.do_phase_load_project_configuration()
+            self.do_phase_load_user_configuration()
+            self.do_phase_validate_configuration_space()
+            self.do_phase_scheduler_discovery()
+            self.do_phase_service_discovery()
+            self.do_phase_ip_discovery()
+            self.do_phase_main()
+            self.do_phase_check()
+            self.do_phase_report()
+            self.do_phase_cleanup()
+            self.do_phase_shutdown()
+            self.do_phase_final()
+        except PhaseEndProcessException as e:
+            if e.message != "":
+                print(e.message)
+            return 0
+        except Exception as e:
+            print(e, file=sys.stderr)
+            return 1
+        finally:
+            return 0
     
     
     def set_command(self, command):
@@ -224,11 +247,10 @@ class RootManager(ABC):
         Sets the command for the root.
         :param command: the command to be set as the root command
         :return: None
-        :raises TypeError: if the command is not an instance of Command
         """
-        if not isinstance(command, Command):
-            raise TypeError("root must be an instance of Root")
-        self._command = command
+        #if not issubclass(type(command), Command):
+        #    raise TypeError("command must extend from class 'Command'")
+        self._command = command()
         command.root = self
     
     def create_phase(self, name):
@@ -237,7 +259,7 @@ class RootManager(ABC):
         :param name: A string representing the name of the phase.
         :return: A `Phase` object representing the newly created phase.
         """
-        self._current_phase = 'Phase'(self, name)
+        self._current_phase = Phase(self, name)
         return self._current_phase
     
     def check_phase_finished(self, phase):
@@ -247,7 +269,12 @@ class RootManager(ABC):
         :return: None.
         """
         if not phase.has_finished():
-            raise RuntimeError(f"Phase '{phase}' has not finished properly")
+            if phase.error:
+                raise RuntimeError(f"Phase '{phase} has encountered an error: {phase.error}")
+            else:
+                raise RuntimeError(f"Phase '{phase}' has not finished properly")
+        if phase.end_process:
+            raise PhaseEndProcessException(phase.end_process_message)
     
     def file_exists(self, path):
         """
@@ -959,7 +986,10 @@ class DefaultRootManager(RootManager):
     Stock implementation of RootManager's pure virtual methods.
     """
     def phase_init(self, phase):
-        self._install_path = os.path.dirname(os.path.realpath(__file__)) / '..'
+        file_path = os.path.realpath(__file__)
+        directory_path = os.path.dirname(file_path)
+        install_path = Path(Path(directory_path) / '..').resolve()
+        self._install_path = install_path
     
     def phase_load_default_configuration(self, phase):
         self._default_configuration_path = self._install_path / 'data' / 'defaults.toml'

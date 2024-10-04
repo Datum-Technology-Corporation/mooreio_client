@@ -10,8 +10,6 @@ import semantic_version
 from semantic_version import Version
 from subprocess import run
 
-#from mio_client.core.root import RootManager
-from mio_client.models.command import Command
 
 
 class Task:
@@ -30,7 +28,7 @@ class Task:
         self._parent_set = None
     
     @property
-    def command(self) -> Command:
+    def command(self) -> 'Command':
         return self._command
     
     @property
@@ -92,7 +90,7 @@ class Task:
     
 
 class TaskSet:
-    def __init__(self, rmh: 'RootManager', command: Command, name: str):
+    def __init__(self, rmh: 'RootManager', command: 'Command', name: str):
         self._rmh = rmh
         self._command = command
         self._name = name
@@ -103,7 +101,7 @@ class TaskSet:
         return self._rmh
 
     @property
-    def command(self) -> Command:
+    def command(self) -> 'Command':
         return self._command
 
     @property
