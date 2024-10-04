@@ -10,8 +10,8 @@ from mio_client.core.model import Model, VALID_NAME_REGEX
 
 class User(Model):
     authenticated: bool
-    username: constr(regex=VALID_NAME_REGEX)
-    token: Optional[str]
+    username: Optional[constr(pattern=VALID_NAME_REGEX)] = "anonymous"
+    token: Optional[str] = ""
 
     @classmethod
     def load(cls, file_path):
