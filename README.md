@@ -28,7 +28,7 @@ managers:
  * The concept of a Project, which is identified by a `mio.toml` file in the root directory
  * A layered Configuration Space defined with TOML files (`mio.toml`) at the user (`~/.mio/mio.toml`) and project levels
  * Packaging of HDL source file into IPs (Intellectual Property) identified by `ip.yml` descriptors in their root directory
- * The ability to perform tasks at the IP-level, including specifying and installing dependencies
+ * Performing tasks at the IP-level, including generating code, specifying and installing dependencies
  * Ability to drive all Logic Simulators (VCS, XCelium, Questa, Vivado, Metrics DSim, Riviera-PRO) with a single set of commands and parameters
  * A feature-driven Test Suite schema for specifying Regressions in UVM Test Benches, and the ability to run these Regressions on Job Schedulers (LSF, GRID Engine, etc.)
 
