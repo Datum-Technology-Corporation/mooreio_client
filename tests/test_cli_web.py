@@ -14,7 +14,7 @@ class TestCliUser:
     @pytest.fixture(autouse=True)
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
-        mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/api/token'
+        mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = cli.main(args)

@@ -16,7 +16,7 @@ class User(Model):
         self._use_pre_set_password = False
         self._pre_set_password = ""
     authenticated: bool
-    username: Optional[constr(pattern=VALID_NAME_REGEX)] = "anonymous"
+    username: Optional[constr(pattern=VALID_NAME_REGEX)] = "__ANONYMOUS__"
     access_token: Optional[str] = ""
     refresh_token: Optional[str] = ""
 
@@ -30,17 +30,23 @@ class User(Model):
         return yaml.dump(self.model_dump())
 
     @property
-    def pre_set_username(self):
+    def use_pre_set_username(self) -> bool:
+        return self._use_pre_set_username
+    @property
+    def pre_set_username(self) -> str:
         return self._pre_set_username
     @pre_set_username.setter
-    def pre_set_username(self, value):
+    def pre_set_username(self, value: str):
         self._use_pre_set_username = True
         self._pre_set_username = value
 
     @property
-    def pre_set_password(self):
+    def use_pre_set_password(self) -> bool:
+        return self._use_pre_set_password
+    @property
+    def pre_set_password(self) -> str:
         return self._pre_set_password
     @pre_set_password.setter
-    def pre_set_password(self, value):
+    def pre_set_password(self, value: str):
         self._use_pre_set_password = True
         self._pre_set_password = value

@@ -46,9 +46,10 @@ class Login(Command):
     def phase_post_load_user_data(self, phase):
         if self.parsed_cli_arguments.username and self.parsed_cli_arguments.password:
             self.rmh.user.authenticated = False
-            self.rmh.user.token = ""
-            self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.trim().lower()
-            self.rmh.user.pre_set_password = self.parsed_cli_arguments.password.trim().lower()
+            self.rmh.user.access_token = ""
+            self.rmh.user.refresh_token = ""
+            self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.strip().lower()
+            self.rmh.user.pre_set_password = self.parsed_cli_arguments.password.strip().lower()
 
     def phase_post_save_user_data(self, phase):
         phase.end_process = True

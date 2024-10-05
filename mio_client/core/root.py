@@ -198,7 +198,6 @@ class RootManager(ABC):
         """
         return self._current_phase
     
-    
     def run(self, command: Command) -> int:
         """
         The `run` method is responsible for executing a series of phases to complete a command.
@@ -253,12 +252,11 @@ class RootManager(ABC):
             if e.message != "":
                 print(e.message)
             return 0
-        except Exception as e:
-            print(e, file=sys.stderr)
-            return 1
-        finally:
+        #except Exception as e:
+        #    print(e, file=sys.stderr)
+        #    return 1
+        else:
             return 0
-    
     
     def set_command(self, command):
         """
@@ -269,7 +267,7 @@ class RootManager(ABC):
         #if not issubclass(type(command), Command):
         #    raise TypeError("command must extend from class 'Command'")
         self._command = command()
-        command.root = self
+        command.rmh = self
     
     def create_phase(self, name):
         """
@@ -1035,32 +1033,40 @@ class DefaultRootManager(RootManager):
                 phase.error(e)
                 raise Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
         else:
-            self._user = User()
+            self._user = User(authenticated=False)
 
     def phase_authenticate(self, phase):
         if not self.user.authenticated:
-            if self.user.username == "":
-                self.user.username = input("Enter your username: ")
+            if self.user.use_pre_set_username:
+                self.user.username = self.user.pre_set_username
+            else:
+                if self.user.username == "__ANONYMOUS__":
+                    self.user.username = input("Enter your username: ")
+            password = ""
             try:
-                password = getpass.getpass("Enter your password: ")
+                if self.user.use_pre_set_password:
+                    password = self.user.pre_set_password
+                else:
+                    password = getpass.getpass("Enter your password: ")
             except Exception as e:
                 phase.error(e)
                 raise Error(f"An error occurred during authentication: {e}")
-            credentials = {
-                'username': self.user.username,
-                'password': password,
-            }
-            try:
-                response = requests.post(self.url_authentication, json=credentials)
-                response.raise_for_status()  # Raise an error for bad status codes
-                data = response.json()
-                self.user.access_token = data['access']
-                self.user.refresh_token = data['refresh']
-            except requests.RequestException as e:
-                error = Exception(f"An error occurred during authentication: {e}")
-                phase.error(error)
-            finally:
-                self.user.authenticated = True
+            else:
+                credentials = {
+                    'username': self.user.username,
+                    'password': password,
+                }
+                try:
+                    response = requests.post(self.url_authentication, json=credentials)
+                    response.raise_for_status()  # Raise an error for bad status codes
+                    data = response.json()
+                    self.user.access_token = data['access']
+                    self.user.refresh_token = data['refresh']
+                except requests.RequestException as e:
+                    error = Exception(f"An error occurred during authentication: {e}")
+                    phase.error(error)
+                else:
+                    self.user.authenticated = True
 
     def phase_save_user_data(self, phase):
         try:

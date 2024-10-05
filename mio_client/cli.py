@@ -65,7 +65,7 @@ Full Command List (`mio help CMD` for help on a specific command):
 # Entry point
 #######################################################################################################################
 URL_BASE = 'https://mooreio.com'
-URL_AUTHENTICATION = f'{URL_BASE}/api/token'
+URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
 def main(args=None) -> int:
     """
     Main entry point. Performs the following steps in order:
