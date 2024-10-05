@@ -85,6 +85,28 @@ Comprehensive documentation is available on [Read the Docs](https://readthedocs.
 
 ## Development
 
+### Architecture
+The Design Pattern for the Moore.io Client mimics UVM's phases and component structure. A RootManager (RM) class instance
+is created by the CLI argument parser and given a Command instance to execute. The RM operates in 3 steps:
+
+1. Discovery: finding the project file, loading/validating the configuration space and finding/loading IP files
+2. Main: RM gives control to the Command which invokes Service(s) (simulators, synthesizers, etc.) to perform Task(s) (compilation, simulation, etc.) via a JobScheduler instance (LocalProcess, LSF, GRID) which accepts Jobs (shell commands) 
+3. Post: RM and Command parse results, generate reports, clean up files, close sockets, stop processes and print out final notes to the user  
+
+Each step is broken up into phases, with each phase having a 'pre' and 'post' phase associated to it:
+
+* The Discovery step is handled by the RM; the Command can participate via pre/post phase hooks
+* During the Main phase, control shifts to the Command, which has a selection of Service tasks and JobSchedulers with which to run them
+* The post step is shared between the RM and the Command
+
+Each phase method has a Phase instance parameter that can be used to end the program arbitrarily and/or report errors to the RM.
+
+Commands are discovered by `cli.py` and must append their CLI argument subparser to the main `argparse` instance.
+If the user selects the command, an instance is created, fed to the RM and execution begins via `RM.run()`.
+
+Errors are handled via the `raise` of Python Exceptions. The RM catches these and exits with the appropriate error message and return code.
+
+
 ### Requirements
 
 - Python 3.11.4
