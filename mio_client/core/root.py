@@ -252,9 +252,9 @@ class RootManager(ABC):
             if e.message != "":
                 print(e.message)
             return 0
-        #except Exception as e:
-        #    print(e, file=sys.stderr)
-        #    return 1
+        except Exception as e:
+            print(e, file=sys.stderr)
+            return 1
         else:
             return 0
     
@@ -1021,8 +1021,7 @@ class DefaultRootManager(RootManager):
             with open(self.default_configuration_path, 'r') as f:
                 self._default_configuration = toml.load(f)
         except ValidationError as e:
-            phase.error(e)
-            raise Exception(f"Failed to load default configuration file at '{self.default_configuration_path}': {e}")
+            phase.error = Exception(f"Failed to load default configuration file at '{self.default_configuration_path}': {e}")
     
     def phase_load_user_data(self, phase):
         self._user_data_file_path = os.path.expanduser("~/.mio/user.yml")
@@ -1030,8 +1029,7 @@ class DefaultRootManager(RootManager):
             try:
                 self._user = User.load(self._user_data_file_path)
             except ValidationError as e:
-                phase.error(e)
-                raise Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
+                phase.error = Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
         else:
             self._user = User(authenticated=False)
 
@@ -1049,8 +1047,7 @@ class DefaultRootManager(RootManager):
                 else:
                     password = getpass.getpass("Enter your password: ")
             except Exception as e:
-                phase.error(e)
-                raise Error(f"An error occurred during authentication: {e}")
+                phase.error = Exception(f"An error occurred during authentication: {e}")
             else:
                 credentials = {
                     'username': self.user.username,
@@ -1063,8 +1060,7 @@ class DefaultRootManager(RootManager):
                     self.user.access_token = data['access']
                     self.user.refresh_token = data['refresh']
                 except requests.RequestException as e:
-                    error = Exception(f"An error occurred during authentication: {e}")
-                    phase.error(error)
+                    phase.error = Exception(f"An error occurred during authentication: {e}")
                 else:
                     self.user.authenticated = True
 
@@ -1073,8 +1069,7 @@ class DefaultRootManager(RootManager):
             self.create_file(self._user_data_file_path)
             self._user.to_yaml()
         except Exception as e:
-            phase.error(e)
-            raise Error(f"Failed to save User Data at '{self._user_data_file_path}': {e}")
+            phase.error = Exception(f"Failed to save User Data at '{self._user_data_file_path}': {e}")
 
     def phase_locate_project_file(self, phase):
         current_path = self._wd
@@ -1087,8 +1082,7 @@ class DefaultRootManager(RootManager):
                 # Move up one directory
                 current_path = os.path.dirname(current_path)
         except Exception as e:
-            phase.error(e)
-            raise Exception(f"Could not locate Project 'mio.toml': {e}")
+            phase.error = Exception(f"Could not locate Project 'mio.toml': {e}")
 
     def phase_create_common_files_and_directories(self, phase):
         self.create_directory(self.md)
@@ -1098,8 +1092,7 @@ class DefaultRootManager(RootManager):
             with open(self.project_configuration_path, 'r') as f:
                 self._project_configuration = toml.load(f)
         except ValidationError as e:
-            phase.error(e)
-            raise Exception(f"Failed to load Project configuration file at '{self.project_configuration_path}': {e}")
+            phase.error = Exception(f"Failed to load Project configuration file at '{self.project_configuration_path}': {e}")
 
     def phase_load_user_configuration(self, phase):
         self._user_configuration_path = os.path.expanduser("~/.mio/mio.toml")
@@ -1108,8 +1101,7 @@ class DefaultRootManager(RootManager):
                 with open(self.user_configuration_path, 'r') as f:
                     self._user_configuration = toml.load(f)
             except ValidationError as e:
-                phase.error(e)
-                raise Exception(f"Failed to load User configuration at '{self._user_configuration_path}': {e}")
+                phase.error = Exception(f"Failed to load User configuration at '{self._user_configuration_path}': {e}")
         else:
             self.create_file(self._user_configuration_path)
             self._user_configuration = Configuration()
@@ -1120,8 +1112,7 @@ class DefaultRootManager(RootManager):
         try:
             self._configuration = Configuration(merged_configuration)
         except ValidationError as e:
-            phase.error(e)
-            raise Exception(f"Failed to validate Configuration Space: {e}")
+            phase.error = Exception(f"Failed to validate Configuration Space: {e}")
         self.configuration.check()
 
     def phase_scheduler_discovery(self, phase):
@@ -1149,7 +1140,7 @@ class DefaultRootManager(RootManager):
                 if file == 'ip.yml':
                     ip_files.append(os.path.join(root, file))
         if not ip_files:
-            raise Exception("No 'ip.yml' files found in the project directory.")
+            phase.error = Exception("No 'ip.yml' files found in the project directory.")
         else:
             for file in ip_files:
                 try:
