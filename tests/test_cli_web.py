@@ -7,18 +7,14 @@ import pytest
 
 import mio_client.cli
 from mio_client import cli
-
-
-class OutputCapture:
-    def __init__(self, return_code: int, text: str):
-        self.return_code = return_code
-        self.text = text
+from tests.test_cli_misc import OutputCapture
 
 
 class TestCliUser:
     @pytest.fixture(autouse=True)
     def setup(self):
-        pass
+        mio_client.cli.URL_BASE = "http://localhost:8000"
+        mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/api/token'
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = cli.main(args)

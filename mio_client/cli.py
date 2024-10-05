@@ -64,6 +64,8 @@ Full Command List (`mio help CMD` for help on a specific command):
 #######################################################################################################################
 # Entry point
 #######################################################################################################################
+URL_BASE = 'https://mooreio.com'
+URL_AUTHENTICATION = f'{URL_BASE}/api/token'
 def main(args=None) -> int:
     """
     Main entry point. Performs the following steps in order:
@@ -104,7 +106,7 @@ def main(args=None) -> int:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
 
-    mio_root = DefaultRootManager("Moore.io Client Root Manager", wd)
+    mio_root = DefaultRootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION)
     command.parsed_cli_arguments = args
     return mio_root.run(command)
 

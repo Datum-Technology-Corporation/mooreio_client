@@ -12,7 +12,6 @@ from typing import List, Pattern
 
 import requests
 import toml
-from django.contrib.auth import authenticate
 from pydantic import ValidationError, BaseModel
 import os
 import getpass
@@ -47,7 +46,7 @@ class RootManager(ABC):
     """
     Abstract component which performs all vital tasks and executes phases.
     """
-    def __init__(self, name, wd):
+    def __init__(self, name: str, wd: Path, url_base: str, url_authentication: str):
         """
         Initialize an instance of the root.
 
@@ -57,6 +56,8 @@ class RootManager(ABC):
         self._name = name
         self._wd = wd
         self._md = self.wd / ".mio"
+        self._url_base = url_base
+        self._url_authentication = url_authentication
         self._command = None
         self._install_path = None
         self._user_data_file_path = None
@@ -105,6 +106,20 @@ class RootManager(ABC):
         :return: Moore.io work (hidden) directory.
         """
         return self._md
+
+    @property
+    def url_base(self):
+        """
+        :return: Moore.io Web Server URL.
+        """
+        return self._url_base
+
+    @property
+    def url_authentication(self):
+        """
+        :return: Moore.io Web Server Authentication URL.
+        """
+        return self._url_authentication
 
     @property
     def command(self) -> Command:
@@ -990,8 +1005,6 @@ class RootManager(ABC):
 #######################################################################################################################
 # Full implementation
 #######################################################################################################################
-URL_BASE = 'https://mooreio.com/'
-URL_AUTHENTICATE = f"{URL_BASE}/api/authenticate"
 
 
 class DefaultRootManager(RootManager):
@@ -1038,7 +1051,7 @@ class DefaultRootManager(RootManager):
                 'password': password,
             }
             try:
-                response = requests.post(URL_AUTHENTICATE, json=credentials)
+                response = requests.post(self.url_authentication, json=credentials)
                 response.raise_for_status()  # Raise an error for bad status codes
                 data = response.json()
                 self.user.access_token = data['access']
@@ -1049,7 +1062,6 @@ class DefaultRootManager(RootManager):
             finally:
                 self.user.authenticated = True
 
-    
     def phase_save_user_data(self, phase):
         try:
             self.create_file(self._user_data_file_path)

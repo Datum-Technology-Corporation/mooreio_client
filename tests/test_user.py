@@ -29,22 +29,24 @@ def valid_authenticated_1():
     return get_fixture_data("valid_authenticated_1")
 
 
-class TestConfiguration:
+class TestUser:
     @pytest.fixture(autouse=True)
     def setup(self, valid_local_1_data, valid_authenticated_1):
         self.valid_local_1_data = valid_local_1_data
         self.valid_authenticated_1 = valid_authenticated_1
 
-    def test_agent_instance_creation(self):
+    def test_user_instance_creation(self):
         config_instance = User(**self.valid_local_1_data)
         assert isinstance(config_instance, User)
 
-    def test_configuration_agent_instance_required_fields(self):
+    def test_user_instance_required_fields(self):
         config_instance = User(**self.valid_local_1_data)
         assert hasattr(config_instance, 'authenticated')
 
-    def test_tb_instance_has_all_fields(self):
+    def test_user_instance_has_all_fields(self):
         config_instance = User(**self.valid_authenticated_1)
         assert hasattr(config_instance, 'authenticated')
         assert hasattr(config_instance, 'username')
-        assert hasattr(config_instance, 'token')
+        assert hasattr(config_instance, 'access_token')
+        assert hasattr(config_instance, 'refresh_token')
+
