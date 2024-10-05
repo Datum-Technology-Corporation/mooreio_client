@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod, abstractproperty
 
 from mio_client.models.ip import Ip
 from mio_client.models.simulation_reports import LibraryCreationReport, CompilationReport, SimulationReport, \
-    CompilationAndElaborationReport, ElaborationReport
+    CompilationAndElaborationReport, ElaborationReport, LibraryDeletionReport
 
 
 class LogicSimulatorConfiguration(ABC):
@@ -135,33 +135,44 @@ class LogicSimulator(Service, ABC):
         pass
 
     def create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, scheduler: JobScheduler) -> LibraryCreationReport:
-        log_path = self.do_create_library(config, ip)
-        return self.parse_library_creation_log(ip, config, log_path)
+        report = LibraryCreationReport()
+        log_path = self.do_create_library(ip, config, scheduler, report)
+        self.parse_library_creation_log(ip, config, report, log_path)
+        return report
 
-    def delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration):
-        self.do_delete_library(ip, config)
+    def delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, scheduler: JobScheduler) -> LibraryDeletionReport:
+        report = LibraryDeletionReport()
+        self.do_delete_library(ip, config, report)
+        return report
 
-    def compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration) -> CompilationReport:
+    def compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, scheduler: JobScheduler) -> CompilationReport:
+        report = CompilationReport()
         log_path = self.do_compile(ip, config)
-        return self.parse_compilation_log(ip, config, log_path)
+        self.parse_compilation_log(ip, config, report, log_path)
+        return report
 
-    def elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration) -> ElaborationReport:
+    def elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, scheduler: JobScheduler) -> ElaborationReport:
+        report = ElaborationReport()
         log_path = self.do_elaborate(ip, config)
-        return self.parse_elaboration_log(ip, config, log_path)
+        self.parse_elaboration_log(ip, config, report, log_path)
+        return report
 
-    def compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration) -> CompilationAndElaborationReport:
+    def compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, scheduler: JobScheduler) -> CompilationAndElaborationReport:
+        report = CompilationAndElaborationReport()
         log_path = self.do_compile_and_elaborate(ip, config)
-        return self.parse_compilation_and_elaboration_log(ip, config, log_path)
+        self.parse_compilation_and_elaboration_log(ip, config, report, log_path)
+        return report
 
-    def simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration) -> SimulationReport:
+    def simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, scheduler: JobScheduler) -> SimulationReport:
+        report = SimulationReport()
         results_directory_path = self.do_simulate(ip, config)
-        return self.parse_simulation_logs(ip, config, results_directory_path)
+        self.parse_simulation_logs(ip, config, report, results_directory_path)
+        return report
 
-    def parse_library_creation_log(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, log_path: Path) -> LibraryCreationReport:
+    def parse_library_creation_log(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, log_path: Path) -> None:
         errors = self.rmh.search_file_for_patterns(log_path, self.library_creation_error_patterns)
         warnings = self.rmh.search_file_for_patterns(log_path, self.library_creation_warning_patterns)
         fatals = self.rmh.search_file_for_patterns(log_path, self.library_creation_fatal_patterns)
-        report = LibraryCreationReport()
         report.name = f"Library creation for '{ip}' using '{self.full_name}'"
         report.success = (len(errors) == 0) and (len(fatals) == 0)
         report.errors = errors
@@ -170,13 +181,11 @@ class LogicSimulator(Service, ABC):
         report.num_errors = len(errors)
         report.num_warnings = len(warnings)
         report.num_fatals = len(fatals)
-        return report
 
-    def parse_compilation_log(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, log_path: Path) -> CompilationReport:
+    def parse_compilation_log(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, log_path: Path) -> None:
         errors = self.rmh.search_file_for_patterns(log_path, self.compilation_error_patterns)
         warnings = self.rmh.search_file_for_patterns(log_path, self.compilation_warning_patterns)
         fatals = self.rmh.search_file_for_patterns(log_path, self.compilation_fatal_patterns)
-        report = CompilationReport()
         report.name = f"Compilation for '{ip}' using '{self.full_name}'"
         report.success = (len(errors) == 0) and (len(fatals) == 0)
         report.errors = errors
@@ -185,13 +194,11 @@ class LogicSimulator(Service, ABC):
         report.num_errors = len(errors)
         report.num_warnings = len(warnings)
         report.num_fatals = len(fatals)
-        return report
 
-    def parse_elaboration_log(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, log_path: Path) -> ElaborationReport:
+    def parse_elaboration_log(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, log_path: Path) -> None:
         errors = self.rmh.search_file_for_patterns(log_path, self.elaboration_error_patterns)
         warnings = self.rmh.search_file_for_patterns(log_path, self.elaboration_warning_patterns)
         fatals = self.rmh.search_file_for_patterns(log_path, self.elaboration_fatal_patterns)
-        report = ElaborationReport()
         report.name = f"Elaboration for '{ip}' using '{self.full_name}'"
         report.success = (len(errors) == 0) and (len(fatals) == 0)
         report.errors = errors
@@ -200,13 +207,11 @@ class LogicSimulator(Service, ABC):
         report.num_errors = len(errors)
         report.num_warnings = len(warnings)
         report.num_fatals = len(fatals)
-        return report
 
-    def parse_compilation_and_elaboration_log(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, log_path: Path) -> CompilationAndElaborationReport:
+    def parse_compilation_and_elaboration_log(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, log_path: Path) -> None:
         errors = self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_error_patterns)
         warnings = self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_warning_patterns)
         fatals = self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_fatal_patterns)
-        report = CompilationAndElaborationReport()
         report.name = f"Compilation and Elaboration for '{ip}' using '{self.full_name}'"
         report.success = (len(errors) == 0) and (len(fatals) == 0)
         report.errors = errors
@@ -215,13 +220,11 @@ class LogicSimulator(Service, ABC):
         report.num_errors = len(errors)
         report.num_warnings = len(warnings)
         report.num_fatals = len(fatals)
-        return report
 
-    def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, log_path: Path) -> SimulationReport:
+    def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, log_path: Path) -> None:
         errors = self.rmh.search_file_for_patterns(log_path, self.simulation_error_patterns)
         warnings = self.rmh.search_file_for_patterns(log_path, self.simulation_warning_patterns)
         fatals = self.rmh.search_file_for_patterns(log_path, self.simulation_fatal_patterns)
-        report = SimulationReport()
         report.name = f"Simulation for '{ip}' using '{self.full_name}'"
         report.success = (len(errors) == 0) and (len(fatals) == 0)
         report.errors = errors
@@ -230,7 +233,6 @@ class LogicSimulator(Service, ABC):
         report.num_errors = len(errors)
         report.num_warnings = len(warnings)
         report.num_fatals = len(fatals)
-        return report
     
     @property
     @abstractmethod
@@ -308,27 +310,27 @@ class LogicSimulator(Service, ABC):
         pass
     
     @abstractmethod
-    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration) -> Path:
+    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LibraryCreationReport, scheduler: JobScheduler) -> Path:
         pass
 
     @abstractmethod
-    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration):
+    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, report: LibraryDeletionReport, scheduler: JobScheduler):
         pass
 
     @abstractmethod
-    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration) -> Path:
+    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: CompilationReport, scheduler: JobScheduler) -> Path:
         pass
 
     @abstractmethod
-    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration) -> Path:
+    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: ElaborationReport, scheduler: JobScheduler) -> Path:
         pass
 
     @abstractmethod
-    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration) -> Path:
+    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, report: CompilationAndElaborationReport, scheduler: JobScheduler) -> Path:
         pass
 
     @abstractmethod
-    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration) -> Path:
+    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: SimulationReport, scheduler: JobScheduler) -> Path:
         pass
 
 
@@ -382,20 +384,20 @@ class SimulatorMetricsDSim(LogicSimulator):
     def simulation_fatal_patterns(self) -> List[str]:
         return [r'^.*=F:.*$', r'^.*UVM_FATAL.*$']
     
-    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration) -> Path:
+    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LibraryCreationReport, scheduler: JobScheduler) -> Path:
         pass
 
-    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration):
+    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, report: LibraryDeletionReport, scheduler: JobScheduler):
         pass
 
-    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration) -> Path:
+    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: CompilationReport, scheduler: JobScheduler) -> Path:
         pass
 
-    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration) -> Path:
+    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: ElaborationReport, scheduler: JobScheduler) -> Path:
         pass
 
-    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration) -> Path:
+    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, report: CompilationAndElaborationReport, scheduler: JobScheduler) -> Path:
         pass
 
-    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration) -> Path:
+    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: SimulationReport, scheduler: JobScheduler) -> Path:
         pass
