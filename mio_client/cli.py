@@ -108,6 +108,10 @@ def main(args=None) -> int:
 
     mio_root = DefaultRootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION)
     command.parsed_cli_arguments = args
+
+    if args.dbg:
+        mio_root.print_trace = True
+
     return mio_root.run(command)
 
 

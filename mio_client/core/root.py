@@ -52,12 +52,15 @@ class RootManager(ABC):
 
         :param name: The name of the instance.
         :param wd: The working directory for the instance.
+        :param url_base: URL of the Moore.io Server
+        :param url_authentication: URL of the Moore.io Server Authentication API
         """
         self._name = name
         self._wd = wd
         self._md = self.wd / ".mio"
         self._url_base = url_base
         self._url_authentication = url_authentication
+        self._print_trace = False
         self._command = None
         self._install_path = None
         self._user_data_file_path = None
@@ -120,6 +123,16 @@ class RootManager(ABC):
         :return: Moore.io Web Server Authentication URL.
         """
         return self._url_authentication
+
+    @property
+    def print_trace(self) -> bool:
+        """
+        :return: Whether or not to print debug information
+        """
+        return self._print_trace
+    @print_trace.setter
+    def print_trace(self, value: bool):
+        self._print_trace = value
 
     @property
     def command(self) -> Command:
@@ -1054,7 +1067,7 @@ class DefaultRootManager(RootManager):
                     'password': password,
                 }
                 try:
-                    response = requests.post(self.url_authentication, json=credentials)
+                    response = requests.post(f"{self.url_authentication}/obtain/", json=credentials)
                     response.raise_for_status()  # Raise an error for bad status codes
                     data = response.json()
                     self.user.access_token = data['access']

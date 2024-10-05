@@ -22,7 +22,7 @@ class TestCliUser:
         text = capsys.readouterr().out.rstrip()
         return OutputCapture(return_code, text)
 
-    @SkipTest
+    #@SkipTest
     def test_cli_login(self, capsys):
         result = self.run_cmd(capsys, ['login', '-u admin', '-p admin'])
         assert result.return_code == 0
