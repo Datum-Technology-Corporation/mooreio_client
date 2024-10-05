@@ -39,6 +39,9 @@ class PhaseEndProcessException(Exception):
         self._message = message
 
 
+#######################################################################################################################
+# Abstract Implementation
+#######################################################################################################################
 class RootManager(ABC):
     """
     Abstract component which performs all vital tasks and executes phases.
@@ -981,6 +984,11 @@ class RootManager(ABC):
         pass
 
 
+
+
+#######################################################################################################################
+# Full implementation
+#######################################################################################################################
 class DefaultRootManager(RootManager):
     """
     Stock implementation of RootManager's pure virtual methods.
@@ -1013,7 +1021,8 @@ class DefaultRootManager(RootManager):
 
     def phase_authenticate(self, phase):
         if not self._user.authenticated:
-            authenticate_url = 'https://mooreio.com/api/authenticate/'
+            #authenticate_url = 'https://mooreio.com/api/authenticate/'
+            authenticate_url = 'https://localhost:8000/api/authenticate/'
             if self._user.username == "":
                 self._user.username = input("Enter your username: ")
             try:

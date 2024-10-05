@@ -38,7 +38,7 @@ endef
 #######################################################################################################################
 PYTHON         := venv/bin/python3
 PIP            := venv/bin/pip3
-PYTEST         := pytest
+PYTEST         := venv/bin/pytest
 TWINE          := twine
 FLAKE8         := venv/bin/flake8
 SPHINX_API_DOC := sphinx-apidoc
@@ -65,7 +65,7 @@ venv:
 	$(call print_banner, Setting up virtual environment)
 	python3 -m venv venv
 	$(call print_banner, Activating virtual environment and installing dependencies)
-	source ./venv/bin/activate && $(PIP) install -r ./requirements-dev.txt
+	source ./venv/bin/activate && $(PIP) install -r ./requirements.txt && $(PIP) install -r ./requirements-dev.txt
 
 # Run all pytest test suites
 test:
