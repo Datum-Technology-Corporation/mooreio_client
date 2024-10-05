@@ -44,14 +44,6 @@ https://mooreio.com/register) and a license for Datum UVMx. However, the tool op
 other regards and can be used without authentication to build a Chip from start to finish. 
 
 
-## Features
-
-- Automation of most EDA tasks faced by ASIC, FPGA, and UVM engineers
-- Management of IP dependencies
-- Encryption & packaging of IP for delivery
-- Publishing both commercial (keyed & encrypted) and Open-Source IP to the Moore.io Catalog
-- Integration with Jenkins CI
-
 ## Installation
 
 You can install `mio_client` via `pip`:
