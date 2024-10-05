@@ -12,6 +12,7 @@ from typing import List, Pattern
 
 import requests
 import toml
+from django.contrib.auth import authenticate
 from pydantic import ValidationError, BaseModel
 import os
 import getpass
@@ -989,6 +990,10 @@ class RootManager(ABC):
 #######################################################################################################################
 # Full implementation
 #######################################################################################################################
+URL_BASE = 'https://mooreio.com/'
+URL_AUTHENTICATE = f"{URL_BASE}/api/authenticate"
+
+
 class DefaultRootManager(RootManager):
     """
     Stock implementation of RootManager's pure virtual methods.
@@ -1020,29 +1025,30 @@ class DefaultRootManager(RootManager):
             self._user = User()
 
     def phase_authenticate(self, phase):
-        if not self._user.authenticated:
-            #authenticate_url = 'https://mooreio.com/api/authenticate/'
-            authenticate_url = 'https://localhost:8000/api/authenticate/'
-            if self._user.username == "":
-                self._user.username = input("Enter your username: ")
+        if not self.user.authenticated:
+            if self.user.username == "":
+                self.user.username = input("Enter your username: ")
             try:
                 password = getpass.getpass("Enter your password: ")
             except Exception as e:
                 phase.error(e)
                 raise Error(f"An error occurred during authentication: {e}")
             credentials = {
-                'username': self._user.username,
+                'username': self.user.username,
                 'password': password,
             }
             try:
-                response = requests.post(authenticate_url, json=credentials)
+                response = requests.post(URL_AUTHENTICATE, json=credentials)
                 response.raise_for_status()  # Raise an error for bad status codes
                 data = response.json()
-                self._user.token = data.get('token')  # Assuming API returns the token in 'token' field
-                self._user.authenticated = True  # Assuming you have a way to mark the user as authenticated
+                self.user.access_token = data['access']
+                self.user.refresh_token = data['refresh']
             except requests.RequestException as e:
-                phase.error(e)
-                raise Exception(f"An error occurred during authentication: {e}")
+                error = Exception(f"An error occurred during authentication: {e}")
+                phase.error(error)
+            finally:
+                self.user.authenticated = True
+
     
     def phase_save_user_data(self, phase):
         try:

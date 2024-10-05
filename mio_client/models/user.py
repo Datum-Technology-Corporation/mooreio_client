@@ -17,7 +17,8 @@ class User(Model):
         self._pre_set_password = ""
     authenticated: bool
     username: Optional[constr(pattern=VALID_NAME_REGEX)] = "anonymous"
-    token: Optional[str] = ""
+    access_token: Optional[str] = ""
+    refresh_token: Optional[str] = ""
 
     @classmethod
     def load(cls, file_path):
