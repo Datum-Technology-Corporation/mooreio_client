@@ -16,9 +16,9 @@ object Build : BuildType({
     steps {
         script {
             scriptContent = """
-                pip install -r requirements.txt
-                pip install -r requirements-dev.txt
+                make venv
                 make test
+                make build
                 make docs
             """.trimIndent()
         }

@@ -3,10 +3,10 @@
 #######################################################################################################################
 import argparse
 import pathlib
+import sys
 
-from core import root
-from commands import eda, ip, misc, project, team, user, web
-
+from mio_client.commands import eda, ip, misc, project, team, user, web
+from mio_client.core.root import DefaultRootManager
 
 #######################################################################################################################
 # User Manual Top
@@ -14,9 +14,9 @@ from commands import eda, ip, misc, project, team, user, web
 VERSION = "2.0.0"
 
 HELP_TEXT = f"""
-                                 Moore.io (`mio`) Command Line Interface (CLI) - v{VERSION}
-                                      User Manual: https://mio-cli.readthedocs.io/
-              https://mooreio.com - Copyright 2020-2024 Datum Technology Corporation - https://datumtc.ca
+                                          Moore.io (`mio`) Client - v{VERSION}
+                                     User Manual: https://mio-client.readthedocs.io/
+             https://mooreio.com - Copyright 2020-2024 Datum Technology Corporation - https://datumtc.ca
 Usage:
   mio [--version] [--help]
   mio [--wd WD] [--dbg] CMD [OPTIONS]
@@ -58,14 +58,15 @@ Full Command List (`mio help CMD` for help on a specific command):
       clean          Manages outputs from tools (other than job results)
       cov            Manages coverage data from EDA tools
       dox            Generates HDL source code documentation via Doxygen
-      results        Manages results from EDA tools
-"""
+      results        Manages results from EDA tools"""
 
 
 #######################################################################################################################
 # Entry point
 #######################################################################################################################
-def main():
+URL_BASE = 'https://mooreio.com'
+URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
+def main(args=None) -> int:
     """
     Main entry point. Performs the following steps in order:
     - Create CLI argument parser
@@ -75,22 +76,44 @@ def main():
     - Create the Root instance
     - Run the command via the Root instance
 
-    :return: None
+    :return: Exit code
     """
+
     parser = create_top_level_parser()
     subparsers = parser.add_subparsers(dest='command', help='Sub-command help')
     commands = register_all_commands(subparsers)
-    args = parser.parse_args()
-    if not args.command:
-        parser.print_help()
-        return
-    command = next((cmd for cmd in commands if cmd.name() == args.command), None)
-    if not command:
-        raise ValueError(f"Invalid command '{command}' specified.")
-    mio_root = root.DefaultRootManager("Moore.io Client Root Service", args.wd)
-    command.parsed_cli_arguments = args
-    mio_root.run(command)
+    args = parser.parse_args(args)
 
+    if args.version:
+        print_version_text()
+        return 0
+    if (not args.command) or args.help:
+        print_help_text()
+        return 0
+
+    command = next((cmd for cmd in commands if cmd.name().lower() == args.command), None)
+    if not command:
+        print(f"Unknown command '{args.command}' specified.", file=sys.stderr)
+        return 1
+
+    wd = None
+    if args.wd is None:
+        wd = pathlib.Path.cwd()
+    else:
+        try:
+            wd = pathlib.Path(args.wd).resolve()
+        except Exception as e:
+            print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
+            return 1
+
+    mio_root = DefaultRootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION)
+    command.parsed_cli_arguments = args
+    return mio_root.run(command)
+
+
+#######################################################################################################################
+# Helper functions
+#######################################################################################################################
 def create_top_level_parser():
     """
     Creates a top-level CLI argument parser.
@@ -98,11 +121,12 @@ def create_top_level_parser():
     :return: argparse.ArgumentParser object representing the top-level parser
     """
     parser = argparse.ArgumentParser(prog="mio", description="", add_help=False)
-    parser.add_argument("-h"   , "--help"   , help="Show this help message and exit.", action="store_true", default=False, required=False)
-    parser.add_argument("-v"   , "--version", help="Print the mio version and exit." , action="store_true", default=False, required=False)
-    parser.add_argument("--dbg",              help="Enable mio tracing output."      , action="store_true", default=False, required=False)
+    parser.add_argument("-h"   , "--help"   , help="Shows this help message and exits.", action="store_true", default=False, required=False)
+    parser.add_argument("-v"   , "--version", help="Prints version and exit."          , action="store_true", default=False, required=False)
+    parser.add_argument("--dbg",              help="Enable tracing output."            , action="store_true", default=False, required=False)
     parser.add_argument("-C"   , "--wd"     , help="Run as if mio was started in <path> instead of the current working directory.", type=pathlib.Path, required=False)
     return parser
+
 
 def register_all_commands(subparsers):
     """
@@ -122,6 +146,7 @@ def register_all_commands(subparsers):
     for command in commands:
         command.add_to_subparsers(subparsers)
     return commands
+
 
 def register_commands(existing_commands, new_commands):
     """
@@ -144,5 +169,13 @@ def register_commands(existing_commands, new_commands):
             raise ValueError(f"Command '{command}' is already registered.")
 
 
+def print_help_text():
+    print(HELP_TEXT)
+
+
+def print_version_text():
+    print(f"Moore.io Client v{VERSION}")
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -2,8 +2,8 @@ language: python
 python:
   - "3.11"
 install:
-  - pip install -r requirements.txt
-  - pip install -r requirements-dev.txt
+  - make venv
 script:
   - make test
+  - make build
   - make docs

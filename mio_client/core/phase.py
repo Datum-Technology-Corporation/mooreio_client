@@ -35,15 +35,16 @@ class Phase:
     :param root: The root object.
     :param name: The name of the phase.
     """
-    def __init__(self, root, name: str):
+    def __init__(self, root: 'RootManager', name: str):
         self._root = root
         self._name = name
-        self._state = State.INITIALIZED
-        self._init_timestamp = datetime.now()
-        self._start_timestamp = None
-        self._end_timestamp = None
-        self._error = None
-        self._end_process = False
+        self._state : State = State.INITIALIZED
+        self._init_timestamp: datetime = datetime.now()
+        self._start_timestamp: datetime = None
+        self._end_timestamp: datetime = None
+        self._error: Exception = None
+        self._end_process: bool = False
+        self._end_process_message: str = ""
 
     def __str__(self):
         return self.name
@@ -122,6 +123,23 @@ class Phase:
         """
         self._end_process = end_process
 
+    @property
+    def end_process_message(self) -> str:
+        """
+        :return: (optional) string as to why the process must end.
+        :rtype: str
+        """
+        return self._end_process_message
+
+    @end_process_message.setter
+    def end_process_message(self, end_process_message: str):
+        """
+        :param end_process_message: A string as to why the process must end.
+        :type end_process_message: str
+        """
+        self._end_process_message = end_process_message
+
+
     def next(self):
         """
         Pick next FSM state.
@@ -142,4 +160,3 @@ class Phase:
         :return: True if the phase has finished, False otherwise.
         """
         return self.state == State.FINISHED
-

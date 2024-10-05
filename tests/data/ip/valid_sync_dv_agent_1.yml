@@ -1,0 +1,16 @@
+ip:
+  sync: true
+  sync_id: 1236789
+  version: "2.9b"
+
+structure:
+  scripts_path : "bin"
+  docs_path    : "docs"
+  examples_path: "examples"
+  src_path     : "src"
+
+hdl_src:
+  directories: [".", "comps", "obj", "seq"]
+  top_sv_files: ["uvma_cvmcu_cpi_pkg.sv", "someotherfile.svh"]
+  top_vhdl_files: ["uvma_cvmcu_cpi_pkg.vhdl"]
+

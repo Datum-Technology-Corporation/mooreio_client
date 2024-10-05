@@ -23,6 +23,11 @@ pipeline {
                 sh 'make test'
             }
         }
+        stage('Build Package') {
+            steps {
+                sh 'make build'
+            }
+        }
         stage('Build Documentation') {
             steps {
                 sh 'make docs'
@@ -33,15 +38,11 @@ pipeline {
                 archiveArtifacts artifacts: 'docs/_build/html/**/*', allowEmptyArchive: true
             }
         }
-        stage('Build Package') {
-            steps {
-                sh 'make build'
-            }
-        }
     }
     post {
         always {
             junit 'reports/*.xml'
+            cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'reports/coverage.xml'
         }
     }
 }

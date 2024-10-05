@@ -36,11 +36,11 @@ endef
 #######################################################################################################################
 # Binaries
 #######################################################################################################################
-PYTHON         := python3
-PIP            := pip
-COVERAGE       := coverage3
+PYTHON         := venv/bin/python3
+PIP            := venv/bin/pip3
+PYTEST         := venv/bin/pytest
 TWINE          := twine
-FLAKE8         := flake8
+FLAKE8         := venv/bin/flake8
 SPHINX_API_DOC := sphinx-apidoc
 SPHINX_BUILD   := sphinx-build
 
@@ -65,17 +65,17 @@ venv:
 	$(call print_banner, Setting up virtual environment)
 	python3 -m venv venv
 	$(call print_banner, Activating virtual environment and installing dependencies)
-	source ./venv/bin/activate && $(PIP) install -r ./requirements-dev.txt
+	source ./venv/bin/activate && $(PIP) install -r ./requirements.txt && $(PIP) install -r ./requirements-dev.txt
 
 # Run all pytest test suites
 test:
 	$(call print_banner, Running all pytest tests)
-	$(COVERAGE) pytest --parallel $(DJANGO_TESTS_NUM_PARALLEL_JOBS)
+	$(PYTEST) --junitxml=reports/report.xml --cov=mio_client -cov-report=xml:reports/coverage.xml -n auto ./tests/
 
 # Lints codebase
 lint:
 	$(call print_banner, Linting codebase)
-	$(FLAKE8) mio_cli
+	$(FLAKE8) mio_client
 
 # Generates documentation
 docs:

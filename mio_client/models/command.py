@@ -1,51 +1,52 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+from abc import abstractmethod
+
 from pydantic import BaseModel
 
+from mio_client.core.model import Model
 from mio_client.core.phase import Phase
-from mio_client.core.root import RootManager
-from mio_client.core.model import FileModel
 
 
-class CommandHistory(FileModel):
+class CommandHistory(Model):
     pass
 
 
-class Command(BaseModel):
-    def __init__(self, name):
+class Command:
+    def __init__(self):
         """
         Constructor for initializing command object.
         :param name: The name of the command.
         """
-        self._name = name
-        self._root = None
+        self._rmh = None
         self._parsed_cli_arguments = None
         self._current_phase = None
 
-    @property
-    def name(self):
+    @staticmethod
+    @abstractmethod
+    def name() -> str:
         """
         :return: The name of the command.
         """
-        return self._name
+        pass
 
     @property
-    def root(self):
+    def rmh(self) -> 'RootManager':
         """
         :return: The current root object.
         """
-        return self._root
+        return self._rmh
 
-    @root.setter
-    def root(self, value):
+    @rmh.setter
+    def rmh(self, value: 'RootManager'):
         """
         :param value: The new root object
         :return: None
         """
-        if not isinstance(value, RootManager):
+        if not isinstance(value, 'RootManager'):
             raise TypeError("root must be an instance of Root")
-        self._root = value
+        self._rmh = value
 
     @property
     def parsed_cli_arguments(self):
@@ -70,15 +71,17 @@ class Command(BaseModel):
         :return: The current phase.
         """
         return self._current_phase
-    
-    def add_to_subparsers(self, subparsers):
+
+    @staticmethod
+    @abstractmethod
+    def add_to_subparsers(subparsers):
         """
         Add parser(s) to the CLI argument subparsers.
         This method is a placeholder and must be implemented by subclasses.
         :param subparsers: The subparsers object to add the current command to.
         :return: None
         """
-        raise NotImplementedError("Subclasses must implement this method.")
+        pass
 
     def needs_authentication(self):
         """
@@ -198,6 +201,33 @@ class Command(BaseModel):
         self.check_phase(phase)
         self.phase_post_locate_project_file(phase)
 
+    def do_phase_pre_create_common_files_and_directories(self, phase):
+        """
+        Dispatcher for Pre-create Common Files and Directories Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_pre_create_common_files_and_directories(phase)
+
+    def do_phase_create_common_files_and_directories(self, phase):
+        """
+        Dispatcher for Create Common Files and Directories Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_create_common_files_and_directories(phase)
+
+    def do_phase_post_create_common_files_and_directories(self, phase):
+        """
+        Dispatcher for Post-create Common Files and Directories Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_post_create_common_files_and_directories(phase)
+
     def do_phase_pre_load_project_configuration(self, phase):
         """
         Dispatcher for Pre-load Project Configuration Phase; called by Root.
@@ -305,33 +335,6 @@ class Command(BaseModel):
         """
         self.check_phase(phase)
         self.phase_post_ip_discovery(phase)
-
-    def do_phase_pre_create_common_files_and_directories(self, phase):
-        """
-        Dispatcher for Pre-create Common Files and Directories Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_pre_create_common_files_and_directories(phase)
-
-    def do_phase_create_common_files_and_directories(self, phase):
-        """
-        Dispatcher for Create Common Files and Directories Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_create_common_files_and_directories(phase)
-
-    def do_phase_post_create_common_files_and_directories(self, phase):
-        """
-        Dispatcher for Post-create Common Files and Directories Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_post_create_common_files_and_directories(phase)
 
     def do_phase_pre_main(self, phase):
         """
@@ -583,6 +586,30 @@ class Command(BaseModel):
         """
         pass
 
+    def phase_pre_create_common_files_and_directories(self, phase):
+        """
+        Pre-create common files and directories phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
+    def phase_create_common_files_and_directories(self, phase):
+        """
+        Create common files and directories phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
+    def phase_post_create_common_files_and_directories(self, phase):
+        """
+        Post-create common files and directories phase. To be overridden by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
     def phase_pre_validate_project_file(self, phase):
         """
         Pre-validate project file phase. To be overridden by subclasses.
@@ -690,30 +717,6 @@ class Command(BaseModel):
     def phase_post_ip_discovery(self, phase):
         """
         Post-IP Discovery phase. To be overridden by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    def phase_pre_create_common_files_and_directories(self, phase):
-        """
-        Pre-create common files and directories phase. To be overridden by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    def phase_create_common_files_and_directories(self, phase):
-        """
-        Create common files and directories phase. To be overridden by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    def phase_post_create_common_files_and_directories(self, phase):
-        """
-        Post-create common files and directories phase. To be overridden by subclasses.
         :param phase: handle to phase object
         :return: None
         """

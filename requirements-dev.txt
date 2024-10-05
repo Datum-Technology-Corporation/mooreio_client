@@ -2,4 +2,12 @@
 # All rights reserved.
 #######################################################################################################################
 
-
+flake8==7.1.1
+mccabe==0.7.0
+pycodestyle==2.12.1
+pyflakes==3.2.0
+coverage==7.6.1
+pytest-cov==5.0.0
+pytest==8.3.3
+pytest-xdist==3.6.1
+pytest-metadata==3.1.1

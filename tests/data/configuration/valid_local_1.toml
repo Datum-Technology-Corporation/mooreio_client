@@ -1,6 +1,8 @@
-# Copyright 2020-2024 Datum Technology Corporation
-# All rights reserved.
-#######################################################################################################################
+[project]
+sync=false
+name="test_project_1"
+full_name="Exercitation ullamco laboris"
+
 [logic_simulation]
 root_path="sim"
 regression_directory_name="regr"
@@ -9,16 +11,20 @@ logs_directory="logs"
 test_result_path_template="{{ ip_name }}_{{ test_name }}_{{ seed }}{% if args_present %}_{% for arg in args %}{{ arg }}{% endfor %}{% endif %}"
 uvm_version="1.2"
 timescale="1ns/1ps"
+metrics_dsim_path="/tools/metrics/"
 
 [synthesis]
-root_path="syn"
+root_path="syn/"
 
 [lint]
-root_path="lint"
+root_path="lint/"
 
 [ip]
 global_paths=[]
-local_paths=[]
+local_paths=["hdl/"]
 
 [docs]
-root_path="docs"
+root_path="docs/"
+
+[encryption]
+metrics_dsim_key_path="/tools/dsim/key.data"

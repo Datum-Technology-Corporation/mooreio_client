@@ -8,12 +8,13 @@
   steps:
     - name: install
       service: app
-      command: |
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+      command: make venv
     - name: test
       service: app
       command: make test
+    - name: build
+      service: app
+      command: make build
     - name: docs
       service: app
       command: make docs
