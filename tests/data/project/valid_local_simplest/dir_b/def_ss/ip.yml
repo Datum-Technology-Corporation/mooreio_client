@@ -1,8 +1,8 @@
 ip:
-  sync: true
-  sync_id: 2
+  sync: false
   type: ss
-  version: "2.6.1"
+  version: "2.6.3"
+  name: "def_ss"
 
 dependencies:
   "acme/abc_block": "1.0.0"

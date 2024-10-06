@@ -51,6 +51,15 @@ class Login(Command):
     def needs_authentication(self) -> bool:
         return True
 
+    def phase_post_load_default_configuration(self, phase):
+        try:
+            # TODO This is a hack and will break if the configuration tree definition changes
+            offline = self.rmh.default_configuration['project']['offline']
+        except:
+            offline = False
+        if offline:
+            phase.error = Exception("Cannot log in: configuration is set to offline mode")
+
     def phase_post_load_user_data(self, phase):
         if self.parsed_cli_arguments.username and self.parsed_cli_arguments.password:
             self.rmh.user.authenticated = False
@@ -79,7 +88,7 @@ class Logout(Command):
     def phase_post_load_user_data(self, phase):
         if self.rmh.user.authenticated:
             try:
-                self.rmh.deauthenticate()
+                self.rmh.deauthenticate(phase)
             except Exception as e:
                 phase.error = e
             else:

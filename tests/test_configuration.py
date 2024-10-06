@@ -41,6 +41,7 @@ class TestConfiguration:
     def test_configuration_agent_instance_required_fields(self):
         config_instance = Configuration(**self.valid_sync_1_data)
         assert hasattr(config_instance, 'project')
+        assert hasattr(config_instance.project, 'offline')
         assert hasattr(config_instance, 'logic_simulation')
         assert hasattr(config_instance, 'synthesis')
         assert hasattr(config_instance, 'lint')

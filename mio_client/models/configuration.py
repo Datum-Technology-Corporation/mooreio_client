@@ -28,6 +28,7 @@ class UvmVersions(Enum):
 
 
 class Project(Model):
+    offline: bool
     sync: bool
     sync_id: Optional[PositiveInt] = 0
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST

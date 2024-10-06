@@ -188,6 +188,13 @@ class RootManager(ABC):
         return self._project_configuration_path
 
     @property
+    def default_configuration(self) -> dict:
+        """
+        :return: The raw default configuration space.
+        """
+        return self._default_configuration
+
+    @property
     def configuration(self) -> Configuration:
         """
         :return: The configuration space.
@@ -550,7 +557,7 @@ class RootManager(ABC):
         current_phase = self.create_phase('authenticate')
         current_phase.next()
         if self._command.needs_authentication():
-            self.phase_authenticate(current_phase)
+            self.authenticate(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
         current_phase = self.create_phase('post_authenticate')
@@ -746,6 +753,11 @@ class RootManager(ABC):
         current_phase = self.create_phase('post_ip_discovery')
         current_phase.next()
         self.command.do_phase_post_ip_discovery(current_phase)
+        if self.ip_database.need_to_find_dependencies_online:
+            self.authenticate(current_phase)
+            self.ip_database.find_dependencies_online(current_phase)
+            if not current_phase.error:
+                self.ip_database.install_remote_dependencies(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
 
@@ -903,7 +915,16 @@ class RootManager(ABC):
         pass
 
     @abstractmethod
-    def phase_authenticate(self, phase):
+    def authenticate(self, phase):
+        """
+        This method is a placeholder and must be implemented by subclasses.
+        :param phase: handle to phase object
+        :return: None
+        """
+        pass
+
+    @abstractmethod
+    def deauthenticate(self, phase):
         """
         This method is a placeholder and must be implemented by subclasses.
         :param phase: handle to phase object
@@ -1070,7 +1091,7 @@ class DefaultRootManager(RootManager):
         else:
             self._user = User.new()
 
-    def phase_authenticate(self, phase):
+    def authenticate(self, phase):
         if not self.user.authenticated:
             if self.user.use_pre_set_username:
                 self.user.username = self.user.pre_set_username
@@ -1101,6 +1122,20 @@ class DefaultRootManager(RootManager):
                 else:
                     self.user.authenticated = True
 
+    def deauthenticate(self, phase):
+        headers = {
+            'Authorization'  : f"Bearer {self.user.access_token}",
+            'Content-Type'   : 'application/json',
+        }
+        data = {
+            'refresh_token' : self.user.refresh_token,
+        }
+        try:
+            response = requests.post(f"{self.url_authentication}/logout/", headers=headers, json=data)
+            response.raise_for_status()  # Raise an error for bad status codes
+        except requests.RequestException as e:
+            Exception(f"Error during logout: {e}")
+
     def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
         response = {}
         headers = {
@@ -1116,20 +1151,6 @@ class DefaultRootManager(RootManager):
         except requests.RequestException as e:
             raise Exception(f"Error during Web API call: {method} to '{path}': {e}")
         return response
-
-    def deauthenticate(self):
-        headers = {
-            'Authorization'  : f"Bearer {self.user.access_token}",
-            'Content-Type'   : 'application/json',
-        }
-        data = {
-            'refresh_token' : self.user.refresh_token,
-        }
-        try:
-            response = requests.post(f"{self.url_authentication}/logout/", headers=headers, json=data)
-            response.raise_for_status()  # Raise an error for bad status codes
-        except requests.RequestException as e:
-            raise Exception(f"Error during logout: {e}")
 
 
     def phase_save_user_data(self, phase):
@@ -1226,6 +1247,7 @@ class DefaultRootManager(RootManager):
                     ip_model = Ip.load(file)
                     ip_model.file_path = file
                     ip_model.rmh = self
+                    ip_model.uid = self.ip_database.num_ips
                     ip_model.check()
                 except ValidationError as e:
                     errors = e.errors()
@@ -1236,7 +1258,10 @@ class DefaultRootManager(RootManager):
         if not self.ip_database.has_ip:
             phase.error = Exception("No valid IP definitions found")
         else:
-            self.ip_database.validate_dependencies()
+            try:
+                self.ip_database.resolve_local_dependencies()
+            except Exception as e:
+                phase.error = Exception(f"Failed to resolve IP dependencies: {e}")
 
     def phase_check(self, phase):
         pass
