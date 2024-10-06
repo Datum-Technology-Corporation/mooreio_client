@@ -1,4 +1,5 @@
 [project]
+offline=true
 sync=false
 name="test_project_1"
 full_name="Exercitation ullamco laboris"

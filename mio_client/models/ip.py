@@ -266,14 +266,14 @@ class IpDataBase():
 
     def find_ip(self, name:str, owner:str="*", version:SimpleSpec=SimpleSpec("*"), raise_exception_if_not_found:bool=True) -> Ip:
         for ip in self._ip_list:
-            if ip.ip.name == name and (owner == "*" or ip.ip.owner == owner) and version.match(ip.version):
+            if ip.ip.name == name and (owner == "*" or ip.ip.owner == owner) and version.match(ip.ip.version):
                 return ip
         if raise_exception_if_not_found:
             raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version}' not found.")
 
     def resolve_local_dependencies(self):
         for ip in self._ip_list:
-            for ip_definition_str, ip_version_spec in ip.ip.dependencies.items():
+            for ip_definition_str, ip_version_spec in ip.dependencies.items():
                 ip_definition = Ip.parse_ip_definition(ip_definition_str)
                 ip_definition.version_spec = ip_version_spec
                 ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)

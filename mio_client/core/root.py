@@ -1138,20 +1138,22 @@ class DefaultRootManager(RootManager):
 
     def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
         response = {}
-        headers = {
-            'Authorization'  : f"Bearer {self.user.access_token}",
-            'Content-Type'   : 'application/json',
-        }
-        try:
-            if method == HTTPMethod.POST:
-                response = requests.post(f"{self.url_api}/{path}", headers=headers, json=data)
-                response.raise_for_status()  # Raise an error for bad status codes
-            else:
-                raise Exception(f"Method {method} is not supported")
-        except requests.RequestException as e:
-            raise Exception(f"Error during Web API call: {method} to '{path}': {e}")
+        if not self.user.authenticated:
+            raise Exception(f"Error during Web API call: user not authenticated")
+        else:
+            headers = {
+                'Authorization'  : f"Bearer {self.user.access_token}",
+                'Content-Type'   : 'application/json',
+            }
+            try:
+                if method == HTTPMethod.POST:
+                    response = requests.post(f"{self.url_api}/{path}", headers=headers, json=data)
+                    response.raise_for_status()  # Raise an error for bad status codes
+                else:
+                    raise Exception(f"Method {method} is not supported")
+            except requests.RequestException as e:
+                raise Exception(f"Error during Web API call: {method} to '{path}': {e}")
         return response
-
 
     def phase_save_user_data(self, phase):
         try:

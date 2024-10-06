@@ -1,4 +1,5 @@
 [project]
+offline=false
 sync=true
 sync_id=123123
 
