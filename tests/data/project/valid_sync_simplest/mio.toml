@@ -1,0 +1,6 @@
+[project]
+sync=true
+sync_id=1
+
+[ip]
+local_paths=["dir_a/", "dir_b/"]

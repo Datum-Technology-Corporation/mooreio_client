@@ -1,6 +1,7 @@
 ip:
   sync: true
   sync_id: 1236789
+  type: dv_agent
   version: "2.9b"
 
 structure:
