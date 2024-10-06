@@ -89,6 +89,12 @@ class About(Model):
     full_name: Optional[str] = ""
     version: Optional[SemanticVersion]
 
+class IpDefinition:
+    def __init__(self):
+        self.owner_name_is_specified = False
+        self.owner_name = ""
+        self.ip_name = ""
+
 class Ip(Model):
     ip: About
     dependencies: Optional[dict[constr(pattern=VALID_IP_OWNER_NAME_REGEX), SemanticVersionSpec]] = {}
@@ -96,6 +102,21 @@ class Ip(Model):
     hdl_src: HdlSource
     dut: Optional[DesignUnderTest] = None
     targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
+
+    @staticmethod
+    def parse_ip_definition(definition: str) -> IpDefinition:
+        ip_definition = IpDefinition()
+        slash_split = definition.split("/")
+        if len(slash_split) == 1:
+            ip_definition.owner_name_is_specified = False
+            ip_definition.ip_name = slash_split[0].strip().lower()
+        elif len(slash_split) == 2:
+            ip_definition.owner_name_is_specified = True
+            ip_definition.owner_name = slash_split[0].strip().lower()
+            ip_definition.ip_name = slash_split[1].strip().lower()
+        else:
+            raise Exception(f"Invalid IP definition: {definition}")
+        return ip_definition
 
 
 class IpDataBase():

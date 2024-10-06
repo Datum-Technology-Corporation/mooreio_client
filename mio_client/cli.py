@@ -6,7 +6,7 @@ import pathlib
 import sys
 
 from mio_client.commands import eda, ip, misc, project, team, user, web
-from mio_client.core.root import DefaultRootManager
+from mio_client.core.root import DefaultRootManager, RootManager
 
 #######################################################################################################################
 # User Manual Top
@@ -66,6 +66,7 @@ Full Command List (`mio help CMD` for help on a specific command):
 #######################################################################################################################
 URL_BASE = 'https://mooreio.com'
 URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
+root_manager: RootManager = None
 def main(args=None) -> int:
     """
     Main entry point. Performs the following steps in order:
@@ -78,11 +79,16 @@ def main(args=None) -> int:
 
     :return: Exit code
     """
+    global root_manager
 
-    parser = create_top_level_parser()
-    subparsers = parser.add_subparsers(dest='command', help='Sub-command help')
-    commands = register_all_commands(subparsers)
-    args = parser.parse_args(args)
+    try:
+        parser = create_top_level_parser()
+        subparsers = parser.add_subparsers(dest='command', help='Sub-command help')
+        commands = register_all_commands(subparsers)
+        args = parser.parse_args(args)
+    except Exception as e:
+        print(f"Error during parsing of CLI arguments: {e}", file=sys.stderr)
+        return 1
 
     if args.version:
         print_version_text()
@@ -106,13 +112,13 @@ def main(args=None) -> int:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
 
-    mio_root = DefaultRootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION)
+    root_manager = DefaultRootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION)
     command.parsed_cli_arguments = args
 
     if args.dbg:
-        mio_root.print_trace = True
+        root_manager.print_trace = True
 
-    return mio_root.run(command)
+    return root_manager.run(command)
 
 
 #######################################################################################################################

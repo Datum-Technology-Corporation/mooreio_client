@@ -6,12 +6,14 @@ import re
 import sys
 from abc import ABC, abstractmethod
 from configparser import Error
+from http import HTTPMethod
 from pathlib import Path
 from re import Match
 from typing import List, Pattern
 
 import requests
 import toml
+import yaml
 from pydantic import ValidationError, BaseModel
 import os
 import getpass
@@ -40,7 +42,7 @@ class PhaseEndProcessException(Exception):
 
 
 #######################################################################################################################
-# Abstract Implementation
+# Abstract Class (Default (full) implementation later in this file)
 #######################################################################################################################
 class RootManager(ABC):
     """
@@ -60,10 +62,11 @@ class RootManager(ABC):
         self._md = self.wd / ".mio"
         self._url_base = url_base
         self._url_authentication = url_authentication
+        self._url_api = f"{self._url_base}/api/"
         self._print_trace = False
         self._command = None
         self._install_path = None
-        self._user_data_file_path = None
+        self._user_data_file_path = os.path.expanduser("~/.mio/user.yml")
         self._user = None
         self._project_root_path = None
         self._default_configuration_path = None
@@ -123,6 +126,13 @@ class RootManager(ABC):
         :return: Moore.io Web Server Authentication URL.
         """
         return self._url_authentication
+
+    @property
+    def url_api(self):
+        """
+        :return: Moore.io Web Server API URL.
+        """
+        return self._url_api
 
     @property
     def print_trace(self) -> bool:
@@ -455,7 +465,11 @@ class RootManager(ABC):
             else:
                 d1[key] = value
         return d1
-    
+
+    @abstractmethod
+    def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
+        pass
+
     def do_phase_init(self):
         """
         Perform any steps necessary before real work begins.
@@ -1016,8 +1030,6 @@ class RootManager(ABC):
 #######################################################################################################################
 # Full implementation
 #######################################################################################################################
-
-
 class DefaultRootManager(RootManager):
     """
     Stock implementation of RootManager's pure virtual methods.
@@ -1037,14 +1049,13 @@ class DefaultRootManager(RootManager):
             phase.error = Exception(f"Failed to load default configuration file at '{self.default_configuration_path}': {e}")
     
     def phase_load_user_data(self, phase):
-        self._user_data_file_path = os.path.expanduser("~/.mio/user.yml")
         if self.file_exists(self._user_data_file_path):
             try:
                 self._user = User.load(self._user_data_file_path)
             except ValidationError as e:
                 phase.error = Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
         else:
-            self._user = User(authenticated=False)
+            self._user = User.new()
 
     def phase_authenticate(self, phase):
         if not self.user.authenticated:
@@ -1067,7 +1078,7 @@ class DefaultRootManager(RootManager):
                     'password': password,
                 }
                 try:
-                    response = requests.post(f"{self.url_authentication}/obtain/", json=credentials)
+                    response = requests.post(f"{self.url_authentication}/login/", json=credentials)
                     response.raise_for_status()  # Raise an error for bad status codes
                     data = response.json()
                     self.user.access_token = data['access']
@@ -1077,10 +1088,43 @@ class DefaultRootManager(RootManager):
                 else:
                     self.user.authenticated = True
 
+    def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
+        response = {}
+        headers = {
+            'Authorization'  : f"Bearer {self.user.access_token}",
+            'Content-Type'   : 'application/json',
+        }
+        try:
+            if method == HTTPMethod.POST:
+                response = requests.post(f"{self.url_api}/{path}", headers=headers, json=data)
+                response.raise_for_status()  # Raise an error for bad status codes
+            else:
+                raise Exception(f"Method {method} is not supported")
+        except requests.RequestException as e:
+            raise Exception(f"Error during Web API call: {method} to '{path}': {e}")
+        return response
+
+    def deauthenticate(self):
+        headers = {
+            'Authorization'  : f"Bearer {self.user.access_token}",
+            'Content-Type'   : 'application/json',
+        }
+        data = {
+            'refresh_token' : self.user.refresh_token,
+        }
+        try:
+            response = requests.post(f"{self.url_authentication}/logout/", headers=headers, json=data)
+            response.raise_for_status()  # Raise an error for bad status codes
+        except requests.RequestException as e:
+            raise Exception(f"Error during logout: {e}")
+
+
     def phase_save_user_data(self, phase):
         try:
             self.create_file(self._user_data_file_path)
-            self._user.to_yaml()
+            data = self._user.dict()
+            with open(self._user_data_file_path, 'w') as file:
+                yaml.dump(data, file)
         except Exception as e:
             phase.error = Exception(f"Failed to save User Data at '{self._user_data_file_path}': {e}")
 

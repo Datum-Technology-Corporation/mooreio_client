@@ -3,24 +3,32 @@
 #######################################################################################################################
 from mio_client.models.command import Command
 
-
 LOGIN_HELP_TEXT = """Moore.io User Login Command
    Authenticates session with the Moore.io Server (https://mooreio.com).
-   
+
 Usage:
    mio login [OPTIONS]
-   
+
 Options:
    -u USERNAME, --username USERNAME  # Specifies Moore.io username (must be combined with -p)
    -p PASSWORD, --password PASSWORD  # Specifies Moore.io password (must be combined with -u)
-   
+
 Examples:
    mio login                          # Asks credentials only if expired (or never entered)
    mio login -u jenkins -p )Kq3)fkqm  # Specify credentials inline"""
 
+LOGOUT_HELP_TEXT = """Moore.io User Logout Command
+   De-authenticates session with the Moore.io Server (https://mooreio.com).
+   
+Usage:
+   mio logout
+   
+Examples:
+   mio logout"""
+
 
 def get_commands():
-    return [Login]
+    return [Login, Logout]
 
 
 class Login(Command):
@@ -53,5 +61,38 @@ class Login(Command):
 
     def phase_post_save_user_data(self, phase):
         phase.end_process = True
+        phase.end_process_message = f"Logged in successfully as '{self.rmh.user.username}'."
+
+
+class Logout(Command):
+    @staticmethod
+    def name() -> str:
+        return "logout"
+
+    @staticmethod
+    def add_to_subparsers(subparsers):
+        parser_logout = subparsers.add_parser('logout', add_help=False)
+
+    def needs_authentication(self) -> bool:
+        return False
+
+    def phase_post_load_user_data(self, phase):
+        if self.rmh.user.authenticated:
+            try:
+                self.rmh.deauthenticate()
+            except Exception as e:
+                phase.error = e
+            else:
+                self.rmh.user.authenticated = False
+                self.rmh.user.access_token = ""
+                self.rmh.user.refresh_token = ""
+        else:
+            phase.end_process = True
+            phase.end_process_message = "Not authenticated: no action taken"
+
+    def phase_post_save_user_data(self, phase):
+        phase.end_process = True
+        phase.end_process_message = "Logged out successfully."
+
 
 
