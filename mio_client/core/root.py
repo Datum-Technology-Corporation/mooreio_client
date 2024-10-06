@@ -18,6 +18,7 @@ from pydantic import ValidationError, BaseModel
 import os
 import getpass
 
+from mio_client.core.model import UNDEFINED_CONST
 from mio_client.core.phase import Phase
 from mio_client.core.scheduler import LocalProcessScheduler, JobSchedulerDatabase
 from mio_client.core.service import ServiceDataBase
@@ -64,10 +65,10 @@ class RootManager(ABC):
         self._url_authentication = url_authentication
         self._url_api = f"{self._url_base}/api/"
         self._print_trace = False
-        self._command = None
+        self._command: Command = None
         self._install_path = None
         self._user_data_file_path = os.path.expanduser("~/.mio/user.yml")
-        self._user = None
+        self._user: User = None
         self._project_root_path = None
         self._default_configuration_path = None
         self._user_configuration_path = None
@@ -76,11 +77,11 @@ class RootManager(ABC):
         self._user_configuration = {}
         self._project_configuration = {}
         self._cli_configuration = {}
-        self._configuration = None
-        self._scheduler_database = None
-        self._service_database = None
-        self._ip_database = None
-        self._current_phase = None
+        self._configuration: Configuration = None
+        self._scheduler_database: JobSchedulerDatabase = None
+        self._service_database: ServiceDataBase = None
+        self._ip_database: IpDataBase = None
+        self._current_phase: Phase = None
 
     def __str__(self):
         """
@@ -381,7 +382,19 @@ class RootManager(ABC):
                 raise FileNotFoundError(f"File '{path}' does not exist")
             os.remove(path)
         except OSError as e:
-            print(f"An error occurred while removing file '{path}': {e}")
+            error = f"An error occurred while removing file '{path}': {e}"
+            raise PhaseEndProcessException(error)
+
+    def directory_exists(self, path):
+        """
+        Check if a directory exists at the specified path.
+        :param path: Path to the directory.
+        :return: True if the directory exists, False otherwise.
+        :raises ValueError: if the path is None or empty.
+        """
+        if not path:
+            raise ValueError("Path must not be None or empty")
+        return os.path.isdir(path)
 
     def create_directory(self, path):
         """
@@ -1134,7 +1147,7 @@ class DefaultRootManager(RootManager):
             while current_path != os.path.dirname(current_path):  # Stop if we're at the root directory
                 candidate_path = os.path.join(current_path, 'mio.toml')
                 if self.file_exists(candidate_path):
-                    self._project_configuration_path = candidate_path
+                    self._project_configuration_path = Path(candidate_path)
                     return
                 # Move up one directory
                 current_path = os.path.dirname(current_path)
@@ -1150,6 +1163,8 @@ class DefaultRootManager(RootManager):
                 self._project_configuration = toml.load(f)
         except ValidationError as e:
             phase.error = Exception(f"Failed to load Project configuration file at '{self.project_configuration_path}': {e}")
+        else:
+            self._project_root_path = self.project_configuration_path.parent
 
     def phase_load_user_configuration(self, phase):
         self._user_configuration_path = os.path.expanduser("~/.mio/mio.toml")
@@ -1167,10 +1182,13 @@ class DefaultRootManager(RootManager):
         merged_configuration = self.merge_dictionaries(self._default_configuration, self._user_configuration)
         merged_configuration = self.merge_dictionaries(merged_configuration, self._project_configuration)
         try:
-            self._configuration = Configuration(merged_configuration)
+            self._configuration = Configuration.model_validate(merged_configuration)
         except ValidationError as e:
-            phase.error = Exception(f"Failed to validate Configuration Space: {e}")
-        self.configuration.check()
+            errors = e.errors()
+            error_messages = "\n  ".join([f"{error['msg']}: {error['loc']}" for error in errors])
+            phase.error = Exception(f"Failed to validate Configuration Space: {error_messages}")
+        else:
+            self.configuration.check()
 
     def phase_scheduler_discovery(self, phase):
         self._scheduler_database = JobSchedulerDatabase(self)
@@ -1179,8 +1197,8 @@ class DefaultRootManager(RootManager):
 
     def phase_service_discovery(self, phase):
         self._service_database = ServiceDataBase(self)
-        if self.configuration.simulation.metrics_dsim_path != "":
-            dsim_simulator = SimulatorMetricsDSim(self, self.configuration.simulation.metrics_dsim_path)
+        if self.configuration.logic_simulation.metrics_dsim_path != UNDEFINED_CONST:
+            dsim_simulator = SimulatorMetricsDSim(self)
             self.service_database.add_service(dsim_simulator)
         # TODO Add other logic simulators
 
@@ -1191,21 +1209,34 @@ class DefaultRootManager(RootManager):
         :return: None
         """
         self._ip_database = IpDataBase(self)
+        local_paths = [os.path.join(self.project_root_path, path) for path in self.configuration.ip.local_paths]
+        global_paths = [os.path.expanduser(path) for path in self.configuration.ip.global_paths]
+        paths_to_search = local_paths + global_paths
         ip_files = []
-        for root, dirs, files in os.walk(self.project_root_path):
-            for file in files:
-                if file == 'ip.yml':
-                    ip_files.append(os.path.join(root, file))
-        if not ip_files:
+        for path in paths_to_search:
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    if file == 'ip.yml':
+                        ip_files.append(os.path.join(root, file))
+        if len(ip_files) == 0:
             phase.error = Exception("No 'ip.yml' files found in the project directory.")
         else:
             for file in ip_files:
                 try:
-                    ip_model = Ip(self, file)
-                except Exception as e:
-                    print(f"Skipping IP definition at '{file}': {e}")
+                    ip_model = Ip.load(file)
+                    ip_model.file_path = file
+                    ip_model.rmh = self
+                    ip_model.check()
+                except ValidationError as e:
+                    errors = e.errors()
+                    error_messages = "\n  ".join([f"{error['msg']}: {error['loc']}" for error in errors])
+                    print(f"Skipping IP definition at '{file}': {error_messages}")
                 else:
                     self.ip_database.add_ip(ip_model)
+        if not self.ip_database.has_ip:
+            phase.error = Exception("No valid IP definitions found")
+        else:
+            self.ip_database.validate_dependencies()
 
     def phase_check(self, phase):
         pass

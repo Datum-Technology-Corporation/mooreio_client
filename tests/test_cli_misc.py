@@ -1,18 +1,14 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import os
 from pathlib import Path
 
 import pytest
 
 import mio_client.cli
 from mio_client import cli
-
-
-class OutputCapture:
-    def __init__(self, return_code: int, text: str):
-        self.return_code = return_code
-        self.text = text
+from tests.common import OutputCapture
 
 
 class TestCliMisc:

@@ -1,7 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from mio_client.commands import web, user
+from mio_client.commands import web, user, ip
 from mio_client.core.phase import Phase
 from mio_client.models.command import Command
 
@@ -44,6 +44,12 @@ class Help(Command):
             self.print_text_and_exit(phase, HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "login":
             self.print_text_and_exit(phase, user.LOGIN_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "logout":
+            self.print_text_and_exit(phase, user.LOGOUT_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "list":
+            self.print_text_and_exit(phase, ip.LIST_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "publish":
+            self.print_text_and_exit(phase, ip.PUBLISH_HELP_TEXT)
 
     def needs_authentication(self) -> bool:
         return False

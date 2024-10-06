@@ -4,6 +4,9 @@ ip:
   type: ss
   version: "2.6b"
 
+dependencies:
+  "acme/abc_block": "1.0"
+
 structure:
   src_path: "."
 

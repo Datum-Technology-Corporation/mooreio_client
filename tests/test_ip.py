@@ -44,6 +44,7 @@ class TestIp:
         assert hasattr(ip_instance, 'structure')
         assert hasattr(ip_instance, 'hdl_src')
         assert hasattr(ip_instance.ip, 'sync')
+        assert hasattr(ip_instance.ip, 'type')
 
     def test_tb_instance_has_all_fields(self):
         ip_instance = Ip(**self.valid_local_dv_tb_fsoc_1_data)

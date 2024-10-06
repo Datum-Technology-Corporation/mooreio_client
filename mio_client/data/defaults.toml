@@ -22,3 +22,6 @@ local_paths=[]
 
 [docs]
 root_path="docs"
+
+[encryption]
+

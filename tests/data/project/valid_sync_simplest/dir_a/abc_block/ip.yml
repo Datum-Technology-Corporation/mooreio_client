@@ -2,7 +2,7 @@ ip:
   sync: true
   sync_id: 1
   type: block
-  version: "1.0"
+  version: "1.0.0"
 
 structure:
   src_path: "."

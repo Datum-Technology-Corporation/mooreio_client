@@ -7,7 +7,7 @@ import jinja2
 import toml
 from pydantic import BaseModel, constr, FilePath, PositiveInt
 from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
-    VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX
+    VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
 from pathlib import Path
 from pydantic import DirectoryPath
 import semantic_version
@@ -15,6 +15,7 @@ import semantic_version
 from mio_client.core.version import SemanticVersion
 
 from enum import Enum
+
 
 
 class UvmVersions(Enum):
@@ -29,8 +30,8 @@ class UvmVersions(Enum):
 class Project(Model):
     sync: bool
     sync_id: Optional[PositiveInt] = 0
-    name: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
-    full_name: Optional[str] = "_"
+    name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
+    full_name: Optional[str] = UNDEFINED_CONST
 
 
 class LogicSimulation(Model):
@@ -41,13 +42,13 @@ class LogicSimulation(Model):
     test_result_path_template: str
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
-    metrics_dsim_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    xilinx_vivado_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    synopsys_vcs_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    siemens_questa_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    cadence_xcelium_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    aldec_riviera_pro_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    default_simulator: Optional[str] = ""
+    metrics_dsim_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    xilinx_vivado_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    synopsys_vcs_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    siemens_questa_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    cadence_xcelium_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    aldec_riviera_pro_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    default_simulator: Optional[str] = UNDEFINED_CONST
 
 
 class Synthesis(Model):
@@ -68,12 +69,12 @@ class Docs(Model):
 
 
 class Encryption(Model):
-    metrics_dsim_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    xilinx_vivado_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    synopsys_vcs_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    siemens_questa_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    cadence_xcelium_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
-    aldec_riviera_pro_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = "UNDEFINED"
+    metrics_dsim_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    xilinx_vivado_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    synopsys_vcs_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    siemens_questa_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    cadence_xcelium_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    aldec_riviera_pro_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
 
 
 class Configuration(Model):

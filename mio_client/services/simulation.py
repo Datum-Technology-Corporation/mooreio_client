@@ -36,9 +36,8 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
 
 
 class LogicSimulator(Service, ABC):
-    def __init__(self, rmh: 'RootManager', vendor_name: str, name: str, full_name: str, installation_path: Path):
+    def __init__(self, rmh: 'RootManager', vendor_name: str, name: str, full_name: str,):
         super().__init__(rmh, name)
-        self._installation_path = installation_path
         self._type = ServiceType.LOGIC_SIMULATION
         self._work_root_path = self.rmh.md / "logic_simulation"
         self._work_path = self.work_root_path / self.name
@@ -56,8 +55,9 @@ class LogicSimulator(Service, ABC):
         self._compilation_and_elaboration_results_path = self.simulation_logs_path / "compilation_and_elaboration"
 
     @property
+    @abstractmethod
     def installation_path(self) -> Path:
-        return self._installation_path
+        pass
 
     @property
     def work_root_path(self) -> Path:
@@ -335,8 +335,12 @@ class LogicSimulator(Service, ABC):
 
 
 class SimulatorMetricsDSim(LogicSimulator):
-    def __init__(self, rmh: 'RootManager', installation_path: Path):
-        super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim", installation_path)
+    def __init__(self, rmh: 'RootManager'):
+        super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim")
+
+    @property
+    def installation_path(self) -> Path:
+        return self.rmh.configuration.logic_simulation.metrics_dsim_path
 
     @property
     def library_creation_error_patterns(self) -> List[str]:
