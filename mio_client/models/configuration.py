@@ -28,11 +28,14 @@ class UvmVersions(Enum):
 
 
 class Project(Model):
-    offline: bool
     sync: bool
     sync_id: Optional[PositiveInt] = 0
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
+
+
+class Authentication(Model):
+    offline: bool
 
 
 class LogicSimulation(Model):
@@ -89,6 +92,7 @@ class Configuration(Model):
     ip: Ip
     docs: Docs
     encryption: Encryption
+    authentication: Authentication
 
     def check(self):
         pass

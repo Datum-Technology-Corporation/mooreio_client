@@ -1,5 +1,7 @@
+[authentication]
+offline=false
+
 [project]
-sync=true
 sync_id=1
 
 [ip]

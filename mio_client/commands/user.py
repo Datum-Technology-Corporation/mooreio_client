@@ -54,7 +54,7 @@ class Login(Command):
     def phase_post_load_default_configuration(self, phase):
         try:
             # TODO This is a hack and will break if the configuration tree definition changes
-            offline = self.rmh.default_configuration['project']['offline']
+            offline = self.rmh.default_configuration['authentication']['offline']
         except:
             offline = False
         if offline:

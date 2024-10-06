@@ -21,7 +21,6 @@ class TestCliMisc:
         text = capsys.readouterr().out.rstrip()
         return OutputCapture(return_code, text)
 
-    #@SkipTest
     def test_cli_list_ip(self, capsys):
         test_project_path = os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest")
         result = self.run_cmd(capsys, [f'--wd={test_project_path}', 'list'])

@@ -28,3 +28,6 @@ root_path="docs/"
 
 [encryption]
 metrics_dsim_key_path="~/metrics/dsim/key"
+
+[authentication]
+offline=false

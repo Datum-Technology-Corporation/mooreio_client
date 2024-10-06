@@ -1,5 +1,4 @@
 [project]
-offline=true
 sync=false
 name="test_project_1"
 full_name="Exercitation ullamco laboris"
@@ -29,3 +28,6 @@ root_path="docs/"
 
 [encryption]
 metrics_dsim_key_path="/tools/dsim/key.data"
+
+[authentication]
+offline=true
