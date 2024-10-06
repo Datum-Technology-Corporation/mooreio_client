@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod, abstractproperty
 
 from mio_client.models.ip import Ip
 from mio_client.models.simulation_reports import LibraryCreationReport, CompilationReport, SimulationReport, \
-    CompilationAndElaborationReport, ElaborationReport, LibraryDeletionReport
+    CompilationAndElaborationReport, ElaborationReport, LibraryDeletionReport, EncryptionReport
 
 
 class LogicSimulatorConfiguration(ABC):
@@ -32,6 +32,9 @@ class LogicSimulatorElaborationAndCompilationConfiguration(LogicSimulatorConfigu
     pass
 
 class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
+    pass
+
+class LogicSimulatorEncryptionConfiguration(LogicSimulatorConfiguration):
     pass
 
 
@@ -169,6 +172,12 @@ class LogicSimulator(Service, ABC):
         self.parse_simulation_logs(ip, config, report, results_directory_path)
         return report
 
+    def encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, scheduler: JobScheduler) -> EncryptionReport:
+        report = EncryptionReport()
+        results_directory_path = self.do_encrypt(ip, config, report, scheduler)
+        self.parse_encryption_logs(ip, config, report, results_directory_path)
+        return report
+
     def parse_library_creation_log(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LibraryCreationReport, log_path: Path) -> None:
         errors = self.rmh.search_file_for_patterns(log_path, self.library_creation_error_patterns)
         warnings = self.rmh.search_file_for_patterns(log_path, self.library_creation_warning_patterns)
@@ -233,6 +242,19 @@ class LogicSimulator(Service, ABC):
         report.num_errors = len(errors)
         report.num_warnings = len(warnings)
         report.num_fatals = len(fatals)
+
+    def parse_encryption_logs(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: EncryptionReport, log_path: Path) -> None:
+        errors = self.rmh.search_file_for_patterns(log_path, self.encryption_error_patterns)
+        warnings = self.rmh.search_file_for_patterns(log_path, self.encryption_warning_patterns)
+        fatals = self.rmh.search_file_for_patterns(log_path, self.encryption_fatal_patterns)
+        report.name = f"Encryption for '{ip}' using '{self.full_name}'"
+        report.success = (len(errors) == 0) and (len(fatals) == 0)
+        report.errors = errors
+        report.warnings = warnings
+        report.fatals = fatals
+        report.num_errors = len(errors)
+        report.num_warnings = len(warnings)
+        report.num_fatals = len(fatals)
     
     @property
     @abstractmethod
@@ -308,6 +330,21 @@ class LogicSimulator(Service, ABC):
     @abstractmethod
     def simulation_fatal_patterns(self) -> List[str]:
         pass
+
+    @property
+    @abstractmethod
+    def encryption_error_patterns(self) -> List[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def encryption_warning_patterns(self) -> List[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def encryption_fatal_patterns(self) -> List[str]:
+        pass
     
     @abstractmethod
     def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LibraryCreationReport, scheduler: JobScheduler) -> Path:
@@ -333,8 +370,13 @@ class LogicSimulator(Service, ABC):
     def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: SimulationReport, scheduler: JobScheduler) -> Path:
         pass
 
+    @abstractmethod
+    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: EncryptionReport, scheduler: JobScheduler) -> Path:
+        pass
+
 
 class SimulatorMetricsDSim(LogicSimulator):
+
     def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim")
 
@@ -380,13 +422,22 @@ class SimulatorMetricsDSim(LogicSimulator):
         return [r'^.*=F:.*$']
     @property
     def simulation_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$', r'^.*UVM_ERROR.*$']
+        return [r'^.*=E:.*$', r'^UVM_ERROR.*$']
     @property
     def simulation_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$', r'^.*UVM_WARNING.*$']
+        return [r'^.*=W:.*$', r'^UVM_WARNING.*$']
     @property
     def simulation_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$', r'^.*UVM_FATAL.*$']
+        return [r'^.*=F:.*$', r'^UVM_FATAL.*$']
+    @property
+    def encryption_error_patterns(self) -> List[str]:
+        return [r'^.*=E:.*$']
+    @property
+    def encryption_warning_patterns(self) -> List[str]:
+        return [r'^.*=W:.*$']
+    @property
+    def encryption_fatal_patterns(self) -> List[str]:
+        return [r'^.*=F:.*$']
     
     def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LibraryCreationReport, scheduler: JobScheduler) -> Path:
         pass
@@ -404,4 +455,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         pass
 
     def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: SimulationReport, scheduler: JobScheduler) -> Path:
+        pass
+
+    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: EncryptionReport, scheduler: JobScheduler) -> Path:
         pass

@@ -1,3 +1,4 @@
+from base64 import b64encode
 from http import HTTPMethod
 
 from mio_client.models.command import Command
@@ -23,7 +24,7 @@ Usage:
 Options:
    -u USERNAME, --username USERNAME  # Specifies Moore.io username (must be combined with -p)
    -p PASSWORD, --password PASSWORD  # Specifies Moore.io password (must be combined with -u)
-   -o ORG     , --org      ORG       # Specifies Moore.io IP Marketplace Organization client name.  Commercial IPs only.
+   -o ORG     , --org      ORG       # Specifies Client (Moore.io Organization) name.  Commercial IPs only.
 
 Examples:
    mio publish uvma_my_ip                               # Publish IP 'uvma_my_ip'.
@@ -84,7 +85,7 @@ class Publish(Command):
         parser_publish.add_argument('-u', "--username", help='Moore.io IP Marketplace username', required=False)
         parser_publish.add_argument('-p', "--password", help='Moore.io IP Marketplace password', required=False)
         parser_publish.add_argument('-o', "--org",
-                                    help='Moore.io IP Marketplace Organization client name.  Commercial IPs only.',
+                                    help='Client (Moore.io Organization) name.  Commercial IPs only.',
                                     required=False)
 
     def needs_authentication(self) -> bool:
@@ -96,6 +97,14 @@ class Publish(Command):
         else:
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
 
+    def phase_post_load_user_data(self, phase):
+        if self.parsed_cli_arguments.username and self.parsed_cli_arguments.password:
+            self.rmh.user.authenticated = False
+            self.rmh.user.access_token = ""
+            self.rmh.user.refresh_token = ""
+            self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.strip().lower()
+            self.rmh.user.pre_set_password = self.parsed_cli_arguments.password.strip().lower()
+
     def phase_post_ip_discovery(self, phase):
         try:
             if self.ip_definition.owner_name_is_specified:
@@ -106,10 +115,28 @@ class Publish(Command):
             phase.error = e
 
     def phase_main(self, phase):
-        data = {}
-        response = {}
-        try:
-            response = self.rmh.web_api_call(HTTPMethod.POST, 'publish_ip', data)
-        except Exception as e:
-            error = Exception(f"Failed to publish IP '{self.parsed_cli_arguments.ip}': {e}")
-            phase.error = e
+        if self.ip.ip.sync:
+            phase.error = Exception(f"Publishing sync'd IP not yet supported (come back soon!)")
+        else:
+            tgz_path = self.ip.create_unencrypted_compressed_tarball()
+            try:
+                with open(tgz_path,'rb') as f:
+                    tgz_b64_encoded = b64encode(f.read())
+            except Exception as e:
+                phase.error = Exception(f"Failed to encode IP {self.ip} compressed tarball: {e}")
+            else:
+                data = {
+                    'id' : self.ip.ip.sync_id,
+                    'payload' : str(tgz_b64_encoded)
+                }
+                try:
+                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish_ip', data)
+                except Exception as e:
+                    error = Exception(f"Failed to POST IP tarball '{self.ip}': {e}")
+                    phase.error = e
+                else:
+                    if 'success' in response and response['success']:
+                        phase.end_process = True
+                        phase.end_process_message = f"Published IP '{self.ip}' successfully."
+                    else:
+                        phase.error = Exception(f"Failed to POST IP tarball '{self.ip}': {response}")

@@ -1,6 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import tarfile
 from http import HTTPMethod
 from pathlib import Path
 from typing import Optional, List, Union
@@ -113,6 +114,12 @@ class Ip(Model):
     _file_path_set: bool = False
     _root_path: Path = None
     _resolved_src_path: Path = None
+    _resolved_docs_path: Path = None
+    _resolved_scripts_path: Path = None
+    _resolved_examples_path: Path = None
+    _has_docs: bool = False
+    _has_scripts: bool = False
+    _has_examples: bool = False
     _resolved_top_sv_files: List[Path] = []
     _resolved_top_vhdl_files: List[Path] = []
     _resolved_top: List[str] = []
@@ -126,6 +133,12 @@ class Ip(Model):
     hdl_src: HdlSource
     dut: Optional[DesignUnderTest] = None
     targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
+
+    def __str__(self):
+        if self.ip.owner != UNDEFINED_CONST:
+            return f"{self.ip.owner}__{self.ip.name}__v{self.ip.version}"
+        else:
+            return f"{self.ip.name}__v{self.ip.version}"
 
     @staticmethod
     def parse_ip_definition(definition: str) -> IpDefinition:
@@ -186,6 +199,30 @@ class Ip(Model):
     @property
     def resolved_src_path(self) -> Path:
         return self._resolved_src_path
+    
+    @property
+    def resolved_docs_path(self) -> Path:
+        return self._resolved_docs_path
+    
+    @property
+    def resolved_scripts_path(self) -> Path:
+        return self._resolved_scripts_path
+    
+    @property
+    def resolved_examples_path(self) -> Path:
+        return self._resolved_examples_path
+    
+    @property
+    def has_docs(self) -> bool:
+        return self._has_docs
+    
+    @property
+    def has_scripts(self) -> bool:
+        return self._has_scripts
+    
+    @property
+    def has_examples(self) -> bool:
+        return self._has_examples
 
     @property
     def dependencies_resolved(self) -> bool:
@@ -198,11 +235,17 @@ class Ip(Model):
         self._resolved_src_path = self.root_path / self.structure.src_path
         self.rmh.directory_exists(self.resolved_src_path)
         if self.structure.scripts_path != UNDEFINED_CONST:
-            self.rmh.directory_exists(self.root_path / self.structure.scripts_path)
+            self._has_scripts = True
+            self._resolved_scripts_path = self.root_path / self.structure.scripts_path
+            self.rmh.directory_exists(self._resolved_scripts_path)
         if self.structure.docs_path != UNDEFINED_CONST:
-            self.rmh.directory_exists(self.root_path / self.structure.docs_path)
+            self._has_docs = True
+            self._resolved_docs_path = self.root_path / self.structure.docs_path
+            self.rmh.directory_exists(self.resolved_docs_path)
         if self.structure.examples_path != UNDEFINED_CONST:
-            self.rmh.directory_exists(self.root_path / self.structure.examples_path)
+            self._has_examples = True
+            self._resolved_examples_path = self.root_path / self.structure.examples_path
+            self.rmh.directory_exists(self.resolved_examples_path)
         for directory in self.hdl_src.directories:
             self.rmh.directory_exists(self.root_path / directory)
         for file in self.hdl_src.top_sv_files:
@@ -224,6 +267,22 @@ class Ip(Model):
     
     def get_dependencies_to_find_online(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
+    
+    def create_unencrypted_compressed_tarball(self) -> Path:
+        try:
+            tgz_file_path = self.rmh.md / f"temp/{self}.tgz"
+            with tarfile.open(tgz_file_path, "w:gz") as tar:
+                tar.add(self.file_path, arcname=self.file_path.name)
+                tar.add(self.resolved_src_path, arcname=self.resolved_src_path.name)
+                if self.has_docs:
+                    tar.add(self.resolved_docs_path, arcname=self.resolved_docs_path.name)
+                if self.has_examples:
+                    tar.add(self.resolved_examples_path, arcname=self.resolved_examples_path.name)
+                if self.has_scripts:
+                    tar.add(self.resolved_scripts_path, arcname=self.resolved_scripts_path.name)
+        except Exception as e:
+            raise Exception(f"Failed to create unencrypted compressed tarball for {self}: {e}")
+        return tgz_file_path
 
 
 class IpDataBase():

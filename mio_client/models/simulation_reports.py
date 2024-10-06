@@ -44,3 +44,7 @@ class SimulationReport(LogicSimulatorReport):
 
 class RegressionReport(LogicSimulatorReport):
     pass
+
+
+class EncryptionReport(LogicSimulatorReport):
+    pass
