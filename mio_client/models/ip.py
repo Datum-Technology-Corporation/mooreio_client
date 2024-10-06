@@ -44,9 +44,9 @@ class ParameterType(Enum):
 
 
 class Structure(Model):
-    scripts_path: constr(pattern=VALID_POSIX_PATH_REGEX)
-    docs_path: constr(pattern=VALID_POSIX_PATH_REGEX)
-    examples_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    scripts_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)]
+    docs_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)]
+    examples_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)]
     src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
 
 
@@ -83,7 +83,7 @@ class Target(Model):
 class About(Model):
     sync: bool
     sync_id: Optional[PositiveInt] = 0
-    type: Optional[IpType]
+    type: IpType
     owner: Optional[str] = "_"
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = "_"
     full_name: Optional[str] = ""
