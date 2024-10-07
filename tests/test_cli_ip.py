@@ -11,7 +11,7 @@ from mio_client import cli
 from tests.common import OutputCapture
 
 
-class TestCliMisc:
+class TestCliIp:
     @pytest.fixture(autouse=True)
     def setup(self):
         pass
