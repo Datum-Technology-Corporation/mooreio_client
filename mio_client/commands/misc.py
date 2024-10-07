@@ -7,7 +7,7 @@ from mio_client.models.command import Command
 
 
 ALL_COMMANDS = [
-    "help", "login"
+    "help", "login", "logout", "list", "publish", "install", "uninstall"
 ]
 
 HELP_TEXT = """Moore.io Help Command
@@ -50,6 +50,10 @@ class Help(Command):
             self.print_text_and_exit(phase, ip.LIST_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "publish":
             self.print_text_and_exit(phase, ip.PUBLISH_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "install":
+            self.print_text_and_exit(phase, ip.INSTALL_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "uninstall":
+            self.print_text_and_exit(phase, ip.UNINSTALL_HELP_TEXT)
 
     def needs_authentication(self) -> bool:
         return False

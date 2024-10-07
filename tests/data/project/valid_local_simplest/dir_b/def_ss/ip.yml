@@ -3,6 +3,7 @@ ip:
   type: ss
   version: "2.6.3"
   name: "def_ss"
+  full_name: "DEF Sub-System"
 
 dependencies:
   "acme/abc_block": "1.0.0"

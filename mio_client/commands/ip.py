@@ -1,18 +1,22 @@
+import warnings
 from base64 import b64encode
+from enum import Enum
 from http import HTTPMethod
+from pathlib import Path
 
-from mio_client.models.command import Command
-from mio_client.models.ip import Ip, IpDefinition
+from mio_client.models.command import Command, IpCommand
+from mio_client.models.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate
 
 
 LIST_HELP_TEXT = """Moore.io IP List Command
-   Lists IPs available on the local setup.
+   Lists IPs available to the current project.
 
 Usage:
    mio list
 
 Examples:
    mio list"""
+
 
 PUBLISH_HELP_TEXT = """Moore.io IP Publish Command
    Packages and publishes an IP to the Moore.io IP Marketplace (https://mooreio.com).
@@ -22,18 +26,55 @@ Usage:
    mio publish IP [OPTIONS]
 
 Options:
-   -u USERNAME, --username USERNAME  # Specifies Moore.io username (must be combined with -p)
-   -p PASSWORD, --password PASSWORD  # Specifies Moore.io password (must be combined with -u)
-   -o ORG     , --org      ORG       # Specifies Client (Moore.io Organization) name.  Commercial IPs only.
+   -o ORG, --org ORG  # Specifies Client (Moore.io Organization) name.  Commercial IPs only.
 
 Examples:
-   mio publish uvma_my_ip                               # Publish IP 'uvma_my_ip'.
-   mio publish uvma_my_ip -u acme_jenkins -p )Kq3)fkqm  # Specify credentials for Jenkins job.
-   mio publish uvma_my_ip -o chip_inc                   # Publish IP 'uvma_my_ip' for client 'chip_inc'."""
+   mio publish uvma_my_ip          # Publish Public IP 'uvma_my_ip'.
+   mio publish uvma_my_ip -o acme  # Publish Commercial IP 'uvma_my_ip' for client 'acme'."""
+
+
+INSTALL_HELP_TEXT = """Moore.io IP Install Command
+   Downloads IP(s) from Moore.io Server.  Can be used in 3 ways:
+     1) Without specifying an IP: install all missing dependencies for all IPs in the current Project
+     2) Specifying the name a local IP: install all missing dependencies for a specific IP in the current project
+     3) Specifying the name of an IP on the Moore.io Server: install remote IP and all its dependencies into the current Project
+   
+Usage:
+   mio install [IP] [OPTIONS]
+
+Options:
+   -v SPEC, --version SPEC  # Specifies IP version (only for remote IPs)
+   
+Examples:
+   mio install                     # Install all dependencies for all IPs in the current Project
+   mio install my_ip               # Install all dependencies for a specific IP in the current Project
+   mio install acme/abc            # Install latest version of IP from Moore.io Server and its dependencies into current Project
+   mio install acme/abc -v "1.2.3" # Install specific version of IP from Moore.io Server and its dependencies into current Project"""
+
+
+UNINSTALL_HELP_TEXT = """Moore.io IP Uninstall Command
+   Removes IP(s) installed in current Project.  Can be used in 3 ways:
+     1) Without specifying an IP: delete all installed dependencies for all IPs in the current Project
+     2) Specifying the name a local IP: delete all installed dependencies for a specific local IP in the current project
+     3) Specifying the name of an installed IP: delete installed IP and all its installed dependencies from the current Project
+   
+Usage:
+   mio uninstall [IP]
+
+Examples:
+   mio uninstall           # Delete all installed IPs in current project
+   mio uninstall my_ip     # Delete all installed dependencies for a specific local IP in the current project
+   mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project"""
+
+
+class InstallMode(Enum):
+    ALL = 1
+    LOCAL = 2
+    REMOTE = 3
 
 
 def get_commands():
-    return [List, Publish]
+    return [List, Publish]#[, , Install]
 
 
 class List(Command):
@@ -57,22 +98,27 @@ class List(Command):
                 ip_qualified_name = f"{ip.ip.owner}/{ip.ip.name}"
             else:
                 ip_qualified_name = f"<no owner>/{ip.ip.name}"
-            ip_text = f"  {ip_qualified_name} v{ip.ip.version} - {ip.ip.type}: {ip.ip.full_name}"
+            ip_text = f"  {ip_qualified_name} v{ip.ip.version} - {ip.ip.type.value}: {ip.ip.full_name}"
             print(ip_text)
         phase.end_process = True
 
 
 class Publish(Command):
-    _ip_definition: IpDefinition
-    _ip: Ip
-    
+    _ip_definition: 'IpDefinition'
+    _ip: 'Ip'
+    _publishing_certificate: IpPublishingCertificate
+
     @property
-    def ip_definition(self) -> IpDefinition:
+    def ip_definition(self) -> 'IpDefinition':
         return self._ip_definition
 
     @property
-    def ip(self) -> Ip:
+    def ip(self) -> 'Ip':
         return self._ip
+
+    @property
+    def publishing_certificate(self) -> IpPublishingCertificate:
+        return self._publishing_certificate
 
     @staticmethod
     def name() -> str:
@@ -82,11 +128,11 @@ class Publish(Command):
     def add_to_subparsers(subparsers):
         parser_publish = subparsers.add_parser('publish', help=PUBLISH_HELP_TEXT, add_help=False)
         parser_publish.add_argument('ip', help='Target IP')
-        parser_publish.add_argument('-u', "--username", help='Moore.io IP Marketplace username', required=False)
-        parser_publish.add_argument('-p', "--password", help='Moore.io IP Marketplace password', required=False)
-        parser_publish.add_argument('-o', "--org",
-                                    help='Client (Moore.io Organization) name.  Commercial IPs only.',
-                                    required=False)
+        parser_publish.add_argument(
+            '-o', "--org",
+            help='Client (Moore.io Organization) name.  Commercial IPs only.',
+            required=False
+        )
 
     def needs_authentication(self) -> bool:
         return True
@@ -97,14 +143,6 @@ class Publish(Command):
         else:
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
 
-    def phase_post_load_user_data(self, phase):
-        if self.parsed_cli_arguments.username and self.parsed_cli_arguments.password:
-            self.rmh.user.authenticated = False
-            self.rmh.user.access_token = ""
-            self.rmh.user.refresh_token = ""
-            self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.strip().lower()
-            self.rmh.user.pre_set_password = self.parsed_cli_arguments.password.strip().lower()
-
     def phase_post_ip_discovery(self, phase):
         try:
             if self.ip_definition.owner_name_is_specified:
@@ -113,30 +151,151 @@ class Publish(Command):
                 self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
         except Exception as e:
             phase.error = e
+        else:
+            if self.ip.location_type != IpLocationType.PROJECT_USER:
+                phase.error = Exception(f"Can only publish IP local to the project")
 
     def phase_main(self, phase):
-        if self.ip.ip.sync:
-            phase.error = Exception(f"Publishing sync'd IP not yet supported (come back soon!)")
+        try:
+            # TODO Remove path unless in debug mode by making the IP model do all the compression/encryption in memory
+            self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_remote(self.ip)
+        except Exception as e:
+            phase.error = Exception(f"Failed to publish IP '{self.ip}': {e}")
+
+    def phase_report(self, phase):
+        print(f"Published IP '{self.ip}' successfully.")
+
+    def phase_cleanup(self, phase):
+        try:
+            # Turn into configuration parameter to store these somewhere for safekeeping
+            #self.rmh.remove_file(self.self._publishing_certificate._tgz_path)
+            pass
+        except Exception as e:
+            warnings.warn(f"Failed to delete compressed tarball for IP '{self.ip}': {e}")
+
+
+class Install(Command):
+    _ip_definition: 'IpDefinition'
+    _ip: 'Ip'
+    _mode: InstallMode
+
+    @staticmethod
+    def name() -> str:
+        return "install"
+
+    @property
+    def ip_definition(self) -> 'IpDefinition':
+        return self._ip_definition
+
+    @property
+    def ip(self) -> 'Ip':
+        return self._ip
+
+    @property
+    def mode(self) -> InstallMode:
+        return self._mode
+
+    @staticmethod
+    def add_to_subparsers(subparsers):
+        parser_install = subparsers.add_parser('install', help=INSTALL_HELP_TEXT, add_help=False)
+        parser_install.add_argument('ip', help='Target IP', nargs='?', default="*")
+        parser_install.add_argument(
+            '-v', "--version",
+            help='IP version spec (remote IPs only)',
+            required=False
+        )
+
+    def needs_authentication(self) -> bool:
+        return True
+
+    def phase_init(self, phase):
+        if self.parsed_cli_arguments.ip == "*":
+            self._mode = InstallMode.ALL
         else:
-            tgz_path = self.ip.create_unencrypted_compressed_tarball()
-            try:
-                with open(tgz_path,'rb') as f:
-                    tgz_b64_encoded = b64encode(f.read())
-            except Exception as e:
-                phase.error = Exception(f"Failed to encode IP {self.ip} compressed tarball: {e}")
+            self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+
+    def phase_post_ip_discovery(self, phase):
+        if self.mode != InstallMode.ALL:
+            if self.parsed_cli_arguments.version:
+                version = self.parsed_cli_arguments.version
             else:
-                data = {
-                    'id' : self.ip.ip.sync_id,
-                    'payload' : str(tgz_b64_encoded)
-                }
-                try:
-                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish_ip', data)
-                except Exception as e:
-                    error = Exception(f"Failed to POST IP tarball '{self.ip}': {e}")
-                    phase.error = e
+                version = "*"
+            if self.ip_definition.owner_name_is_specified:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.owner_name, version, raise_exception_if_not_found=False)
+            else:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, "*", version, raise_exception_if_not_found=False)
+            if self.ip:
+                self._mode = InstallMode.LOCAL
+            else:
+                self._mode = InstallMode.REMOTE
+
+    def phase_main(self, phase):
+        pass
+
+    def phase_report(self, phase):
+        if self.mode == InstallMode.ALL:
+            print(f"Installed all IPs successfully.")
+        else:
+            print(f"Installed IP '{self.ip}' successfully.")
+
+    def phase_cleanup(self, phase):
+        pass
+
+
+class Uninstall(Command):
+    _ip_definition: 'IpDefinition'
+    _ip: 'Ip'
+    _mode: InstallMode
+
+    @staticmethod
+    def name() -> str:
+        return "uninstall"
+
+    @property
+    def ip_definition(self) -> 'IpDefinition':
+        return self._ip_definition
+
+    @property
+    def ip(self) -> 'Ip':
+        return self._ip
+
+    @property
+    def mode(self) -> InstallMode:
+        return self._mode
+
+    @staticmethod
+    def add_to_subparsers(subparsers):
+        parser_uninstall = subparsers.add_parser('uninstall', help=UNINSTALL_HELP_TEXT, add_help=False)
+        parser_uninstall.add_argument('ip', help='Target IP', nargs='?', default="*")
+
+    def needs_authentication(self) -> bool:
+        return False
+
+    def phase_init(self, phase):
+        if self.parsed_cli_arguments.ip == "*":
+            self._mode = InstallMode.ALL
+        else:
+            self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+
+    def phase_post_ip_discovery(self, phase):
+        if self.mode != InstallMode.ALL:
+            try:
+                if self.ip_definition.owner_name_is_specified:
+                    self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.owner_name)
                 else:
-                    if 'success' in response and response['success']:
-                        phase.end_process = True
-                        phase.end_process_message = f"Published IP '{self.ip}' successfully."
-                    else:
-                        phase.error = Exception(f"Failed to POST IP tarball '{self.ip}': {response}")
+                    self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
+            except Exception as e:
+                phase.error = e
+
+    def phase_main(self, phase):
+        pass
+
+    def phase_report(self, phase):
+        if self.mode == InstallMode.ALL:
+            print(f"Uninstalled all IPs successfully.")
+        else:
+            print(f"Uninstalled IP '{self.ip}' successfully.")
+
+    def phase_cleanup(self, phase):
+        pass
+

@@ -1,14 +1,18 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import base64
+import os
 import tarfile
+from datetime import datetime
 from http import HTTPMethod
+from io import BytesIO
 from pathlib import Path
 from typing import Optional, List, Union
 
 import jinja2
 import yaml
-from pydantic import BaseModel, AnyUrl, constr, FilePath, PositiveInt
+from pydantic import BaseModel, AnyUrl, constr, FilePath, PositiveInt, ValidationError
 from pydantic import DirectoryPath
 from pydantic_extra_types import semantic_version
 from semantic_version import Spec, SimpleSpec, Version
@@ -46,6 +50,16 @@ class ParameterType(Enum):
     INT = "int"
     BOOL = "bool"
 
+class IpLocationType(Enum):
+    PROJECT_USER = "local"
+    PROJECT_INSTALLED = "installed"
+    GLOBAL = "global"
+
+class IpLicenseType(Enum):
+    PUBLIC_OPEN_SOURCE = "public_open_source"
+    COMMERCIAL = "commercial"
+
+
 
 class IpDefinition:
     owner_name_is_specified: bool = False
@@ -59,6 +73,28 @@ class IpDefinition:
             return f"{self.owner_name}/{self.ip_name}"
         else:
             return self.ip_name
+        
+
+class IpPublishingRights(Model):
+    certificator: str
+    timestamp: datetime
+    license_type: IpLicenseType
+
+
+class IpPublishingCertificate(Model):
+    certificator: str
+    timestamp: datetime
+    license_type: IpLicenseType
+    license_key: Optional[str] = UNDEFINED_CONST
+    client: Optional[str] = UNDEFINED_CONST
+    _tgz_file_path: Path
+
+    @property
+    def tgz_file_path(self) -> Path:
+        return self._tgz_file_path
+    @tgz_file_path.setter
+    def tgz_file_path(self, value: Path):
+        self._tgz_file_path = Path(value)
 
 
 class Structure(Model):
@@ -101,6 +137,9 @@ class Target(Model):
 class About(Model):
     sync: bool
     sync_id: Optional[PositiveInt] = 0
+    sync_revision: Optional[str] = UNDEFINED_CONST
+    encrypted: Optional[bool] = False
+    mlicensed: Optional[bool] = False
     type: IpType
     owner: Optional[str] = UNDEFINED_CONST
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
@@ -111,6 +150,7 @@ class Ip(Model):
     _uid: int
     _rmh: 'RootManager' = None
     _file_path: Path = None
+    _location_type: IpLocationType
     _file_path_set: bool = False
     _root_path: Path = None
     _resolved_src_path: Path = None
@@ -123,7 +163,7 @@ class Ip(Model):
     _resolved_top_sv_files: List[Path] = []
     _resolved_top_vhdl_files: List[Path] = []
     _resolved_top: List[str] = []
-    _resolved_dependencies: list[Ip] = []
+    _resolved_dependencies: dict[IpDefinition, Ip] = {}
     _dependencies_to_find_online: List[IpDefinition] = []
     _dependencies_resolved: bool = False
     
@@ -135,6 +175,13 @@ class Ip(Model):
     targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
 
     def __str__(self):
+        if self.ip.owner != UNDEFINED_CONST:
+            return f"{self.ip.owner} {self.ip.name} v{self.ip.version}"
+        else:
+            return f"{self.ip.name} v{self.ip.version}"
+
+    @property
+    def archive_name(self):
         if self.ip.owner != UNDEFINED_CONST:
             return f"{self.ip.owner}__{self.ip.name}__v{self.ip.version}"
         else:
@@ -191,7 +238,14 @@ class Ip(Model):
         self._file_path_set = True
         self._file_path = Path(value)
         self._root_path = self._file_path.parent
-    
+
+    @property
+    def location_type(self) -> IpLocationType:
+        return self._location_type
+    @location_type.setter
+    def location_type(self, value: IpLocationType):
+        self._location_type = value
+
     @property
     def root_path(self) -> Path:
         return self._root_path
@@ -259,18 +313,22 @@ class Ip(Model):
         if self.hdl_src.tests_path != UNDEFINED_CONST:
             self.rmh.directory_exists(self.root_path / self.hdl_src.tests_path)
 
-    def add_resolved_dependency(self, ip: Ip):
-        self._resolved_dependencies.append(ip)
+    def add_resolved_dependency(self, ip_definition:IpDefinition, ip:Ip):
+        self._resolved_dependencies[ip_definition] = ip
+        if len(self._resolved_dependencies) == len(self.dependencies):
+            self.dependencies_resolved = True
+        else:
+            self.dependencies_resolved = False
     
-    def add_dependency_to_find_online(self, ip_definition: IpDefinition):
+    def add_dependency_to_find_on_remote(self, ip_definition: IpDefinition):
         self._dependencies_to_find_online.append(ip_definition)
     
-    def get_dependencies_to_find_online(self) -> List[IpDefinition]:
+    def get_dependencies_to_find_on_remote(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
     
     def create_unencrypted_compressed_tarball(self) -> Path:
         try:
-            tgz_file_path = self.rmh.md / f"temp/{self}.tgz"
+            tgz_file_path = self.rmh.md / f"temp/{self.archive_name}.tgz"
             with tarfile.open(tgz_file_path, "w:gz") as tar:
                 tar.add(self.file_path, arcname=self.file_path.name)
                 tar.add(self.resolved_src_path, arcname=self.resolved_src_path.name)
@@ -288,7 +346,7 @@ class Ip(Model):
 class IpDataBase():
     _ip_list: list[Ip] = []
     _rmh: 'RootManager' = None
-    _need_to_find_dependencies_online: bool = False
+    _need_to_find_dependencies_on_remote: bool = False
     _ip_with_missing_dependencies: dict[int, Ip] = {}
     _ip_definitions_to_be_installed: list[IpDefinition] = []
     
@@ -301,7 +359,7 @@ class IpDataBase():
     @property
     def rmh(self) -> 'RootManager':
         return self._rmh
-    
+
     @property
     def has_ip(self) -> bool:
         return len(self._ip_list) > 0
@@ -311,8 +369,12 @@ class IpDataBase():
         return len(self._ip_list)
 
     @property
-    def need_to_find_dependencies_online(self) -> bool:
-        return self._need_to_find_dependencies_online
+    def need_to_find_dependencies_on_remote(self) -> bool:
+        return self._need_to_find_dependencies_on_remote
+
+    @property
+    def ip_definitions_to_be_installed(self) -> list[IpDefinition]:
+        return self._ip_definitions_to_be_installed
 
     def get_all_ip(self) -> list[Ip]:
         return self._ip_list
@@ -330,67 +392,155 @@ class IpDataBase():
         if raise_exception_if_not_found:
             raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version}' not found.")
 
+    def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed:bool=False, error_on_nothing_found:bool=True) -> list[Ip]:
+        ip_list: list[Ip] = []
+        ip_files: list[str] = []
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file == 'ip.yml':
+                    ip_files.append(os.path.join(root, file))
+        if len(ip_files) == 0:
+            if error_on_nothing_found:
+                raise Exception(f"No 'ip.yml' files found in the '{ip_location_type}' directory.")
+        else:
+            for file in ip_files:
+                try:
+                    ip_model = Ip.load(file)
+                    if ip_model.ip.owner == UNDEFINED_CONST:
+                        if self.find_ip(ip_model.ip.name, "*", SimpleSpec(str(ip_model.ip.version)), raise_exception_if_not_found=False):
+                            continue
+                    else:
+                        if self.find_ip(ip_model.ip.name, ip_model.ip.owner, SimpleSpec(str(ip_model.ip.version)), raise_exception_if_not_found=False):
+                            continue
+                    ip_model.rmh = self.rmh
+                    ip_model.file_path = file
+                    ip_model.uid = self.num_ips
+                    ip_model.location_type = ip_location_type
+                    ip_model.check()
+                except ValidationError as e:
+                    errors = e.errors()
+                    error_messages = "\n  ".join([f"{error['msg']}: {error['loc']}" for error in errors])
+                    if error_on_malformed:
+                        raise Exception(f"IP definition at '{file}' is malformed: {error_messages}")
+                    else:
+                        print(f"Skipping IP definition at '{file}': {error_messages}")
+                else:
+                    self.add_ip(ip_model)
+                    ip_list.append(ip_model)
+        return ip_list
+
     def resolve_local_dependencies(self):
+        self._dependencies_to_find_online = []
         for ip in self._ip_list:
             for ip_definition_str, ip_version_spec in ip.dependencies.items():
-                ip_definition = Ip.parse_ip_definition(ip_definition_str)
-                ip_definition.version_spec = ip_version_spec
-                ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
-                if ip_dependency is None:
-                    ip.add_dependency_to_find_online(ip_definition)
-                    self._need_to_find_dependencies_online = True
-                    self._ip_with_missing_dependencies[ip.uid] = ip
-                else:
-                    ip.add_resolved_dependency(ip_dependency)
+                if not ip.dependencies_resolved:
+                    ip_definition = Ip.parse_ip_definition(ip_definition_str)
+                    ip_definition.version_spec = ip_version_spec
+                    ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
+                    if ip_dependency is None:
+                        ip.add_dependency_to_find_on_remote(ip_definition)
+                        self._need_to_find_dependencies_on_remote = True
+                        self._ip_with_missing_dependencies[ip.uid] = ip
+                    else:
+                        ip.add_resolved_dependency(ip_definition, ip_dependency)
     
-    def find_dependencies_online(self, phase: 'Phase'):
+    def find_missing_dependencies_on_remote(self):
         ip_definitions_not_found = []
         for ip_uid in self._ip_with_missing_dependencies:
             ip = self._ip_with_missing_dependencies[ip_uid]
-            for ip_definition in ip.get_dependencies_to_find_online():
-                if ip_definition.owner_name_is_specified:
-                    owner = ip_definition.owner_name
-                else:
-                    owner = "*"
-                request = {
-                    "name": ip_definition.ip_name,
-                    "owner": owner,
-                    "version_spec": ip_definition.version_spec
-                }
-                response = self.rmh.web_api_call(HTTPMethod.POST, "find_ip", request)
-                try:
-                    if response['exists'].lower() == 'true':
-                        found_ip = True
-                    else:
-                        found_ip = False
-                except:
-                    found_ip = False
-                if found_ip:
-                    ip_definition.online_id = int(response['id'])
+            for ip_definition in ip.get_dependencies_to_find_on_remote():
+                if self.ip_definition_is_available_on_remote(ip_definition):
                     self._ip_definitions_to_be_installed.append(ip_definition)
                 else:
                     print(f"Could not find IP '{ip.ip.full_name}' dependency '{ip_definition}' on the Moore.io Server")
                     ip_definitions_not_found.append(ip_definition)
         if len(ip_definitions_not_found) > 0:
-            phase.error = Exception(f"Could not resolve all dependencies for the following IP: {ip_definitions_not_found}")
-    
-    def install_remote_dependencies(self, phase: 'Phase'):
-        ip_definitions_that_failed_to_install: list[IpDefinition] = []
-        new_ip_list: list[Ip] = []
-        # Prompt the user to confirm if they want to install the dependencies
-        install_confirmation = input(
-            f"Do you want to install {len(self._ip_definitions_to_be_installed)} remote dependencies? (Y/n): ")
-        if install_confirmation.lower() in ["y", "yes", ""]:
-            for ip_definition in self._ip_definitions_to_be_installed:
-                try:
-                    response = self.rmh.web_api_call(HTTPMethod.POST, "get_ip", {"id": ip_definition.online_id})
-                except Exception as e:
-                    ip_definitions_that_failed_to_install.append(ip_definition)
-                else:
-                    new_ip = Ip.model_validate(response)
-                    new_ip_list.append(new_ip)
-            if len(ip_definitions_that_failed_to_install) > 0:
-                phase.error = Exception(f"Failed to install the following IP: {e}")
+            raise Exception(f"Could not resolve all dependencies for the following IP: {ip_definitions_not_found}")
+
+    def ip_definition_is_available_on_remote(self, ip_definition: IpDefinition) -> bool:
+        if ip_definition.owner_name_is_specified:
+            owner = ip_definition.owner_name
+        else:
+            owner = "*"
+        request = {
+            "name": ip_definition.ip_name,
+            "owner": owner,
+            "version_spec": ip_definition.version_spec
+        }
+        response = self.rmh.web_api_call(HTTPMethod.POST, "find_ip", request)
+        try:
+            if response['exists'] == True:
+                found_ip = True
             else:
-                for ip in new_ip_list:
-                    self.add_ip(ip)
+                found_ip = False
+        except:
+            found_ip = False
+        if found_ip:
+            ip_definition.online_id = int(response['id'])
+        return found_ip
+
+    def install_all_missing_ip_from_remote(self):
+        ip_definitions_that_failed_to_install: list[IpDefinition] = []
+        for ip_definition in self._ip_definitions_to_be_installed:
+            if not self.install_ip_from_remote(ip_definition):
+                ip_definitions_that_failed_to_install.append(ip_definition)
+        number_of_failed_installations = len(ip_definitions_that_failed_to_install)
+        if number_of_failed_installations > 0:
+            raise Exception(f"Failed to install {number_of_failed_installations} IPs from remote: {e}")
+    
+    def install_ip_from_remote(self, ip_definition: IpDefinition):
+        try:
+            response = self.rmh.web_api_call(HTTPMethod.POST, "get_ip", {"id": ip_definition.online_id})
+            b64encoded_data = response['payload']
+            data = base64.b64decode(b64encoded_data)
+            path_installation = self.rmh.locally_installed_ip_dir / response['fully_qualified_name']
+            self.rmh.create_directory(path_installation)
+            with tarfile.open(fileobj=BytesIO(data), mode='r:gz') as tar:
+                tar.extractall(path=path_installation)
+        except Exception as e:
+            return False
+        else:
+            return True
+    
+    def publish_new_version_to_remote(self, ip:Ip, client:str="public") -> IpPublishingCertificate:
+        certificate = self.get_publishing_grant(ip, client)
+        if not certificate.granted:
+            raise Exception(f"IP {ip} is not available for publishing")
+        else:
+            # TODO Implement encrypted IP publishing
+            # if certification.license_type == IpLicenseType.COMMERCIAL:
+            tgz_path = ip.create_unencrypted_compressed_tarball()
+            try:
+                with open(tgz_path,'rb') as f:
+                    tgz_b64_encoded = base64.b64encode(f.read())
+            except Exception as e:
+                raise Exception(f"Failed to encode IP {ip} compressed tarball: {e}")
+            else:
+                data = {
+                    'id' : ip.ip.sync_id,
+                    'version' : ip.ip.version,
+                    'payload' : str(tgz_b64_encoded),
+                }
+                try:
+                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish_ip/mint', data)
+                    certificate = IpPublishingCertificate.model_validate(response)
+                    certificate.tgz_file_path = tgz_path
+                except Exception as e:
+                    raise Exception(f"Failed to obtain IP publishing certificate from remote for '{ip}': {e}")
+        return certificate
+    
+    def get_publishing_grant(self, ip: Ip, client:str= "public") -> IpPublishingRights:
+        request = {
+            'vendor': ip.ip.owner,
+            "ip_name": ip.ip.name,
+            "ip_id": ip.ip.sync_id,
+            "ip_version": ip.ip.version,
+            "client": client
+        }
+        try:
+            response = self.rmh.web_api_call(HTTPMethod.POST, "publish_ip/grant", request)
+            rights = IpPublishingRights.model_validate(response)
+        except Exception as e:
+            raise Exception(f"Failed to obtain certificate from remote for publishing IP {ip}: {e}")
+        else:
+            return rights

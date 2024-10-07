@@ -4,6 +4,7 @@ ip:
   version: "1.0.0"
   owner: "acme"
   name: "abc_block"
+  full_name: "ABC Block"
 
 structure:
   src_path: "."

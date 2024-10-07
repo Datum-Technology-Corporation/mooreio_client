@@ -13,6 +13,9 @@ class CommandHistory(Model):
     pass
 
 
+#######################################################################################################################
+# Abtract
+#######################################################################################################################
 class Command:
     def __init__(self):
         """
@@ -865,3 +868,31 @@ class Command:
         :return: None
         """
         pass
+
+
+#######################################################################################################################
+# Specializations
+#######################################################################################################################
+class IpCommand(Command):
+    _ip_definition: 'IpDefinition'
+    _ip: 'Ip'
+
+    @property
+    def ip_definition(self) -> 'IpDefinition':
+        return self._ip_definition
+
+    @property
+    def ip(self) -> 'Ip':
+        return self._ip
+
+    def needs_authentication(self) -> bool:
+        return True
+
+    def phase_post_ip_discovery(self, phase):
+        try:
+            if self.ip_definition.owner_name_is_specified:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.owner_name)
+            else:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
+        except Exception as e:
+            phase.error = e

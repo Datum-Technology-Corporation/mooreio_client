@@ -23,11 +23,14 @@ from mio_client.core.phase import Phase
 from mio_client.core.scheduler import LocalProcessScheduler, JobSchedulerDatabase
 from mio_client.core.service import ServiceDataBase
 from mio_client.models.configuration import Configuration
-from mio_client.models.ip import IpDataBase, Ip
+from mio_client.models.ip import IpDataBase, Ip, IpLocationType
 from mio_client.models.user import User
 from mio_client.services.simulation import SimulatorMetricsDSim
 from mio_client.models.command import Command
 
+
+
+MAX_DEPTH_DEPENDENCY_INSTALLATION = 10
 
 class PhaseEndProcessException(Exception):
     def __init__(self, message: str = ""):
@@ -61,6 +64,7 @@ class RootManager(ABC):
         self._name = name
         self._wd = wd
         self._md = self.wd / ".mio"
+        self._locally_installed_ip_dir = self.md / "installed_ip"
         self._url_base = url_base
         self._url_authentication = url_authentication
         self._url_api = f"{self._url_base}/api/"
@@ -113,6 +117,10 @@ class RootManager(ABC):
         :return: Moore.io work (hidden) directory.
         """
         return self._md
+    
+    @property
+    def locally_installed_ip_dir(self) -> Path:
+        return self._locally_installed_ip_dir
 
     @property
     def url_base(self):
@@ -284,7 +292,7 @@ class RootManager(ABC):
                 print(e.message)
             return 0
         except Exception as e:
-            print(e, file=sys.stderr)
+            print(f"\033[1;31m{e}\033[0m", file=sys.stderr)
             return 1
         else:
             return 0
@@ -753,11 +761,6 @@ class RootManager(ABC):
         current_phase = self.create_phase('post_ip_discovery')
         current_phase.next()
         self.command.do_phase_post_ip_discovery(current_phase)
-        if self.ip_database.need_to_find_dependencies_online:
-            self.authenticate(current_phase)
-            self.ip_database.find_dependencies_online(current_phase)
-            if not current_phase.error:
-                self.ip_database.install_remote_dependencies(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
 
@@ -1179,6 +1182,7 @@ class DefaultRootManager(RootManager):
 
     def phase_create_common_files_and_directories(self, phase):
         self.create_directory(self.md)
+        self.create_directory(self.locally_installed_ip_dir)
 
     def phase_load_project_configuration(self, phase):
         try:
@@ -1234,37 +1238,40 @@ class DefaultRootManager(RootManager):
         self._ip_database = IpDataBase(self)
         local_paths = [os.path.join(self.project_root_path, path) for path in self.configuration.ip.local_paths]
         global_paths = [os.path.expanduser(path) for path in self.configuration.ip.global_paths]
-        paths_to_search = local_paths + global_paths
-        ip_files = []
-        for path in paths_to_search:
-            for root, dirs, files in os.walk(path):
-                for file in files:
-                    if file == 'ip.yml':
-                        ip_files.append(os.path.join(root, file))
-        if len(ip_files) == 0:
-            phase.error = Exception("No 'ip.yml' files found in the project directory.")
-        else:
-            for file in ip_files:
-                try:
-                    ip_model = Ip.load(file)
-                    ip_model.file_path = file
-                    ip_model.rmh = self
-                    ip_model.uid = self.ip_database.num_ips
-                    ip_model.check()
-                except ValidationError as e:
-                    errors = e.errors()
-                    error_messages = "\n  ".join([f"{error['msg']}: {error['loc']}" for error in errors])
-                    print(f"Skipping IP definition at '{file}': {error_messages}")
-                else:
-                    self.ip_database.add_ip(ip_model)
+        for path in local_paths:
+            self.ip_database.discover_ip(Path(path), IpLocationType.PROJECT_USER)
         if not self.ip_database.has_ip:
-            phase.error = Exception("No valid IP definitions found")
+            phase.error = Exception("No IP definitions found in the project")
         else:
-            try:
-                self.ip_database.resolve_local_dependencies()
-            except Exception as e:
-                phase.error = Exception(f"Failed to resolve IP dependencies: {e}")
-
+            for path in global_paths:
+                self.ip_database.discover_ip(Path(path), IpLocationType.GLOBAL)
+        if not self.configuration.authentication.offline:
+            depth = 0
+            while depth < MAX_DEPTH_DEPENDENCY_INSTALLATION:
+                try:
+                    self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED, error_on_nothing_found=False)
+                    self.ip_database.resolve_local_dependencies()
+                    if not self.ip_database.need_to_find_dependencies_on_remote:
+                        break
+                    else:
+                        if depth == 0:
+                            # Prompt the user to confirm if they want to install the dependencies
+                            install_confirmation = input(
+                                f"Do you want to install {len(self.ip_database.ip_definitions_to_be_installed)} remote dependencies? (Y/n): ")
+                            if install_confirmation.lower() in ["y", "yes", ""]:
+                                if not self.user.authenticated:
+                                    self.authenticate(phase)
+                            else:
+                                raise Exception("Must install dependencies from remote before continuing")
+                        self.ip_database.find_missing_dependencies_on_remote()
+                        self.ip_database.install_all_missing_ip_from_remote()
+                    depth += 1
+                except Exception as e:
+                    phase.error = Exception(f"Failed to install remote IP dependencies: {e}")
+                    break
+            if self.ip_database.need_to_find_dependencies_on_remote:
+                phase.error = Exception(f"Failed to resolve all IP dependencies after {depth} attempts")
+    
     def phase_check(self, phase):
         pass
 
