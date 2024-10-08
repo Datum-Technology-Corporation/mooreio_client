@@ -15,7 +15,8 @@ from tests.common import OutputCapture
 class TestCliIp:
     @pytest.fixture(autouse=True)
     def setup(self):
-        pass
+        mio_client.cli.URL_BASE = "http://localhost:8000"
+        mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = cli.main(args)
@@ -26,11 +27,15 @@ class TestCliIp:
         os.environ['MIO_AUTHENTICATION_PASSWORD'] = password
         result = self.run_cmd(capsys, ['login', f'-u {username}', f'--no-input'])
         assert result.return_code == 0
+        assert "Logged in successfully" in result.text
+        assert mio_client.cli.root_manager.user.authenticated == True
         return result
 
     def logout(self, capsys) -> OutputCapture:
         result = self.run_cmd(capsys, ['logout'])
         assert result.return_code == 0
+        assert "Logged out successfully" in result.text
+        assert mio_client.cli.root_manager.user.authenticated == False
         return result
 
     def publish_ip(self, capsys, project_path: Path, ip_name: str):
@@ -69,7 +74,7 @@ class TestCliIp:
         assert result.return_code == 0
         assert "Found 2" in result.text
 
-    @SkipTest
+    #@SkipTest
     def test_cli_publish_ip(self, capsys):
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
         p2_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p2"))
@@ -77,28 +82,40 @@ class TestCliIp:
         p4_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p4"))
         # 1. Login
         self.login(capsys, 'admin', 'admin')
+
         # 2. Publish A from P1
         self.publish_ip(capsys, p1_path, 'a_vlib')
+
         # 3. Install A from P2
-        self.install_ip(capsys, p2_path, 'a_vlib')
+        #self.install_ip(capsys, p2_path, 'a_vlib')
+
         # 4. Publish B from P2
-        self.publish_ip(capsys, p2_path, 'b_agent')
+        #self.publish_ip(capsys, p2_path, 'b_agent')
+
         # 5. Install * from P3
-        self.install_ip(capsys, p3_path)
+        #self.install_ip(capsys, p3_path)
+
         # 6. Publish C from P3
-        self.publish_ip(capsys, p3_path, 'c_block')
+        #self.publish_ip(capsys, p3_path, 'c_block')
+
         # 7. Publish D from P3
-        self.publish_ip(capsys, p3_path, 'd_lib')
+        #self.publish_ip(capsys, p3_path, 'd_lib')
+
         # 8. Install A from P4
-        self.install_ip(capsys, p4_path, 'a_vlib')
+        #self.install_ip(capsys, p4_path, 'a_vlib')
+
         # 9. Install E from P4
-        self.install_ip(capsys, p4_path, 'e_ss')
+        #self.install_ip(capsys, p4_path, 'e_ss')
+
         # 10. Install * from P4
-        self.install_ip(capsys, p4_path)
+        #self.install_ip(capsys, p4_path)
+
         # 11. Uninstall E from P4
-        self.uninstall_ip(capsys, p4_path, 'e_ss')
+        #self.uninstall_ip(capsys, p4_path, 'e_ss')
+
         # 12. Uninstall * from P4
-        self.uninstall_ip(capsys, p4_path)
+        #self.uninstall_ip(capsys, p4_path)
+
         # 13. Logout from P1
         self.logout(capsys)
 

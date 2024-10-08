@@ -186,8 +186,17 @@ class Ip(Model):
 
     @property
     def archive_name(self):
+        version_no_dots = str(self.ip.version).replace(".", "p")
         if self.ip.vendor != UNDEFINED_CONST:
-            return f"{self.ip.vendor}__{self.ip.name}__v{self.ip.version}"
+            return f"{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
+        else:
+            return f"{self.ip.name}__v{self.ip.version}"
+
+    @property
+    def installation_directory_name(self):
+        version_no_dots = str(self.ip.version).replace(".", "p")
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
         else:
             return f"{self.ip.name}__v{self.ip.version}"
 
@@ -471,7 +480,7 @@ class IpDataBase():
             "owner": owner,
             "version_spec": ip_definition.version_spec
         }
-        response = self.rmh.web_api_call(HTTPMethod.POST, "find_ip", request)
+        response = self.rmh.web_api_call(HTTPMethod.POST, "find-ip", request)
         try:
             if response['exists'] == True:
                 found_ip = True
@@ -494,7 +503,7 @@ class IpDataBase():
     
     def install_ip_from_remote(self, ip_definition: IpDefinition):
         try:
-            response = self.rmh.web_api_call(HTTPMethod.POST, "get_ip", {"id": ip_definition.online_id})
+            response = self.rmh.web_api_call(HTTPMethod.POST, "get-ip", {"id": ip_definition.online_id})
             b64encoded_data = response['payload']
             data = base64.b64decode(b64encoded_data)
             path_installation = self.rmh.locally_installed_ip_dir / response['fully_qualified_name']
@@ -517,17 +526,17 @@ class IpDataBase():
             certificate.tgz_file_path = tgz_path
             try:
                 with open(tgz_path,'rb') as f:
-                    tgz_b64_encoded = base64.b64encode(f.read())
+                    tgz_b64_encoded = str(base64.b64encode(f.read()))[2:-1]
             except Exception as e:
                 raise Exception(f"Failed to encode IP {ip} compressed tarball: {e}")
             else:
                 data = {
-                    'id' : ip.ip.sync_id,
+                    'id' : certificate.id,
                     'payload' : str(tgz_b64_encoded),
                 }
                 try:
-                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish_ip/payload', data)
-                    confirmation = IpPublishingConfirmation.model_validate(response)
+                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/payload', data)
+                    confirmation = IpPublishingConfirmation.model_validate(response.json())
                     if not confirmation.success:
                         raise Exception(f"Failed to push IP payload to remote for '{ip}'")
                 except Exception as e:
@@ -539,12 +548,12 @@ class IpDataBase():
             'vendor': ip.ip.vendor,
             "ip_name": ip.ip.name,
             "ip_id": ip.ip.sync_id,
-            "ip_version": ip.ip.version,
+            "ip_version": str(ip.ip.version),
             "client": client
         }
         try:
-            response = self.rmh.web_api_call(HTTPMethod.POST, "publish_ip/certificate", request)
-            certificate = IpPublishingCertificate.model_validate(response)
+            response = self.rmh.web_api_call(HTTPMethod.POST, "publish-ip/certificate", request)
+            certificate = IpPublishingCertificate.model_validate(response.json())
         except Exception as e:
             raise Exception(f"Failed to obtain certificate from remote for publishing IP {ip}: {e}")
         else:

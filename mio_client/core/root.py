@@ -67,7 +67,7 @@ class RootManager(ABC):
         self._locally_installed_ip_dir = self.md / "installed_ip"
         self._url_base = url_base
         self._url_authentication = url_authentication
-        self._url_api = f"{self._url_base}/api/"
+        self._url_api = f"{self._url_base}/api"
         self._print_trace = False
         self._command: Command = None
         self._install_path = None
@@ -325,7 +325,7 @@ class RootManager(ABC):
         """
         if not phase.has_finished():
             if phase.error:
-                raise RuntimeError(f"Phase '{phase} has encountered an error: {phase.error}")
+                raise RuntimeError(f"Phase '{phase}' has encountered an error: {phase.error}")
             else:
                 raise RuntimeError(f"Phase '{phase}' has not finished properly")
         if phase.end_process:
@@ -1183,6 +1183,7 @@ class DefaultRootManager(RootManager):
     def phase_create_common_files_and_directories(self, phase):
         self.create_directory(self.md)
         self.create_directory(self.locally_installed_ip_dir)
+        self.create_directory(self.md / "temp")
 
     def phase_load_project_configuration(self, phase):
         try:
