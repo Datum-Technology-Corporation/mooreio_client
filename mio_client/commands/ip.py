@@ -145,8 +145,8 @@ class Publish(Command):
 
     def phase_post_ip_discovery(self, phase):
         try:
-            if self.ip_definition.owner_name_is_specified:
-                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.owner_name)
+            if self.ip_definition.vendor_name_is_specified:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name)
             else:
                 self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
         except Exception as e:
@@ -220,8 +220,8 @@ class Install(Command):
                 version = self.parsed_cli_arguments.version
             else:
                 version = "*"
-            if self.ip_definition.owner_name_is_specified:
-                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.owner_name, version, raise_exception_if_not_found=False)
+            if self.ip_definition.vendor_name_is_specified:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name, version, raise_exception_if_not_found=False)
             else:
                 self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, "*", version, raise_exception_if_not_found=False)
             if self.ip:
@@ -280,8 +280,8 @@ class Uninstall(Command):
     def phase_post_ip_discovery(self, phase):
         if self.mode != InstallMode.ALL:
             try:
-                if self.ip_definition.owner_name_is_specified:
-                    self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.owner_name)
+                if self.ip_definition.vendor_name_is_specified:
+                    self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name)
                 else:
                     self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
             except Exception as e:

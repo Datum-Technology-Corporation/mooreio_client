@@ -60,19 +60,6 @@ class IpLicenseType(Enum):
     COMMERCIAL = "commercial"
 
 
-
-class IpDefinition:
-    owner_name_is_specified: bool = False
-    owner_name: str = ""
-    ip_name: str = ""
-    version_spec: SimpleSpec
-    online_id: int
-    
-    def __str__(self):
-        if self.owner_name_is_specified:
-            return f"{self.owner_name}/{self.ip_name}"
-        else:
-            return self.ip_name
         
 
 class IpPublishingConfirmation(Model):
@@ -98,6 +85,45 @@ class IpPublishingCertificate(Model):
     @tgz_file_path.setter
     def tgz_file_path(self, value: Path):
         self._tgz_file_path = Path(value)
+
+
+class IpFindResults(Model):
+    found: bool
+    ip_id: Optional[int] = 0
+    license_type: Optional[IpLicenseType] = IpLicenseType.PUBLIC_OPEN_SOURCE
+    version: Optional[SemanticVersion] = SemanticVersion()
+    version_id: Optional[int] = 0
+
+
+class IpGetResults(Model):
+    success: bool
+    payload: Optional[str] = ""
+
+
+class IpDefinition:
+    vendor_name_is_specified: bool = False
+    vendor_name: str = ""
+    ip_name: str = ""
+    version_spec: SimpleSpec
+    online_id: int
+    find_results: IpFindResults
+
+    def __str__(self):
+        if self.vendor_name_is_specified:
+            return f"{self.vendor_name}/{self.ip_name}"
+        else:
+            return self.ip_name
+
+    @property
+    def installation_directory_name(self) -> str:
+        if not self.find_results:
+            raise Exception(f"This IP Definition '{self}' has not been checked against the Server")
+        else:
+            version_str = str(self.find_results.version).replace(".", "p")
+            if self.vendor_name_is_specified:
+                return f"{self.vendor_name}__{self.ip_name}__{version_str}"
+            else:
+                return f"{self.ip_name}__{version_str}"
 
 
 class Structure(Model):
@@ -205,11 +231,11 @@ class Ip(Model):
         ip_definition = IpDefinition()
         slash_split = definition.split("/")
         if len(slash_split) == 1:
-            ip_definition.owner_name_is_specified = False
+            ip_definition.vendor_name_is_specified = False
             ip_definition.ip_name = slash_split[0].strip().lower()
         elif len(slash_split) == 2:
-            ip_definition.owner_name_is_specified = True
-            ip_definition.owner_name = slash_split[0].strip().lower()
+            ip_definition.vendor_name_is_specified = True
+            ip_definition.vendor_name = slash_split[0].strip().lower()
             ip_definition.ip_name = slash_split[1].strip().lower()
         else:
             raise Exception(f"Invalid IP definition: {definition}")
@@ -300,31 +326,43 @@ class Ip(Model):
     
     def check(self):
         self._resolved_src_path = self.root_path / self.structure.src_path
-        self.rmh.directory_exists(self.resolved_src_path)
+        if not self.rmh.directory_exists(self.resolved_src_path):
+            raise Exception(f"IP '{self}' src path '{self.resolved_src_path}' does not exist")
         if self.structure.scripts_path != UNDEFINED_CONST:
             self._has_scripts = True
             self._resolved_scripts_path = self.root_path / self.structure.scripts_path
-            self.rmh.directory_exists(self._resolved_scripts_path)
+            if not self.rmh.directory_exists(self.resolved_scripts_path):
+                raise Exception(f"IP '{self}' scripts path '{self.resolved_scripts_path}' does not exist")
         if self.structure.docs_path != UNDEFINED_CONST:
             self._has_docs = True
             self._resolved_docs_path = self.root_path / self.structure.docs_path
-            self.rmh.directory_exists(self.resolved_docs_path)
+            if not self.rmh.directory_exists(self.resolved_docs_path):
+                raise Exception(f"IP '{self}' docs path '{self.resolved_docs_path}' does not exist")
         if self.structure.examples_path != UNDEFINED_CONST:
             self._has_examples = True
             self._resolved_examples_path = self.root_path / self.structure.examples_path
-            self.rmh.directory_exists(self.resolved_examples_path)
+            if not self.rmh.directory_exists(self.resolved_examples_path):
+                raise Exception(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
         for directory in self.hdl_src.directories:
-            self.rmh.directory_exists(self.root_path / directory)
+            directory_path = self.root_path / directory
+            if not self.rmh.directory_exists(directory_path):
+                raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
         for file in self.hdl_src.top_sv_files:
             full_path = self.root_path / file
-            self.rmh.file_exists(full_path)
-            self._resolved_top_sv_files.append(full_path)
+            if not self.rmh.file_exists(full_path):
+                raise Exception(f"IP '{self}' HDL SystemVerilog file path '{full_path}' does not exist")
+            else:
+                self._resolved_top_sv_files.append(full_path)
         for file in self.hdl_src.top_vhdl_files:
             full_path = self.root_path / file
-            self.rmh.file_exists(full_path)
-            self._resolved_top_vhdl_files.append(full_path)
+            if not self.rmh.file_exists(full_path):
+                raise Exception(f"IP '{self}' HDL VHDL file path '{full_path}' does not exist")
+            else:
+                self._resolved_top_vhdl_files.append(full_path)
         if self.hdl_src.tests_path != UNDEFINED_CONST:
-            self.rmh.directory_exists(self.root_path / self.hdl_src.tests_path)
+            directory_path = self.root_path / self.hdl_src.tests_path
+            if not self.rmh.directory_exists(directory_path):
+                raise Exception(f"IP '{self}' HDL Tests src path '{directory_path}' does not exist")
 
     def add_resolved_dependency(self, ip_definition:IpDefinition, ip:Ip):
         self._resolved_dependencies[ip_definition] = ip
@@ -393,8 +431,8 @@ class IpDataBase():
         return self._ip_list
 
     def find_ip_definition(self, definition:IpDefinition, raise_exception_if_not_found:bool=True) -> Ip:
-        if definition.owner_name_is_specified:
-            return self.find_ip(definition.ip_name, definition.owner_name, definition.version_spec, raise_exception_if_not_found)
+        if definition.vendor_name_is_specified:
+            return self.find_ip(definition.ip_name, definition.vendor_name, definition.version_spec, raise_exception_if_not_found)
         else:
             return self.find_ip(definition.ip_name, "*", definition.version_spec, raise_exception_if_not_found)
 
@@ -462,7 +500,8 @@ class IpDataBase():
         for ip_uid in self._ip_with_missing_dependencies:
             ip = self._ip_with_missing_dependencies[ip_uid]
             for ip_definition in ip.get_dependencies_to_find_on_remote():
-                if self.ip_definition_is_available_on_remote(ip_definition):
+                ip_definition.results = self.ip_definition_is_available_on_remote(ip_definition)
+                if ip_definition.results.found:
                     self._ip_definitions_to_be_installed.append(ip_definition)
                 else:
                     print(f"Could not find IP '{ip.ip.full_name}' dependency '{ip_definition}' on the Moore.io Server")
@@ -470,27 +509,23 @@ class IpDataBase():
         if len(ip_definitions_not_found) > 0:
             raise Exception(f"Could not resolve all dependencies for the following IP: {ip_definitions_not_found}")
 
-    def ip_definition_is_available_on_remote(self, ip_definition: IpDefinition) -> bool:
-        if ip_definition.owner_name_is_specified:
-            owner = ip_definition.owner_name
+    def ip_definition_is_available_on_remote(self, ip_definition: IpDefinition) -> IpFindResults:
+        if ip_definition.vendor_name_is_specified:
+            vendor = ip_definition.vendor_name
         else:
-            owner = "*"
+            vendor = "*"
         request = {
             "name": ip_definition.ip_name,
-            "owner": owner,
+            "vendor": vendor,
             "version_spec": ip_definition.version_spec
         }
-        response = self.rmh.web_api_call(HTTPMethod.POST, "find-ip", request)
         try:
-            if response['exists'] == True:
-                found_ip = True
-            else:
-                found_ip = False
+            response = self.rmh.web_api_call(HTTPMethod.POST, "find-ip", request)
+            results = IpFindResults.model_validate(response.json())
         except:
-            found_ip = False
-        if found_ip:
-            ip_definition.online_id = int(response['id'])
-        return found_ip
+            raise Exception(f"Error while getting IP '{ip_definition}' information from server")
+        else:
+            return results
 
     def install_all_missing_ip_from_remote(self):
         ip_definitions_that_failed_to_install: list[IpDefinition] = []
@@ -499,21 +534,30 @@ class IpDataBase():
                 ip_definitions_that_failed_to_install.append(ip_definition)
         number_of_failed_installations = len(ip_definitions_that_failed_to_install)
         if number_of_failed_installations > 0:
-            raise Exception(f"Failed to install {number_of_failed_installations} IPs from remote: {e}")
+            raise Exception(f"Failed to install {number_of_failed_installations} IPs from remote")
     
     def install_ip_from_remote(self, ip_definition: IpDefinition):
+        request = {
+            "version_id" : ip_definition.find_results.version_id
+        }
         try:
-            response = self.rmh.web_api_call(HTTPMethod.POST, "get-ip", {"id": ip_definition.online_id})
-            b64encoded_data = response['payload']
-            data = base64.b64decode(b64encoded_data)
-            path_installation = self.rmh.locally_installed_ip_dir / response['fully_qualified_name']
-            self.rmh.create_directory(path_installation)
-            with tarfile.open(fileobj=BytesIO(data), mode='r:gz') as tar:
-                tar.extractall(path=path_installation)
+            response = self.rmh.web_api_call(HTTPMethod.POST, "get-ip", request)
+            results = IpGetResults.model_validate(response.json())
         except Exception as e:
-            return False
+            raise e
         else:
-            return True
+            if results.success:
+                try:
+                    b64encoded_data = results.payload
+                    data = base64.b64decode(b64encoded_data)
+                    path_installation = self.rmh.locally_installed_ip_dir / ip_definition.installation_directory_name
+                    self.rmh.create_directory(path_installation)
+                    with tarfile.open(fileobj=BytesIO(data), mode='r:gz') as tar:
+                        tar.extractall(path=path_installation)
+                except Exception as e:
+                    raise Exception(f"Failed to decompress tgz data for IP version '{ip_definition.find_results.version_id}' from server: {e}")
+            else:
+                raise Exception(f"Failed to get IP version '{ip_definition.find_results.version_id}' from server")
     
     def publish_new_version_to_remote(self, ip:Ip, client:str="public") -> IpPublishingCertificate:
         certificate = self.get_publishing_certificate(ip, client)

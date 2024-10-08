@@ -890,8 +890,8 @@ class IpCommand(Command):
 
     def phase_post_ip_discovery(self, phase):
         try:
-            if self.ip_definition.owner_name_is_specified:
-                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.owner_name)
+            if self.ip_definition.vendor_name_is_specified:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name)
             else:
                 self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
         except Exception as e:

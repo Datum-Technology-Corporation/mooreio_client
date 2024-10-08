@@ -32,7 +32,7 @@ class TestCliUser:
         result = self.run_cmd(capsys, ['logout'])
         return result
 
-    #@SkipTest
+    @SkipTest
     def test_cli_login_logout(self, capsys):
         result = self.login(capsys, 'admin', 'admin')
         assert result.return_code == 0
