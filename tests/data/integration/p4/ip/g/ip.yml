@@ -1,7 +1,7 @@
 ip:
   sync: true
   sync_id: 6
-  type: dv_tb
+  pkg_type: dv_tb
   vendor: "acme"
   name: "g_tb"
   full_name: "G FPGA TB"

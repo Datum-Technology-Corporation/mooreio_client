@@ -1,6 +1,6 @@
 ip:
   sync: false
-  type: dv_tb
+  pkg_type: dv_tb
   vendor: "acme"
   name: "uvmt_abc"
   full_name: "Duis aute irure dolor in "

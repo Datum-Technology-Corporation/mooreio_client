@@ -1,7 +1,7 @@
 ip:
   sync: true
-  sync_id: 2
-  type: dv_agent
+  sync_id: 3
+  pkg_type: dv_agent
   vendor: "gigadyne"
   name: "b_agent"
   full_name: "B Agent"

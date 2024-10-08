@@ -1,7 +1,7 @@
 ip:
   sync: true
   sync_id: 6
-  type: fpga
+  pkg_type: fpga
   vendor: "acme"
   name: "f_fpga"
   full_name: "F FPGA"

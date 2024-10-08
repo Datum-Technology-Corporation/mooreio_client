@@ -1,7 +1,7 @@
 ip:
   sync: true
-  sync_id: 4
-  type: lib
+  sync_id: 5
+  pkg_type: lib
   vendor: "datron"
   name: "d_lib"
   full_name: "D Library"

@@ -1,6 +1,6 @@
 ip:
   sync: false
-  type: ss
+  pkg_type: ss
   version: "2.6.3"
   vendor: "acme"
   name: "def_ss"

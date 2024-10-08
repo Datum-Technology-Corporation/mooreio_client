@@ -98,7 +98,7 @@ class List(Command):
                 ip_qualified_name = f"{ip.ip.vendor}/{ip.ip.name}"
             else:
                 ip_qualified_name = f"<no owner>/{ip.ip.name}"
-            ip_text = f"  {ip_qualified_name} v{ip.ip.version} - {ip.ip.type.value}: {ip.ip.full_name}"
+            ip_text = f"  {ip_qualified_name} v{ip.ip.version} - {ip.ip.pkg_type.value}: {ip.ip.full_name}"
             print(ip_text)
         phase.end_process = True
 

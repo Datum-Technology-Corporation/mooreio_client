@@ -28,7 +28,7 @@ from mio_client.core.version import SemanticVersion, SemanticVersionSpec
 from mio_client.models.configuration import Ip
 
 
-class IpType(Enum):
+class IpPkgType(Enum):
     DV_LIBRARY = "dv_lib"
     DV_AGENT = "dv_agent"
     DV_ENV = "dv_env"
@@ -144,7 +144,7 @@ class About(Model):
     sync_revision: Optional[str] = UNDEFINED_CONST
     encrypted: Optional[bool] = False
     mlicensed: Optional[bool] = False
-    type: IpType
+    pkg_type: IpPkgType
     vendor: str
     name: constr(pattern=VALID_NAME_REGEX)
     full_name: str

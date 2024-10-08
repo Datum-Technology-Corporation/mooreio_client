@@ -1,7 +1,7 @@
 ip:
   sync: true
-  sync_id: 1
-  type: dv_lib
+  sync_id: 4
+  pkg_type: dv_lib
   vendor: "bravo"
   name: "a_vlib"
   version: "1.0.0"

@@ -1,7 +1,7 @@
 ip:
   sync: true
-  sync_id: 3
-  type: block
+  sync_id: 1
+  pkg_type: block
   vendor: "datron"
   name: "c_block"
   full_name: "C Block"

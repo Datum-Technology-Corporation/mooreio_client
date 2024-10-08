@@ -1,7 +1,7 @@
 ip:
   sync: true
-  sync_id: 5
-  type: ss
+  sync_id: 2
+  pkg_type: ss
   vendor: "acme"
   name: "e_ss"
   full_name: "E Sub-System"

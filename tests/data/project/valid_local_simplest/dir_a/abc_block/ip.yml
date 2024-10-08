@@ -1,6 +1,6 @@
 ip:
   sync: false
-  type: block
+  pkg_type: block
   version: "1.0.0"
   vendor: "acme"
   name: "abc_block"
