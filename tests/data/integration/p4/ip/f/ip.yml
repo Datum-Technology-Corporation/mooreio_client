@@ -1,0 +1,19 @@
+ip:
+  sync: true
+  sync_id: 6
+  type: fpga
+  vendor: "acme"
+  name: "f_fpga"
+  full_name: "F FPGA"
+  version: "7.6.2"
+
+dependencies:
+  "acme/e_ss": "*"
+
+structure:
+  src_path: "."
+
+hdl_src:
+  directories: ["."]
+  top_sv_files: ["fpga_top.sv"]
+

@@ -1249,7 +1249,7 @@ class DefaultRootManager(RootManager):
             depth = 0
             while depth < MAX_DEPTH_DEPENDENCY_INSTALLATION:
                 try:
-                    self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED, error_on_nothing_found=False)
+                    self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED)
                     self.ip_database.resolve_local_dependencies()
                     if not self.ip_database.need_to_find_dependencies_on_remote:
                         break

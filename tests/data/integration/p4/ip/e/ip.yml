@@ -1,11 +1,14 @@
 ip:
   sync: true
-  sync_id: 2
+  sync_id: 5
   type: ss
+  vendor: "acme"
+  name: "e_ss"
+  full_name: "E Sub-System"
   version: "2.6.1"
 
 dependencies:
-  "acme/abc_block": "1.0.0"
+  "datron/c_block": ">=1.0.0"
 
 structure:
   src_path: "."

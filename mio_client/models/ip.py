@@ -75,16 +75,19 @@ class IpDefinition:
             return self.ip_name
         
 
-class IpPublishingRights(Model):
+class IpPublishingConfirmation(Model):
+    success: bool
     certificator: str
     timestamp: datetime
     license_type: IpLicenseType
 
 
 class IpPublishingCertificate(Model):
+    granted: bool
     certificator: str
     timestamp: datetime
     license_type: IpLicenseType
+    id: int
     license_key: Optional[str] = UNDEFINED_CONST
     client: Optional[str] = UNDEFINED_CONST
     _tgz_file_path: Path
@@ -117,6 +120,7 @@ class HdlSource(Model):
 class DesignUnderTest(Model):
     type: DutType
     name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = UNDEFINED_CONST
+    version: Optional[SemanticVersionSpec] = SemanticVersionSpec()
     target: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
 
 
@@ -141,10 +145,10 @@ class About(Model):
     encrypted: Optional[bool] = False
     mlicensed: Optional[bool] = False
     type: IpType
-    owner: Optional[str] = UNDEFINED_CONST
-    name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
-    full_name: Optional[str] = ""
-    version: Optional[SemanticVersion]
+    vendor: str
+    name: constr(pattern=VALID_NAME_REGEX)
+    full_name: str
+    version: SemanticVersion
 
 class Ip(Model):
     _uid: int
@@ -175,15 +179,15 @@ class Ip(Model):
     targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
 
     def __str__(self):
-        if self.ip.owner != UNDEFINED_CONST:
-            return f"{self.ip.owner} {self.ip.name} v{self.ip.version}"
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor} {self.ip.name} v{self.ip.version}"
         else:
             return f"{self.ip.name} v{self.ip.version}"
 
     @property
     def archive_name(self):
-        if self.ip.owner != UNDEFINED_CONST:
-            return f"{self.ip.owner}__{self.ip.name}__v{self.ip.version}"
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor}__{self.ip.name}__v{self.ip.version}"
         else:
             return f"{self.ip.name}__v{self.ip.version}"
 
@@ -221,7 +225,7 @@ class Ip(Model):
 
     @property
     def has_owner(self) -> bool:
-        return self.ip.owner != UNDEFINED_CONST
+        return self.ip.vendor != UNDEFINED_CONST
     
     @property
     def rmh(self) -> 'RootManager':
@@ -387,12 +391,12 @@ class IpDataBase():
 
     def find_ip(self, name:str, owner:str="*", version:SimpleSpec=SimpleSpec("*"), raise_exception_if_not_found:bool=True) -> Ip:
         for ip in self._ip_list:
-            if ip.ip.name == name and (owner == "*" or ip.ip.owner == owner) and version.match(ip.ip.version):
+            if ip.ip.name == name and (owner == "*" or ip.ip.vendor == owner) and version.match(ip.ip.version):
                 return ip
         if raise_exception_if_not_found:
             raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version}' not found.")
 
-    def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed:bool=False, error_on_nothing_found:bool=True) -> list[Ip]:
+    def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed:bool=False, error_on_nothing_found:bool=False) -> list[Ip]:
         ip_list: list[Ip] = []
         ip_files: list[str] = []
         for root, dirs, files in os.walk(path):
@@ -406,11 +410,11 @@ class IpDataBase():
             for file in ip_files:
                 try:
                     ip_model = Ip.load(file)
-                    if ip_model.ip.owner == UNDEFINED_CONST:
+                    if ip_model.ip.vendor == UNDEFINED_CONST:
                         if self.find_ip(ip_model.ip.name, "*", SimpleSpec(str(ip_model.ip.version)), raise_exception_if_not_found=False):
                             continue
                     else:
-                        if self.find_ip(ip_model.ip.name, ip_model.ip.owner, SimpleSpec(str(ip_model.ip.version)), raise_exception_if_not_found=False):
+                        if self.find_ip(ip_model.ip.name, ip_model.ip.vendor, SimpleSpec(str(ip_model.ip.version)), raise_exception_if_not_found=False):
                             continue
                     ip_model.rmh = self.rmh
                     ip_model.file_path = file
@@ -503,13 +507,14 @@ class IpDataBase():
             return True
     
     def publish_new_version_to_remote(self, ip:Ip, client:str="public") -> IpPublishingCertificate:
-        certificate = self.get_publishing_grant(ip, client)
+        certificate = self.get_publishing_certificate(ip, client)
         if not certificate.granted:
             raise Exception(f"IP {ip} is not available for publishing")
         else:
             # TODO Implement encrypted IP publishing
             # if certification.license_type == IpLicenseType.COMMERCIAL:
             tgz_path = ip.create_unencrypted_compressed_tarball()
+            certificate.tgz_file_path = tgz_path
             try:
                 with open(tgz_path,'rb') as f:
                     tgz_b64_encoded = base64.b64encode(f.read())
@@ -518,29 +523,29 @@ class IpDataBase():
             else:
                 data = {
                     'id' : ip.ip.sync_id,
-                    'version' : ip.ip.version,
                     'payload' : str(tgz_b64_encoded),
                 }
                 try:
-                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish_ip/mint', data)
-                    certificate = IpPublishingCertificate.model_validate(response)
-                    certificate.tgz_file_path = tgz_path
+                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish_ip/payload', data)
+                    confirmation = IpPublishingConfirmation.model_validate(response)
+                    if not confirmation.success:
+                        raise Exception(f"Failed to push IP payload to remote for '{ip}'")
                 except Exception as e:
-                    raise Exception(f"Failed to obtain IP publishing certificate from remote for '{ip}': {e}")
+                    raise Exception(f"Failed to push IP payload to remote for '{ip}': {e}")
         return certificate
     
-    def get_publishing_grant(self, ip: Ip, client:str= "public") -> IpPublishingRights:
+    def get_publishing_certificate(self, ip: Ip, client:str= "public") -> IpPublishingCertificate:
         request = {
-            'vendor': ip.ip.owner,
+            'vendor': ip.ip.vendor,
             "ip_name": ip.ip.name,
             "ip_id": ip.ip.sync_id,
             "ip_version": ip.ip.version,
             "client": client
         }
         try:
-            response = self.rmh.web_api_call(HTTPMethod.POST, "publish_ip/grant", request)
-            rights = IpPublishingRights.model_validate(response)
+            response = self.rmh.web_api_call(HTTPMethod.POST, "publish_ip/certificate", request)
+            certificate = IpPublishingCertificate.model_validate(response)
         except Exception as e:
             raise Exception(f"Failed to obtain certificate from remote for publishing IP {ip}: {e}")
         else:
-            return rights
+            return certificate

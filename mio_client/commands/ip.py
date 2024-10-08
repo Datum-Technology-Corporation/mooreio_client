@@ -92,10 +92,10 @@ class List(Command):
     def phase_post_ip_discovery(self, phase):
         all_ip_unsorted = self.rmh.ip_database.get_all_ip()
         print(f"Found {len(all_ip_unsorted)} IP(s):")
-        sorted_ip = sorted(all_ip_unsorted, key=lambda current_ip: (current_ip.has_owner, current_ip.ip.owner if current_ip.has_owner else '', current_ip.ip.name))
+        sorted_ip = sorted(all_ip_unsorted, key=lambda current_ip: (current_ip.has_owner, current_ip.ip.vendor if current_ip.has_owner else '', current_ip.ip.name))
         for ip in sorted_ip:
             if ip.has_owner:
-                ip_qualified_name = f"{ip.ip.owner}/{ip.ip.name}"
+                ip_qualified_name = f"{ip.ip.vendor}/{ip.ip.name}"
             else:
                 ip_qualified_name = f"<no owner>/{ip.ip.name}"
             ip_text = f"  {ip_qualified_name} v{ip.ip.version} - {ip.ip.type.value}: {ip.ip.full_name}"

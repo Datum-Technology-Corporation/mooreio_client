@@ -2,6 +2,7 @@ ip:
   sync: false
   type: ss
   version: "2.6.3"
+  vendor: "acme"
   name: "def_ss"
   full_name: "DEF Sub-System"
 
