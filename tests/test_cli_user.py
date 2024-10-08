@@ -24,7 +24,8 @@ class TestCliUser:
         return OutputCapture(return_code, text)
 
     def login(self, capsys, username: str, password: str) -> OutputCapture:
-        result = self.run_cmd(capsys, ['login', f'-u {username}', f'-p {password}'])
+        os.environ['MIO_AUTHENTICATION_PASSWORD'] = password
+        result = self.run_cmd(capsys, ['login', f'-u {username}', f'--no-input'])
         return result
 
     def logout(self, capsys) -> OutputCapture:
