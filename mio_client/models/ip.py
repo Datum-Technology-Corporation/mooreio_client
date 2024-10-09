@@ -210,6 +210,7 @@ class Ip(Model):
         self._resolved_dependencies: dict[IpDefinition, Ip] = {}
         self._dependencies_to_find_online: List[IpDefinition] = []
         self._dependencies_resolved: bool = False
+        self._uninstalled = False
 
     def __str__(self):
         if self.ip.vendor != UNDEFINED_CONST:
@@ -325,12 +326,20 @@ class Ip(Model):
         return self._has_examples
 
     @property
+    def resolved_dependencies(self) -> dict[IpDefinition, Ip]:
+        return self._resolved_dependencies
+
+    @property
     def dependencies_resolved(self) -> bool:
         return self._dependencies_resolved
     @dependencies_resolved.setter
     def dependencies_resolved(self, value: bool):
         self._dependencies_resolved = value
-    
+
+    @property
+    def uninstalled(self) -> bool:
+        return self._uninstalled
+
     def check(self):
         self._resolved_src_path = self.root_path / self.structure.src_path
         if not self.rmh.directory_exists(self.resolved_src_path):
@@ -402,6 +411,12 @@ class Ip(Model):
         except Exception as e:
             raise Exception(f"Failed to create unencrypted compressed tarball for {self}: {e}")
         return tgz_file_path
+    
+    def uninstall(self):
+        if self.location_type == IpLocationType.PROJECT_INSTALLED:
+            if not self._uninstalled:
+                self.rmh.remove_directory(self.root_path)
+                self._uninstalled = True
 
 
 class IpDataBase():
@@ -518,7 +533,7 @@ class IpDataBase():
                         self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
     
     def find_all_missing_dependencies_on_server(self):
-        # TODO Resolve all specs for same IP definition
+        # TODO Check all specs for same IP definition for contradictions
         unique_dependencies = {dep.ip_name + dep.vendor_name: dep for dep in self._dependencies_to_find_online}
         self._dependencies_to_find_online = list(unique_dependencies.values())
         ip_definitions_not_found = []
@@ -627,3 +642,21 @@ class IpDataBase():
             raise Exception(f"Failed to obtain certificate from remote for publishing IP {ip}: {e}")
         else:
             return certificate
+    
+    def uninstall(self, ip:Ip, recursive:bool=True):
+        if not ip.uninstalled:
+            if recursive:
+                for dep in ip.resolved_dependencies:
+                    ip = ip.resolved_dependencies[dep]
+                    self.uninstall(ip, recursive=True)
+            ip.uninstall()
+            if ip.location_type == IpLocationType.PROJECT_INSTALLED:
+                try: # HACK!
+                    self._ip_list.remove(ip)
+                except:
+                    pass
+
+    def uninstall_all(self):
+        list_copy = self._ip_list.copy()
+        for ip in list_copy:
+            self.uninstall(ip, recursive=False)

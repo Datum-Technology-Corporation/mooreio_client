@@ -77,7 +77,7 @@ class InstallMode(Enum):
 
 
 def get_commands():
-    return [List, Publish, Install]
+    return [List, Publish, Install, Uninstall]
 
 
 class List(Command):
@@ -285,7 +285,7 @@ class Install(Command):
 class Uninstall(Command):
     _ip_definition: 'IpDefinition'
     _ip: 'Ip'
-    _mode: InstallMode
+    _uninstall_all: bool
 
     @staticmethod
     def name() -> str:
@@ -300,8 +300,8 @@ class Uninstall(Command):
         return self._ip
 
     @property
-    def mode(self) -> InstallMode:
-        return self._mode
+    def uninstall_all(self) -> bool:
+        return self._uninstall_all
 
     @staticmethod
     def add_to_subparsers(subparsers):
@@ -312,13 +312,14 @@ class Uninstall(Command):
         return False
 
     def phase_init(self, phase):
-        if self.parsed_cli_arguments.ip == "*":
-            self._mode = InstallMode.ALL
-        else:
+        if self.parsed_cli_arguments.ip != "*":
+            self._uninstall_all = False
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+        else:
+            self._uninstall_all = True
 
     def phase_post_ip_discovery(self, phase):
-        if self.mode != InstallMode.ALL:
+        if not self.uninstall_all:
             try:
                 if self.ip_definition.vendor_name_is_specified:
                     self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name)
@@ -328,10 +329,13 @@ class Uninstall(Command):
                 phase.error = e
 
     def phase_main(self, phase):
-        pass
+        if self.uninstall_all:
+            self.rmh.ip_database.uninstall_all()
+        else:
+            self.rmh.ip_database.uninstall(self.ip)
 
     def phase_report(self, phase):
-        if self.mode == InstallMode.ALL:
+        if self.uninstall_all:
             print(f"Uninstalled all IPs successfully.")
         else:
             print(f"Uninstalled IP '{self.ip}' successfully.")

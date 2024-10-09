@@ -138,10 +138,12 @@ class TestCliIp:
         self.check_ip_database(7)
 
         # 11. Uninstall E from P4
-        #self.uninstall_ip(capsys, p4_path, 'e_ss')
+        self.uninstall_ip(capsys, p4_path, 'e_ss')
+        self.check_ip_database(5)
 
         # 12. Uninstall * from P4
-        #self.uninstall_ip(capsys, p4_path)
+        self.uninstall_ip(capsys, p4_path)
+        self.check_ip_database(3)
 
         # 13. Logout from P1
         self.logout(capsys)
