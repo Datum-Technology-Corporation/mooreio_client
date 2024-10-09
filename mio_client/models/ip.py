@@ -109,7 +109,7 @@ class IpDefinition:
     vendor_name_is_specified: bool = False
     vendor_name: str = ""
     ip_name: str = ""
-    version_spec: SimpleSpec
+    version_spec: SimpleSpec = SimpleSpec("*")
     online_id: int
     find_results: IpFindResults
 
@@ -514,8 +514,8 @@ class IpDataBase():
                     self._dependencies_to_find_online.append(ip_definition)
                 else:
                     ip.add_resolved_dependency(ip_definition, ip_dependency)
-                if recursive:
-                    self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
+                    if recursive:
+                        self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
     
     def find_all_missing_dependencies_on_server(self):
         # TODO Resolve all specs for same IP definition

@@ -178,8 +178,8 @@ class Publish(Command):
 
 
 class Install(Command):
-    _ip_definition: 'IpDefinition'
-    _ip: 'Ip'
+    _ip_definition: 'IpDefinition' = None
+    _ip: 'Ip' = None
     _mode: InstallMode = InstallMode.UNKNOWN
 
     @staticmethod
@@ -218,13 +218,11 @@ class Install(Command):
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
         if self.parsed_cli_arguments.version and (self.mode == InstallMode.ALL):
             phase.error = Exception(f"Cannot specify a version when requesting to install all IPs")
-        elif self.parsed_cli_arguments.version:
+        elif self.parsed_cli_arguments.version and (self.mode != InstallMode.ALL):
             try:
                 self.ip_definition.version_spec = SimpleSpec(self.parsed_cli_arguments.version)
             except Exception as e:
                 phase.error = Exception(f"Invalid version specifier: {e}")
-        else:
-            self.ip_definition.version_spec = SimpleSpec("*")
 
     def phase_post_ip_discovery(self, phase):
         if self.mode != InstallMode.ALL:
