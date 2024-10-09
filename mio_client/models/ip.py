@@ -8,7 +8,7 @@ from datetime import datetime
 from http import HTTPMethod
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Any
 
 import jinja2
 import yaml
@@ -27,6 +27,8 @@ from enum import Enum
 from mio_client.core.version import SemanticVersion, SemanticVersionSpec
 from mio_client.models.configuration import Ip
 
+
+MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
 
 class IpPkgType(Enum):
     DV_LIBRARY = "dv_lib"
@@ -77,7 +79,10 @@ class IpPublishingCertificate(Model):
     id: int
     license_key: Optional[str] = UNDEFINED_CONST
     client: Optional[str] = UNDEFINED_CONST
-    _tgz_file_path: Path
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self._tgz_file_path: Path
 
     @property
     def tgz_file_path(self) -> Path:
@@ -177,32 +182,34 @@ class About(Model):
     version: SemanticVersion
 
 class Ip(Model):
-    _uid: int
-    _rmh: 'RootManager' = None
-    _file_path: Path = None
-    _location_type: IpLocationType
-    _file_path_set: bool = False
-    _root_path: Path = None
-    _resolved_src_path: Path = None
-    _resolved_docs_path: Path = None
-    _resolved_scripts_path: Path = None
-    _resolved_examples_path: Path = None
-    _has_docs: bool = False
-    _has_scripts: bool = False
-    _has_examples: bool = False
-    _resolved_top_sv_files: List[Path] = []
-    _resolved_top_vhdl_files: List[Path] = []
-    _resolved_top: List[str] = []
-    _resolved_dependencies: dict[IpDefinition, Ip] = {}
-    _dependencies_to_find_online: List[IpDefinition] = []
-    _dependencies_resolved: bool = False
-    
     ip: About
     dependencies: Optional[dict[constr(pattern=VALID_IP_OWNER_NAME_REGEX), SemanticVersionSpec]] = {}
     structure: Structure
     hdl_src: HdlSource
     dut: Optional[DesignUnderTest] = None
     targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        self._uid: int
+        self._rmh: 'RootManager' = None
+        self._file_path: Path = None
+        self._location_type: IpLocationType
+        self._file_path_set: bool = False
+        self._root_path: Path = None
+        self._resolved_src_path: Path = None
+        self._resolved_docs_path: Path = None
+        self._resolved_scripts_path: Path = None
+        self._resolved_examples_path: Path = None
+        self._has_docs: bool = False
+        self._has_scripts: bool = False
+        self._has_examples: bool = False
+        self._resolved_top_sv_files: List[Path] = []
+        self._resolved_top_vhdl_files: List[Path] = []
+        self._resolved_top: List[str] = []
+        self._resolved_dependencies: dict[IpDefinition, Ip] = {}
+        self._dependencies_to_find_online: List[IpDefinition] = []
+        self._dependencies_resolved: bool = False
 
     def __str__(self):
         if self.ip.vendor != UNDEFINED_CONST:
@@ -344,23 +351,23 @@ class Ip(Model):
             if not self.rmh.directory_exists(self.resolved_examples_path):
                 raise Exception(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
         for directory in self.hdl_src.directories:
-            directory_path = self.root_path / directory
+            directory_path = self.resolved_src_path / directory
             if not self.rmh.directory_exists(directory_path):
                 raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
         for file in self.hdl_src.top_sv_files:
-            full_path = self.root_path / file
+            full_path = self.resolved_src_path / file
             if not self.rmh.file_exists(full_path):
-                raise Exception(f"IP '{self}' HDL SystemVerilog file path '{full_path}' does not exist")
+                raise Exception(f"IP '{self}' src SystemVerilog file path '{full_path}' does not exist")
             else:
                 self._resolved_top_sv_files.append(full_path)
         for file in self.hdl_src.top_vhdl_files:
-            full_path = self.root_path / file
+            full_path = self.resolved_src_path / file
             if not self.rmh.file_exists(full_path):
-                raise Exception(f"IP '{self}' HDL VHDL file path '{full_path}' does not exist")
+                raise Exception(f"IP '{self}' src VHDL file path '{full_path}' does not exist")
             else:
                 self._resolved_top_vhdl_files.append(full_path)
         if self.hdl_src.tests_path != UNDEFINED_CONST:
-            directory_path = self.root_path / self.hdl_src.tests_path
+            directory_path = self.resolved_src_path / self.hdl_src.tests_path
             if not self.rmh.directory_exists(directory_path):
                 raise Exception(f"IP '{self}' HDL Tests src path '{directory_path}' does not exist")
 
@@ -381,28 +388,30 @@ class Ip(Model):
         try:
             tgz_file_path = self.rmh.md / f"temp/{self.archive_name}.tgz"
             with tarfile.open(tgz_file_path, "w:gz") as tar:
-                tar.add(self.file_path, arcname=self.file_path.name)
-                tar.add(self.resolved_src_path, arcname=self.resolved_src_path.name)
-                if self.has_docs:
-                    tar.add(self.resolved_docs_path, arcname=self.resolved_docs_path.name)
-                if self.has_examples:
-                    tar.add(self.resolved_examples_path, arcname=self.resolved_examples_path.name)
-                if self.has_scripts:
-                    tar.add(self.resolved_scripts_path, arcname=self.resolved_scripts_path.name)
+                if self.resolved_src_path == self.root_path:
+                    tar.add(self.root_path, arcname=".", recursive=True)
+                else:
+                    tar.add(self.file_path, arcname=self.file_path.name)
+                    tar.add(self.resolved_src_path, arcname=self.resolved_src_path.name)
+                    if self.has_docs:
+                        tar.add(self.resolved_docs_path, arcname=self.resolved_docs_path.name)
+                    if self.has_examples:
+                        tar.add(self.resolved_examples_path, arcname=self.resolved_examples_path.name)
+                    if self.has_scripts:
+                        tar.add(self.resolved_scripts_path, arcname=self.resolved_scripts_path.name)
         except Exception as e:
             raise Exception(f"Failed to create unencrypted compressed tarball for {self}: {e}")
         return tgz_file_path
 
 
 class IpDataBase():
-    _ip_list: list[Ip] = []
-    _rmh: 'RootManager' = None
-    _need_to_find_dependencies_on_remote: bool = False
-    _ip_with_missing_dependencies: dict[int, Ip] = {}
-    _ip_definitions_to_be_installed: list[IpDefinition] = []
-    
     def __init__(self, rmh: 'RootManager'):
         self._rmh = rmh
+        self._ip_list: list[Ip] = []
+        self._rmh: 'RootManager' = rmh
+        self._need_to_find_dependencies_on_remote: bool = False
+        self._ip_with_missing_dependencies: dict[int, Ip] = {}
+        self._ip_definitions_to_be_installed: list[IpDefinition] = []
 
     def add_ip(self, ip: Ip):
         self._ip_list.append(ip)
@@ -436,12 +445,12 @@ class IpDataBase():
         else:
             return self.find_ip(definition.ip_name, "*", definition.version_spec, raise_exception_if_not_found)
 
-    def find_ip(self, name:str, owner:str="*", version:SimpleSpec=SimpleSpec("*"), raise_exception_if_not_found:bool=True) -> Ip:
+    def find_ip(self, name:str, owner:str="*", version_spec:SimpleSpec=SimpleSpec("*"), raise_exception_if_not_found:bool=True) -> Ip:
         for ip in self._ip_list:
-            if ip.ip.name == name and (owner == "*" or ip.ip.vendor == owner) and version.match(ip.ip.version):
+            if ip.ip.name == name and (owner == "*" or ip.ip.vendor == owner) and version_spec.match(ip.ip.version):
                 return ip
         if raise_exception_if_not_found:
-            raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version}' not found.")
+            raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version_spec}' not found.")
 
     def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed:bool=False, error_on_nothing_found:bool=False) -> list[Ip]:
         ip_list: list[Ip] = []
@@ -480,32 +489,46 @@ class IpDataBase():
                     ip_list.append(ip_model)
         return ip_list
 
-    def resolve_local_dependencies(self):
-        self._dependencies_to_find_online = []
+    def resolve_local_dependencies(self, reset_list_of_dependencies_to_find_online:bool=True):
+        if reset_list_of_dependencies_to_find_online:
+            self._dependencies_to_find_online = []
+            self._need_to_find_dependencies_on_remote = False
         for ip in self._ip_list:
-            for ip_definition_str, ip_version_spec in ip.dependencies.items():
-                if not ip.dependencies_resolved:
-                    ip_definition = Ip.parse_ip_definition(ip_definition_str)
-                    ip_definition.version_spec = ip_version_spec
-                    ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
-                    if ip_dependency is None:
-                        ip.add_dependency_to_find_on_remote(ip_definition)
-                        self._need_to_find_dependencies_on_remote = True
-                        self._ip_with_missing_dependencies[ip.uid] = ip
-                    else:
-                        ip.add_resolved_dependency(ip_definition, ip_dependency)
-    
-    def find_missing_dependencies_on_remote(self):
-        ip_definitions_not_found = []
-        for ip_uid in self._ip_with_missing_dependencies:
-            ip = self._ip_with_missing_dependencies[ip_uid]
-            for ip_definition in ip.get_dependencies_to_find_on_remote():
-                ip_definition.results = self.ip_definition_is_available_on_remote(ip_definition)
-                if ip_definition.results.found:
-                    self._ip_definitions_to_be_installed.append(ip_definition)
+            self.resolve_dependencies(ip, reset_list_of_dependencies_to_find_online=False)
+
+    def resolve_dependencies(self, ip:Ip, recursive:bool=False, reset_list_of_dependencies_to_find_online:bool=True, depth:int=0):
+        if depth > MAX_DEPTH_DEPENDENCY_INSTALLATION:
+            raise Exception(f"Loop detected in IP dependencies after depth of {depth}")
+        if reset_list_of_dependencies_to_find_online:
+            self._dependencies_to_find_online = []
+            self._need_to_find_dependencies_on_remote = False
+        for ip_definition_str, ip_version_spec in ip.dependencies.items():
+            if not ip.dependencies_resolved:
+                ip_definition = Ip.parse_ip_definition(ip_definition_str)
+                ip_definition.version_spec = ip_version_spec
+                ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
+                if ip_dependency is None:
+                    ip.add_dependency_to_find_on_remote(ip_definition)
+                    self._need_to_find_dependencies_on_remote = True
+                    self._ip_with_missing_dependencies[ip.uid] = ip
+                    self._dependencies_to_find_online.append(ip_definition)
                 else:
-                    print(f"Could not find IP '{ip.ip.full_name}' dependency '{ip_definition}' on the Moore.io Server")
-                    ip_definitions_not_found.append(ip_definition)
+                    ip.add_resolved_dependency(ip_definition, ip_dependency)
+                if recursive:
+                    self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
+    
+    def find_all_missing_dependencies_on_server(self):
+        # TODO Resolve all specs for same IP definition
+        unique_dependencies = {dep.ip_name + dep.vendor_name: dep for dep in self._dependencies_to_find_online}
+        self._dependencies_to_find_online = list(unique_dependencies.values())
+        ip_definitions_not_found = []
+        for ip_definition in self._dependencies_to_find_online:
+            ip_definition.results = self.ip_definition_is_available_on_remote(ip_definition)
+            if ip_definition.results.found:
+                self._ip_definitions_to_be_installed.append(ip_definition)
+            else:
+                print(f"Could not find IP '{ip.ip.full_name}' dependency '{ip_definition}' on the Server")
+                ip_definitions_not_found.append(ip_definition)
         if len(ip_definitions_not_found) > 0:
             raise Exception(f"Could not resolve all dependencies for the following IP: {ip_definitions_not_found}")
 
@@ -517,26 +540,26 @@ class IpDataBase():
         request = {
             "name": ip_definition.ip_name,
             "vendor": vendor,
-            "version_spec": ip_definition.version_spec
+            "version_spec": str(ip_definition.version_spec)
         }
         try:
             response = self.rmh.web_api_call(HTTPMethod.POST, "find-ip", request)
             results = IpFindResults.model_validate(response.json())
-        except:
+        except Exception as e:
             raise Exception(f"Error while getting IP '{ip_definition}' information from server")
         else:
             return results
 
-    def install_all_missing_ip_from_remote(self):
+    def install_all_missing_dependencies_from_server(self):
         ip_definitions_that_failed_to_install: list[IpDefinition] = []
         for ip_definition in self._ip_definitions_to_be_installed:
-            if not self.install_ip_from_remote(ip_definition):
+            if not self.install_ip_from_server(ip_definition):
                 ip_definitions_that_failed_to_install.append(ip_definition)
         number_of_failed_installations = len(ip_definitions_that_failed_to_install)
         if number_of_failed_installations > 0:
             raise Exception(f"Failed to install {number_of_failed_installations} IPs from remote")
     
-    def install_ip_from_remote(self, ip_definition: IpDefinition):
+    def install_ip_from_server(self, ip_definition: IpDefinition):
         request = {
             "version_id" : ip_definition.find_results.version_id
         }

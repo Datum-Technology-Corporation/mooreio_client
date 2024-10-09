@@ -4,9 +4,11 @@ from enum import Enum
 from http import HTTPMethod
 from pathlib import Path
 
-from mio_client.models.command import Command, IpCommand
-from mio_client.models.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate
+from semantic_version import SimpleSpec
 
+from mio_client.models.command import Command, IpCommand
+from mio_client.models.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
+    MAX_DEPTH_DEPENDENCY_INSTALLATION
 
 LIST_HELP_TEXT = """Moore.io IP List Command
    Lists IPs available to the current project.
@@ -43,7 +45,7 @@ Usage:
    mio install [IP] [OPTIONS]
 
 Options:
-   -v SPEC, --version SPEC  # Specifies IP version (only for remote IPs)
+   -v SPEC, --version SPEC  # Specifies IP version (only for remote IPs). Must specify IP when using this option.
    
 Examples:
    mio install                     # Install all dependencies for all IPs in the current Project
@@ -68,13 +70,14 @@ Examples:
 
 
 class InstallMode(Enum):
+    UNKNOWN = 0
     ALL = 1
     LOCAL = 2
     REMOTE = 3
 
 
 def get_commands():
-    return [List, Publish]#[, , Install]
+    return [List, Publish, Install]
 
 
 class List(Command):
@@ -177,7 +180,7 @@ class Publish(Command):
 class Install(Command):
     _ip_definition: 'IpDefinition'
     _ip: 'Ip'
-    _mode: InstallMode
+    _mode: InstallMode = InstallMode.UNKNOWN
 
     @staticmethod
     def name() -> str:
@@ -213,24 +216,63 @@ class Install(Command):
             self._mode = InstallMode.ALL
         else:
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+        if self.parsed_cli_arguments.version and (self.mode == InstallMode.ALL):
+            phase.error = Exception(f"Cannot specify a version when requesting to install all IPs")
+        elif self.parsed_cli_arguments.version:
+            try:
+                self.ip_definition.version_spec = SimpleSpec(self.parsed_cli_arguments.version)
+            except Exception as e:
+                phase.error = Exception(f"Invalid version specifier: {e}")
+        else:
+            self.ip_definition.version_spec = SimpleSpec("*")
 
     def phase_post_ip_discovery(self, phase):
         if self.mode != InstallMode.ALL:
-            if self.parsed_cli_arguments.version:
-                version = self.parsed_cli_arguments.version
-            else:
-                version = "*"
-            if self.ip_definition.vendor_name_is_specified:
-                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name, version, raise_exception_if_not_found=False)
-            else:
-                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, "*", version, raise_exception_if_not_found=False)
+            self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
             if self.ip:
                 self._mode = InstallMode.LOCAL
             else:
                 self._mode = InstallMode.REMOTE
 
     def phase_main(self, phase):
-        pass
+        if self.mode == InstallMode.REMOTE:
+            self.ip_definition.find_results = self.rmh.ip_database.ip_definition_is_available_on_remote(self.ip_definition)
+            if self.ip_definition.find_results.found:
+                try:
+                    self.rmh.ip_database.install_ip_from_server(self.ip_definition)
+                except Exception as e:
+                    phase.error = e
+                    return
+            else:
+                phase.error = Exception(f"IP {self.ip_definition} does not exist on Server")
+                return
+        elif self.mode == InstallMode.LOCAL:
+            pass
+        depth = 0
+        while depth < MAX_DEPTH_DEPENDENCY_INSTALLATION:
+            try:
+                self.rmh.ip_database.discover_ip(self.rmh.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED, error_on_malformed=True)
+                if self.mode == InstallMode.ALL:
+                    self.rmh.ip_database.resolve_local_dependencies()
+                elif self.mode == InstallMode.REMOTE:
+                    if depth == 0:
+                        self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition)
+                    self.rmh.ip_database.resolve_dependencies(self.ip, recursive=True)
+                elif self.mode == InstallMode.LOCAL:
+                    self.rmh.ip_database.resolve_dependencies(self.ip, recursive=True)
+                if not self.rmh.ip_database.need_to_find_dependencies_on_remote:
+                    break
+                else:
+                    if not self.rmh.user.authenticated:
+                        self.rmh.authenticate(phase)
+                    self.rmh.ip_database.find_all_missing_dependencies_on_server()
+                    self.rmh.ip_database.install_all_missing_dependencies_from_server()
+                depth += 1
+            except Exception as e:
+                phase.error = Exception(f"Failed to install remote IP dependencies: {e}")
+                break
+        if self.rmh.ip_database.need_to_find_dependencies_on_remote:
+            phase.error = Exception(f"Failed to resolve all IP dependencies after {depth} attempts")
 
     def phase_report(self, phase):
         if self.mode == InstallMode.ALL:

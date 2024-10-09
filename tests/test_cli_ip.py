@@ -87,7 +87,7 @@ class TestCliIp:
         self.publish_ip(capsys, p1_path, 'a_vlib')
 
         # 3. Install A from P2
-        #self.install_ip(capsys, p2_path, 'a_vlib')
+        self.install_ip(capsys, p2_path, 'a_vlib')
 
         # 4. Publish B from P2
         #self.publish_ip(capsys, p2_path, 'b_agent')

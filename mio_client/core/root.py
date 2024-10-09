@@ -30,8 +30,6 @@ from mio_client.models.command import Command
 
 
 
-MAX_DEPTH_DEPENDENCY_INSTALLATION = 10
-
 class PhaseEndProcessException(Exception):
     def __init__(self, message: str = ""):
         self.message = message
@@ -331,7 +329,7 @@ class RootManager(ABC):
         if phase.end_process:
             raise PhaseEndProcessException(phase.end_process_message)
     
-    def file_exists(self, path):
+    def file_exists(self, path:Path):
         """
         Check if a file exists at the specified path.
         :param path: Path to the file.
@@ -342,7 +340,7 @@ class RootManager(ABC):
             raise ValueError("Path must not be None or empty")
         return os.path.isfile(path)
     
-    def create_file(self, path):
+    def create_file(self, path:Path):
         """
         Create a file at the specified path.
         :param path: The path where the file should be created.
@@ -357,7 +355,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while creating file '{path}': {e}")
 
-    def move_file(self, src, dst):
+    def move_file(self, src:Path, dst:Path):
         """
         Move a file from src to dst.
         :param src: Path to the source file.
@@ -370,7 +368,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while moving file from '{src}' to '{dst}': {e}")
 
-    def copy_file(self, src, dst):
+    def copy_file(self, src:Path, dst:Path):
         """
         Copy a file from src to dst.
         :param src: Path to the source file.
@@ -387,7 +385,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while copying file from '{src}' to '{dst}': {e}")
 
-    def remove_file(self, path):
+    def remove_file(self, path:Path):
         """
         Remove a file at the specified path.
         :param path: Path to the file.
@@ -400,7 +398,7 @@ class RootManager(ABC):
             error = f"An error occurred while removing file '{path}': {e}"
             raise PhaseEndProcessException(error)
 
-    def directory_exists(self, path):
+    def directory_exists(self, path:Path):
         """
         Check if a directory exists at the specified path.
         :param path: Path to the directory.
@@ -411,7 +409,7 @@ class RootManager(ABC):
             raise ValueError("Path must not be None or empty")
         return os.path.isdir(path)
 
-    def create_directory(self, path):
+    def create_directory(self, path:Path):
         """
         Create a directory at the specified path.
         :param path: Path to the directory.
@@ -422,7 +420,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while creating directory '{path}': {e}")
 
-    def move_directory(self, src, dst):
+    def move_directory(self, src:Path, dst:Path):
         """
         Move a directory from src to dst.
         :param src: Path to the source directory.
@@ -435,7 +433,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while moving directory from '{src}' to '{dst}': {e}")
 
-    def copy_directory(self, src, dst):
+    def copy_directory(self, src:Path, dst:Path):
         """
         Copy a directory from src to dst.
         :param src: Path to the source directory.
@@ -452,7 +450,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while copying directory from '{src}' to '{dst}': {e}")
 
-    def remove_directory(self, path):
+    def remove_directory(self, path:Path):
         """
         Remove a directory at the specified path.
         :param path: Path to the directory.
@@ -1247,32 +1245,9 @@ class DefaultRootManager(RootManager):
             for path in global_paths:
                 self.ip_database.discover_ip(Path(path), IpLocationType.GLOBAL)
         if not self.configuration.authentication.offline:
-            depth = 0
-            while depth < MAX_DEPTH_DEPENDENCY_INSTALLATION:
-                try:
-                    self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED)
-                    self.ip_database.resolve_local_dependencies()
-                    if not self.ip_database.need_to_find_dependencies_on_remote:
-                        break
-                    else:
-                        if depth == 0:
-                            # Prompt the user to confirm if they want to install the dependencies
-                            install_confirmation = input(
-                                f"Do you want to install {len(self.ip_database.ip_definitions_to_be_installed)} remote dependencies? (Y/n): ")
-                            if install_confirmation.lower() in ["y", "yes", ""]:
-                                if not self.user.authenticated:
-                                    self.authenticate(phase)
-                            else:
-                                raise Exception("Must install dependencies from remote before continuing")
-                        self.ip_database.find_missing_dependencies_on_remote()
-                        self.ip_database.install_all_missing_ip_from_remote()
-                    depth += 1
-                except Exception as e:
-                    phase.error = Exception(f"Failed to install remote IP dependencies: {e}")
-                    break
-            if self.ip_database.need_to_find_dependencies_on_remote:
-                phase.error = Exception(f"Failed to resolve all IP dependencies after {depth} attempts")
-    
+            self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED)
+            self.ip_database.resolve_local_dependencies()
+
     def phase_check(self, phase):
         pass
 
