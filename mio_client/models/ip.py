@@ -523,11 +523,11 @@ class IpDataBase():
         self._dependencies_to_find_online = list(unique_dependencies.values())
         ip_definitions_not_found = []
         for ip_definition in self._dependencies_to_find_online:
-            ip_definition.results = self.ip_definition_is_available_on_remote(ip_definition)
-            if ip_definition.results.found:
+            ip_definition.find_results = self.ip_definition_is_available_on_remote(ip_definition)
+            if ip_definition.find_results.found:
                 self._ip_definitions_to_be_installed.append(ip_definition)
             else:
-                print(f"Could not find IP '{ip.ip.full_name}' dependency '{ip_definition}' on the Server")
+                print(f"Could not find IP dependency '{ip_definition}' on the Server")
                 ip_definitions_not_found.append(ip_definition)
         if len(ip_definitions_not_found) > 0:
             raise Exception(f"Could not resolve all dependencies for the following IP: {ip_definitions_not_found}")
@@ -559,7 +559,7 @@ class IpDataBase():
         if number_of_failed_installations > 0:
             raise Exception(f"Failed to install {number_of_failed_installations} IPs from remote")
     
-    def install_ip_from_server(self, ip_definition: IpDefinition):
+    def install_ip_from_server(self, ip_definition: IpDefinition) -> bool:
         request = {
             "version_id" : ip_definition.find_results.version_id
         }
@@ -579,6 +579,8 @@ class IpDataBase():
                         tar.extractall(path=path_installation)
                 except Exception as e:
                     raise Exception(f"Failed to decompress tgz data for IP version '{ip_definition.find_results.version_id}' from server: {e}")
+                else:
+                    return True
             else:
                 raise Exception(f"Failed to get IP version '{ip_definition.find_results.version_id}' from server")
     

@@ -87,7 +87,7 @@ class TestCliIp:
         assert result.return_code == 0
         assert "Found 2" in result.text
 
-    @SkipTest
+    #@SkipTest
     def test_cli_publish_ip(self, capsys):
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
         p2_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p2"))
