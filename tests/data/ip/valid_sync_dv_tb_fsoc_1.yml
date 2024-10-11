@@ -1,6 +1,10 @@
 ip:
   sync: true
   sync_id: 1238940
+  pkg_type: dv_tb
+  vendor: "acme"
+  name: "abc"
+  full_name: "Always Be Clocking"
   version: "5.6"
 
 dut:

@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field, ValidationError
 import re
 
 
+UNDEFINED_CONST = "______UNDEFINED______"
+
 VALID_POSIX_DIR_NAME_REGEX = re.compile(r"[\w\-.]+$")
 VALID_POSIX_PATH_REGEX = re.compile(r"^(~|.)?/?([\w\-.]+/)*[\w\-.]+/?$")
 VALID_NAME_REGEX = re.compile(r"^\w+$")

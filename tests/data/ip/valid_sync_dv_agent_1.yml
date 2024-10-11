@@ -1,6 +1,10 @@
 ip:
   sync: true
   sync_id: 1236789
+  pkg_type: dv_agent
+  vendor: "datron"
+  name: "b_agent"
+  full_name: "B Agent"
   version: "2.9b"
 
 structure:

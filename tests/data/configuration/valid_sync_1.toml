@@ -1,4 +1,5 @@
 [project]
+offline=false
 sync=true
 sync_id=123123
 
@@ -27,3 +28,6 @@ root_path="docs/"
 
 [encryption]
 metrics_dsim_key_path="~/metrics/dsim/key"
+
+[authentication]
+offline=false

@@ -1,18 +1,14 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import os
 from pathlib import Path
 
 import pytest
 
 import mio_client.cli
 from mio_client import cli
-
-
-class OutputCapture:
-    def __init__(self, return_code: int, text: str):
-        self.return_code = return_code
-        self.text = text
+from tests.common import OutputCapture
 
 
 class TestCliMisc:
@@ -68,6 +64,48 @@ class TestCliMisc:
         assert "User Login Command" in result.text
         assert "Usage" in result.text
         assert "Options" in result.text
+        assert "Examples" in result.text
+
+    def test_cli_help_command_logout(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'logout'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "User Logout Command" in result.text
+        assert "Usage" in result.text
+        assert "Examples" in result.text
+
+    def test_cli_help_command_list(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'list'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "IP List Command" in result.text
+        assert "Usage" in result.text
+        assert "Examples" in result.text
+
+    def test_cli_help_command_publish(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'publish'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "IP Publish Command" in result.text
+        assert "Usage" in result.text
+        assert "Options" in result.text
+        assert "Examples" in result.text
+
+    def test_cli_help_command_install(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'install'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "IP Install Command" in result.text
+        assert "Usage" in result.text
+        assert "Options" in result.text
+        assert "Examples" in result.text
+
+    def test_cli_help_command_uninstall(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'uninstall'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "IP Uninstall Command" in result.text
+        assert "Usage" in result.text
         assert "Examples" in result.text
 
 

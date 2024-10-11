@@ -1,7 +1,7 @@
 ip:
   sync: false
-  type: dv_agent
-  owner: "acme"
+  pkg_type: dv_agent
+  vendor: "acme"
   name: "uvma_abc"
   full_name: "Duis aute irure dolor in "
   version: "1.0.0"

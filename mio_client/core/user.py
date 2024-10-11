@@ -15,19 +15,23 @@ class User(Model):
         self._pre_set_username = ""
         self._use_pre_set_password = False
         self._pre_set_password = ""
-    authenticated: bool
+    authenticated: bool = False
     username: Optional[constr(pattern=VALID_NAME_REGEX)] = "__ANONYMOUS__"
     access_token: Optional[str] = ""
     refresh_token: Optional[str] = ""
 
     @classmethod
+    def new(cls):
+        data= {}
+        return cls(**data)
+
+    @classmethod
     def load(cls, file_path):
         with open(file_path, 'r') as f:
             data = yaml.safe_load(f)
+            if data is None:
+                data = {}
             return cls(**data)
-
-    def to_yaml(self):
-        return yaml.dump(self.model_dump())
 
     @property
     def use_pre_set_username(self) -> bool:

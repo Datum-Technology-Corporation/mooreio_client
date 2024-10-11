@@ -1,29 +1,27 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-import os
 import re
 import sys
-from abc import ABC, abstractmethod
-from configparser import Error
+from http import HTTPMethod
 from pathlib import Path
-from re import Match
-from typing import List, Pattern
+from typing import List
 
+import jinja2
 import requests
 import toml
-from pydantic import ValidationError, BaseModel
+import yaml
+from pydantic import ValidationError
 import os
 import getpass
 
-from mio_client.core.phase import Phase
-from mio_client.core.scheduler import LocalProcessScheduler, JobSchedulerDatabase
-from mio_client.core.service import ServiceDataBase
-from mio_client.models.configuration import Configuration
-from mio_client.models.ip import IpDataBase, Ip
-from mio_client.models.user import User
-from mio_client.services.simulation import SimulatorMetricsDSim
-from mio_client.models.command import Command
+from core.command import Command
+from configuration import Configuration
+from core.ip import IpDataBase, IpLocationType
+from core.phase import Phase
+from core.scheduler import JobSchedulerDatabase
+from core.service import ServiceDataBase
+from core.user import User
 
 
 class PhaseEndProcessException(Exception):
@@ -40,41 +38,49 @@ class PhaseEndProcessException(Exception):
 
 
 #######################################################################################################################
-# Abstract Implementation
+# Root Manager from here on out
 #######################################################################################################################
-class RootManager(ABC):
+class RootManager:
     """
-    Abstract component which performs all vital tasks and executes phases.
+    Component which performs all vital tasks and executes phases.
     """
-    def __init__(self, name: str, wd: Path, url_base: str, url_authentication: str):
+    def __init__(self, name: str, wd: Path, url_base: str, url_authentication: str, user_home_path:Path=os.path.expanduser("~/.mio")):
         """
-        Initialize an instance of the root.
+        Initialize an instance of the Root Manager.
 
         :param name: The name of the instance.
         :param wd: The working directory for the instance.
+        :param url_base: URL of the Moore.io Server
+        :param url_authentication: URL of the Moore.io Server Authentication API
+        :param user_home_path: Path to user home directory
         """
-        self._name = name
-        self._wd = wd
-        self._md = self.wd / ".mio"
-        self._url_base = url_base
-        self._url_authentication = url_authentication
-        self._command = None
-        self._install_path = None
-        self._user_data_file_path = None
-        self._user = None
-        self._project_root_path = None
-        self._default_configuration_path = None
-        self._user_configuration_path = None
-        self._project_configuration_path = None
-        self._default_configuration = {}
-        self._user_configuration = {}
-        self._project_configuration = {}
-        self._cli_configuration = {}
-        self._configuration = None
-        self._scheduler_database = None
-        self._service_database = None
-        self._ip_database = None
-        self._current_phase = None
+        self._name:str = name
+        self._wd:Path = wd
+        self._md:Path = self.wd / ".mio"
+        self._locally_installed_ip_dir:Path = self.md / "installed_ip"
+        self._url_base:str = url_base
+        self._url_authentication:str = url_authentication
+        self._url_api:str = f"{self._url_base}/api"
+        self._print_trace:bool = False
+        self._command: Command = None
+        self._install_path:Path = None
+        self._user_home_path:Path = Path(user_home_path)
+        self._user_data_file_path:Path = self.user_home_path / "user.yml"
+        self._user:User = None
+        self._project_root_path:Path = None
+        self._default_configuration_path:Path = None
+        self._user_configuration_path:Path = None
+        self._project_configuration_path:Path = None
+        self._default_configuration:dict = {}
+        self._user_configuration:dict = {}
+        self._project_configuration:dict = {}
+        self._cli_configuration:dict = {}
+        self._configuration: Configuration = None
+        self._scheduler_database: JobSchedulerDatabase = None
+        self._service_database: ServiceDataBase = None
+        self._ip_database: IpDataBase = None
+        self._j2_env: jinja2.Environment = None
+        self._current_phase: Phase = None
 
     def __str__(self):
         """
@@ -106,6 +112,10 @@ class RootManager(ABC):
         :return: Moore.io work (hidden) directory.
         """
         return self._md
+    
+    @property
+    def locally_installed_ip_dir(self) -> Path:
+        return self._locally_installed_ip_dir
 
     @property
     def url_base(self):
@@ -120,6 +130,30 @@ class RootManager(ABC):
         :return: Moore.io Web Server Authentication URL.
         """
         return self._url_authentication
+
+    @property
+    def url_api(self):
+        """
+        :return: Moore.io Web Server API URL.
+        """
+        return self._url_api
+
+    @property
+    def user_home_path(self) -> Path:
+        """
+        :return: Path to user .mio directory
+        """
+        return self._user_home_path
+
+    @property
+    def print_trace(self) -> bool:
+        """
+        :return: Whether or not to print debug information
+        """
+        return self._print_trace
+    @print_trace.setter
+    def print_trace(self, value: bool):
+        self._print_trace = value
 
     @property
     def command(self) -> Command:
@@ -164,6 +198,13 @@ class RootManager(ABC):
         return self._project_configuration_path
 
     @property
+    def default_configuration(self) -> dict:
+        """
+        :return: The raw default configuration space.
+        """
+        return self._default_configuration
+
+    @property
     def configuration(self) -> Configuration:
         """
         :return: The configuration space.
@@ -190,6 +231,10 @@ class RootManager(ABC):
         :return: The IP database.
         """
         return self._ip_database
+
+    @property
+    def j2_env(self) -> jinja2.Environment:
+        return self._j2_env
 
     @property
     def current_phase(self) -> 'Phase':
@@ -253,7 +298,7 @@ class RootManager(ABC):
                 print(e.message)
             return 0
         except Exception as e:
-            print(e, file=sys.stderr)
+            print(f"\033[1;31m{e}\033[0m", file=sys.stderr)
             return 1
         else:
             return 0
@@ -286,13 +331,13 @@ class RootManager(ABC):
         """
         if not phase.has_finished():
             if phase.error:
-                raise RuntimeError(f"Phase '{phase} has encountered an error: {phase.error}")
+                raise RuntimeError(f"Phase '{phase}' has encountered an error: {phase.error}")
             else:
                 raise RuntimeError(f"Phase '{phase}' has not finished properly")
         if phase.end_process:
             raise PhaseEndProcessException(phase.end_process_message)
     
-    def file_exists(self, path):
+    def file_exists(self, path:Path):
         """
         Check if a file exists at the specified path.
         :param path: Path to the file.
@@ -303,7 +348,7 @@ class RootManager(ABC):
             raise ValueError("Path must not be None or empty")
         return os.path.isfile(path)
     
-    def create_file(self, path):
+    def create_file(self, path:Path):
         """
         Create a file at the specified path.
         :param path: The path where the file should be created.
@@ -318,7 +363,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while creating file '{path}': {e}")
 
-    def move_file(self, src, dst):
+    def move_file(self, src:Path, dst:Path):
         """
         Move a file from src to dst.
         :param src: Path to the source file.
@@ -331,7 +376,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while moving file from '{src}' to '{dst}': {e}")
 
-    def copy_file(self, src, dst):
+    def copy_file(self, src:Path, dst:Path):
         """
         Copy a file from src to dst.
         :param src: Path to the source file.
@@ -348,7 +393,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while copying file from '{src}' to '{dst}': {e}")
 
-    def remove_file(self, path):
+    def remove_file(self, path:Path):
         """
         Remove a file at the specified path.
         :param path: Path to the file.
@@ -358,9 +403,21 @@ class RootManager(ABC):
                 raise FileNotFoundError(f"File '{path}' does not exist")
             os.remove(path)
         except OSError as e:
-            print(f"An error occurred while removing file '{path}': {e}")
+            error = f"An error occurred while removing file '{path}': {e}"
+            raise PhaseEndProcessException(error)
 
-    def create_directory(self, path):
+    def directory_exists(self, path:Path):
+        """
+        Check if a directory exists at the specified path.
+        :param path: Path to the directory.
+        :return: True if the directory exists, False otherwise.
+        :raises ValueError: if the path is None or empty.
+        """
+        if not path:
+            raise ValueError("Path must not be None or empty")
+        return os.path.isdir(path)
+
+    def create_directory(self, path:Path):
         """
         Create a directory at the specified path.
         :param path: Path to the directory.
@@ -371,7 +428,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while creating directory '{path}': {e}")
 
-    def move_directory(self, src, dst):
+    def move_directory(self, src:Path, dst:Path):
         """
         Move a directory from src to dst.
         :param src: Path to the source directory.
@@ -384,7 +441,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while moving directory from '{src}' to '{dst}': {e}")
 
-    def copy_directory(self, src, dst):
+    def copy_directory(self, src:Path, dst:Path):
         """
         Copy a directory from src to dst.
         :param src: Path to the source directory.
@@ -401,7 +458,7 @@ class RootManager(ABC):
         except OSError as e:
             print(f"An error occurred while copying directory from '{src}' to '{dst}': {e}")
 
-    def remove_directory(self, path):
+    def remove_directory(self, path:Path):
         """
         Remove a directory at the specified path.
         :param path: Path to the directory.
@@ -424,17 +481,18 @@ class RootManager(ABC):
         try:
             with open(file_path, 'r') as file_searched:
                 file_content = file_searched.read()
-            regex_patterns = []
-            for pattern in patterns:
-                regex_patterns.append(re.compile(pattern))
-            return [match.group() for pattern in regex_patterns for match in pattern.finditer(file_content)]
+            matches = []
+            for pattern_str in patterns:
+                pattern = re.compile(pattern_str, re.MULTILINE)
+                matches.extend(pattern.findall(file_content))
+            return matches
         except OSError as e:
             print(f"An error occurred while searching file '{file_path}': {e}")
             return []
 
     def merge_dictionaries(self,d1: dict, d2: dict) -> dict:
         """
-           Merge two dictionaries, d2 will overwrite d1 where keys overlap
+        Merge two dictionaries, d2 will overwrite d1 where keys overlap
         """
         for key, value in d2.items():
             if key in d1 and isinstance(d1[key], dict) and isinstance(value, dict):
@@ -442,7 +500,7 @@ class RootManager(ABC):
             else:
                 d1[key] = value
         return d1
-    
+
     def do_phase_init(self):
         """
         Perform any steps necessary before real work begins.
@@ -510,7 +568,7 @@ class RootManager(ABC):
         current_phase = self.create_phase('authenticate')
         current_phase.next()
         if self._command.needs_authentication():
-            self.phase_authenticate(current_phase)
+            self.authenticate(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
         current_phase = self.create_phase('post_authenticate')
@@ -840,200 +898,33 @@ class RootManager(ABC):
         current_phase.next()
         self.check_phase_finished(current_phase)
 
-    @abstractmethod
-    def phase_init(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_load_default_configuration(self, phase):
-        pass
-
-    @abstractmethod
-    def phase_load_user_data(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_authenticate(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_save_user_data(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_locate_project_file(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_create_common_files_and_directories(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_load_user_configuration(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_load_project_configuration(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_validate_configuration_space(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_scheduler_discovery(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_service_discovery(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_ip_discovery(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_check(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_report(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_cleanup(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_shutdown(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def phase_final(self, phase):
-        """
-        This method is a placeholder and must be implemented by subclasses.
-        :param phase: handle to phase object
-        :return: None
-        """
-        pass
-
-
-
-
-#######################################################################################################################
-# Full implementation
-#######################################################################################################################
-
-
-class DefaultRootManager(RootManager):
-    """
-    Stock implementation of RootManager's pure virtual methods.
-    """
     def phase_init(self, phase):
         file_path = os.path.realpath(__file__)
         directory_path = os.path.dirname(file_path)
         install_path = Path(Path(directory_path) / '..').resolve()
         self._install_path = install_path
-    
+        template_loader = jinja2.FileSystemLoader(searchpath=self._install_path / "data")
+        self._j2_env = jinja2.Environment(loader=template_loader)
+
     def phase_load_default_configuration(self, phase):
         self._default_configuration_path = self._install_path / 'data' / 'defaults.toml'
         try:
             with open(self.default_configuration_path, 'r') as f:
                 self._default_configuration = toml.load(f)
         except ValidationError as e:
-            phase.error = Exception(f"Failed to load default configuration file at '{self.default_configuration_path}': {e}")
-    
+            phase.error = Exception(
+                f"Failed to load default configuration file at '{self.default_configuration_path}': {e}")
+
     def phase_load_user_data(self, phase):
-        self._user_data_file_path = os.path.expanduser("~/.mio/user.yml")
         if self.file_exists(self._user_data_file_path):
             try:
                 self._user = User.load(self._user_data_file_path)
             except ValidationError as e:
                 phase.error = Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
         else:
-            self._user = User(authenticated=False)
+            self._user = User.new()
 
-    def phase_authenticate(self, phase):
+    def authenticate(self, phase):
         if not self.user.authenticated:
             if self.user.use_pre_set_username:
                 self.user.username = self.user.pre_set_username
@@ -1054,7 +945,7 @@ class DefaultRootManager(RootManager):
                     'password': password,
                 }
                 try:
-                    response = requests.post(self.url_authentication, json=credentials)
+                    response = requests.post(f"{self.url_authentication}/login/", json=credentials)
                     response.raise_for_status()  # Raise an error for bad status codes
                     data = response.json()
                     self.user.access_token = data['access']
@@ -1064,10 +955,45 @@ class DefaultRootManager(RootManager):
                 else:
                     self.user.authenticated = True
 
+    def deauthenticate(self, phase):
+        headers = {
+            'Authorization': f"Bearer {self.user.access_token}",
+            'Content-Type': 'application/json',
+        }
+        data = {
+            'refresh_token': self.user.refresh_token,
+        }
+        try:
+            response = requests.post(f"{self.url_authentication}/logout/", headers=headers, json=data)
+            response.raise_for_status()  # Raise an error for bad status codes
+        except requests.RequestException as e:
+            Exception(f"Error during logout: {e}")
+
+    def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
+        response = {}
+        if not self.user.authenticated:
+            raise Exception(f"Error during Web API call: user not authenticated")
+        else:
+            headers = {
+                'Authorization': f"Bearer {self.user.access_token}",
+                'Content-Type': 'application/json',
+            }
+            try:
+                if method == HTTPMethod.POST:
+                    response = requests.post(f"{self.url_api}/{path}", headers=headers, json=data)
+                    response.raise_for_status()  # Raise an error for bad status codes
+                else:
+                    raise Exception(f"Method {method} is not supported")
+            except requests.RequestException as e:
+                raise Exception(f"Error during Web API call: {method} to '{path}': {e}")
+        return response
+
     def phase_save_user_data(self, phase):
         try:
             self.create_file(self._user_data_file_path)
-            self._user.to_yaml()
+            data = self._user.dict()
+            with open(self._user_data_file_path, 'w') as file:
+                yaml.dump(data, file)
         except Exception as e:
             phase.error = Exception(f"Failed to save User Data at '{self._user_data_file_path}': {e}")
 
@@ -1077,7 +1003,7 @@ class DefaultRootManager(RootManager):
             while current_path != os.path.dirname(current_path):  # Stop if we're at the root directory
                 candidate_path = os.path.join(current_path, 'mio.toml')
                 if self.file_exists(candidate_path):
-                    self._project_configuration_path = candidate_path
+                    self._project_configuration_path = Path(candidate_path)
                     return
                 # Move up one directory
                 current_path = os.path.dirname(current_path)
@@ -1086,46 +1012,50 @@ class DefaultRootManager(RootManager):
 
     def phase_create_common_files_and_directories(self, phase):
         self.create_directory(self.md)
+        self.create_directory(self.locally_installed_ip_dir)
+        self.create_directory(self.md / "temp")
 
     def phase_load_project_configuration(self, phase):
         try:
             with open(self.project_configuration_path, 'r') as f:
                 self._project_configuration = toml.load(f)
         except ValidationError as e:
-            phase.error = Exception(f"Failed to load Project configuration file at '{self.project_configuration_path}': {e}")
+            phase.error = Exception(
+                f"Failed to load Project configuration file at '{self.project_configuration_path}': {e}")
+        else:
+            self._project_root_path = self.project_configuration_path.parent
 
     def phase_load_user_configuration(self, phase):
         self._user_configuration_path = os.path.expanduser("~/.mio/mio.toml")
-        if self.file_exists(self._user_configuration_path):
+        if self.file_exists(self.user_configuration_path):
             try:
                 with open(self.user_configuration_path, 'r') as f:
                     self._user_configuration = toml.load(f)
             except ValidationError as e:
-                phase.error = Exception(f"Failed to load User configuration at '{self._user_configuration_path}': {e}")
+                phase.error = Exception(f"Failed to load User configuration at '{self.user_configuration_path}': {e}")
         else:
-            self.create_file(self._user_configuration_path)
+            self.create_file(self.user_configuration_path)
             self._user_configuration = Configuration()
 
     def phase_validate_configuration_space(self, phase):
         merged_configuration = self.merge_dictionaries(self._default_configuration, self._user_configuration)
         merged_configuration = self.merge_dictionaries(merged_configuration, self._project_configuration)
         try:
-            self._configuration = Configuration(merged_configuration)
+            self._configuration = Configuration.model_validate(merged_configuration)
         except ValidationError as e:
-            phase.error = Exception(f"Failed to validate Configuration Space: {e}")
-        self.configuration.check()
+            errors = e.errors()
+            error_messages = "\n  ".join([f"{error['msg']}: {error['loc']}" for error in errors])
+            phase.error = Exception(f"Failed to validate Configuration Space: {error_messages}")
+        else:
+            self.configuration.check()
 
     def phase_scheduler_discovery(self, phase):
         self._scheduler_database = JobSchedulerDatabase(self)
-        self._scheduler_database.add_task_scheduler(LocalProcessScheduler(self))
-        # TODO Implement proper discovery once another TaskScheduler implementation other than LocalProcessScheduler is implemented
+        self.scheduler_database.discover_schedulers()
 
     def phase_service_discovery(self, phase):
         self._service_database = ServiceDataBase(self)
-        if self.configuration.simulation.metrics_dsim_path != "":
-            dsim_simulator = SimulatorMetricsDSim(self, self.configuration.simulation.metrics_dsim_path)
-            self.service_database.add_service(dsim_simulator)
-        # TODO Add other logic simulators
+        self.service_database.discover_services()
 
     def phase_ip_discovery(self, phase):
         """
@@ -1134,21 +1064,18 @@ class DefaultRootManager(RootManager):
         :return: None
         """
         self._ip_database = IpDataBase(self)
-        ip_files = []
-        for root, dirs, files in os.walk(self.project_root_path):
-            for file in files:
-                if file == 'ip.yml':
-                    ip_files.append(os.path.join(root, file))
-        if not ip_files:
-            phase.error = Exception("No 'ip.yml' files found in the project directory.")
+        local_paths = [os.path.join(self.project_root_path, path) for path in self.configuration.ip.local_paths]
+        global_paths = [os.path.expanduser(path) for path in self.configuration.ip.global_paths]
+        for path in local_paths:
+            self.ip_database.discover_ip(Path(path), IpLocationType.PROJECT_USER)
+        if not self.ip_database.has_ip:
+            phase.error = Exception("No IP definitions found in the project")
         else:
-            for file in ip_files:
-                try:
-                    ip_model = Ip(self, file)
-                except Exception as e:
-                    print(f"Skipping IP definition at '{file}': {e}")
-                else:
-                    self.ip_database.add_ip(ip_model)
+            for path in global_paths:
+                self.ip_database.discover_ip(Path(path), IpLocationType.GLOBAL)
+        if not self.configuration.authentication.offline:
+            self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED)
+            self.ip_database.resolve_local_dependencies()
 
     def phase_check(self, phase):
         pass
@@ -1164,4 +1091,3 @@ class DefaultRootManager(RootManager):
 
     def phase_final(self, phase):
         pass
-

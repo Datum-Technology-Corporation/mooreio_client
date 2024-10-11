@@ -1,0 +1,16 @@
+ip:
+  sync: true
+  sync_id: 4
+  pkg_type: dv_lib
+  vendor: "bravo"
+  name: "a_vlib"
+  version: "1.0.0"
+  full_name: "A VIP Library"
+
+structure:
+  src_path: "."
+
+hdl_src:
+  directories: ["."]
+  top_sv_files: ["vlib_object.sv"]
+

@@ -28,7 +28,7 @@ RESET = "\033[0m"
 define print_banner
 	@echo
 	@echo $(BOLD)$(GREEN)***********************************************************************************************************************
-	@echo $(CYAN)[$(MAGENTA)MIO$(CYAN)-$(MAGENTA)MAKE$(CYAN)]$(RESET)$(BOLD)$(1) ...
+	@echo $(CYAN)[$(MAGENTA)MIO$(CYAN)-$(MAGENTA)CLIENT$(CYAN)-$(MAGENTA)MAKE$(CYAN)]$(RESET)$(BOLD)$(1) ...
 	@echo $(GREEN)***********************************************************************************************************************$(RESET)
 endef
 

@@ -2,16 +2,12 @@
 # All rights reserved.
 #######################################################################################################################
 import os
-import unittest
-from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict
 
 import pytest
-import toml
 import yaml
 
-from mio_client.models.user import User
-from pydantic import constr, BaseModel
+from user import User
 
 
 def get_fixture_data(file: str) -> Dict:

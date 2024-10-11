@@ -21,7 +21,8 @@ class SemanticVersion:
         _handler: Callable[[Any], core_schema.CoreSchema],
     ) -> core_schema.CoreSchema:
         def validate_from_str(value: str) -> semver.Version:
-            return semver.Version.parse(value)
+            version = semver.Version(version_string=value)
+            return version
 
         from_str_schema = core_schema.chain_schema(
             [
@@ -49,6 +50,8 @@ class SemanticVersion:
 
 
 class SemanticVersionSpec:
+    def __str__(self):
+        return
     @classmethod
     def __get_pydantic_core_schema__(
         cls,

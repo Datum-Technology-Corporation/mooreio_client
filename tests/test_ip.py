@@ -2,16 +2,13 @@
 # All rights reserved.
 #######################################################################################################################
 import os
-import unittest
-from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict
 
 import pytest
 import yaml
 from semantic_version import SimpleSpec
 
-from mio_client.models.ip import Ip, Spec, Structure, HdlSource, DesignUnderTest, Target
-from pydantic import constr, BaseModel
+from ip import Ip
 
 
 def get_fixture_data(file: str) -> Dict:
@@ -44,13 +41,17 @@ class TestIp:
         assert hasattr(ip_instance, 'structure')
         assert hasattr(ip_instance, 'hdl_src')
         assert hasattr(ip_instance.ip, 'sync')
+        assert hasattr(ip_instance.ip, 'pkg_type')
+        assert hasattr(ip_instance.ip, 'vendor')
+        assert hasattr(ip_instance.ip, 'name')
+        assert hasattr(ip_instance.ip, 'full_name')
 
     def test_tb_instance_has_all_fields(self):
         ip_instance = Ip(**self.valid_local_dv_tb_fsoc_1_data)
         assert hasattr(ip_instance, 'ip')
         assert hasattr(ip_instance.ip, 'sync')
-        assert hasattr(ip_instance.ip, 'type')
-        assert hasattr(ip_instance.ip, 'owner')
+        assert hasattr(ip_instance.ip, 'pkg_type')
+        assert hasattr(ip_instance.ip, 'vendor')
         assert hasattr(ip_instance.ip, 'name')
         assert hasattr(ip_instance.ip, 'full_name')
         assert hasattr(ip_instance.ip, 'version')

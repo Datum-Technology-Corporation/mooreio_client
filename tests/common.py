@@ -3,3 +3,8 @@
 #######################################################################################################################
 
 
+class OutputCapture:
+    def __init__(self, return_code: int, text: str):
+        self.return_code = return_code
+        self.text = text
+
