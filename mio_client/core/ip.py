@@ -4,6 +4,7 @@
 import base64
 import os
 import tarfile
+from collections import defaultdict, deque
 from datetime import datetime
 from http import HTTPMethod
 from io import BytesIO
@@ -12,20 +13,18 @@ from typing import Optional, List, Union, Any
 
 import jinja2
 import yaml
-from pydantic import BaseModel, AnyUrl, constr, FilePath, PositiveInt, ValidationError
-from pydantic import DirectoryPath
-from pydantic_extra_types import semantic_version
-from semantic_version import Spec, SimpleSpec, Version
+from pydantic import constr, PositiveInt, ValidationError
+from semantic_version import SimpleSpec
 
 from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
-    VALID_POSIX_DIR_NAME_REGEX, VALID_POSIX_PATH_REGEX, UNDEFINED_CONST
+    VALID_POSIX_PATH_REGEX, UNDEFINED_CONST
 #from mio_client.core.root import RootManager
 
 from enum import Enum
 
 #from mio_client.core.root import RootManager
 from mio_client.core.version import SemanticVersion, SemanticVersionSpec
-from mio_client.models.configuration import Ip
+from configuration import Ip
 
 
 MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
@@ -193,6 +192,7 @@ class Ip(Model):
         super().__init__(**data)
         self._uid: int
         self._rmh: 'RootManager' = None
+        self._ip_database: 'IpDatabase' = None
         self._file_path: Path = None
         self._location_type: IpLocationType
         self._file_path_set: bool = False
@@ -204,6 +204,7 @@ class Ip(Model):
         self._has_docs: bool = False
         self._has_scripts: bool = False
         self._has_examples: bool = False
+        self._resolved_hdl_directories: List[Path] = []
         self._resolved_top_sv_files: List[Path] = []
         self._resolved_top_vhdl_files: List[Path] = []
         self._resolved_top: List[str] = []
@@ -219,6 +220,13 @@ class Ip(Model):
             return f"{self.ip.name} v{self.ip.version}"
 
     @property
+    def ip_database(self) -> 'IpDatabase':
+        return self._ip_database
+    @ip_database.setter
+    def ip_database(self, value: 'IpDatabase'):
+        self._ip_database = value
+    
+    @property
     def archive_name(self):
         version_no_dots = str(self.ip.version).replace(".", "p")
         if self.ip.vendor != UNDEFINED_CONST:
@@ -233,6 +241,28 @@ class Ip(Model):
             return f"{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
         else:
             return f"{self.ip.name}__v{self.ip.version}"
+
+    @property
+    def lib_name(self):
+        version_no_dots = str(self.ip.version).replace(".", "p")
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
+        else:
+            return f"{self.ip.name}__v{self.ip.version}"
+
+    @property
+    def work_directory_name(self):
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor}__{self.ip.name}"
+        else:
+            return f"{self.ip.name}"
+
+    @property
+    def result_file_name(self):
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor}_{self.ip.name}"
+        else:
+            return f"{self.ip.name}"
 
     @staticmethod
     def parse_ip_definition(definition: str) -> IpDefinition:
@@ -312,6 +342,18 @@ class Ip(Model):
     @property
     def resolved_examples_path(self) -> Path:
         return self._resolved_examples_path
+
+    @property
+    def resolved_hdl_directories(self) -> List[Path]:
+        return self._resolved_hdl_directories
+
+    @property
+    def resolved_top_sv_files(self) -> List[Path]:
+        return self._resolved_top_sv_files
+
+    @property
+    def resolved_top_vhdl_files(self) -> List[Path]:
+        return self._resolved_top_vhdl_files
     
     @property
     def has_docs(self) -> bool:
@@ -363,6 +405,8 @@ class Ip(Model):
             directory_path = self.resolved_src_path / directory
             if not self.rmh.directory_exists(directory_path):
                 raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
+            else:
+                self._resolved_hdl_directories.append(directory_path)
         for file in self.hdl_src.top_sv_files:
             full_path = self.resolved_src_path / file
             if not self.rmh.file_exists(full_path):
@@ -418,6 +462,57 @@ class Ip(Model):
                 self.rmh.remove_directory(self.root_path)
                 self._uninstalled = True
 
+    def __eq__(self, other):
+        if isinstance(other, Ip):
+            return self.archive_name == other.archive_name
+        return False
+
+    def __hash__(self):
+        return hash(self.archive_name)
+    
+    def get_dependencies(self, src_dest_map:dict[Ip,Ip]):
+        for dep in self.resolved_dependencies:
+            dependency = self.resolved_dependencies[dep]
+            src_dest_map[self] = dependency
+            dependency.get_dependencies(src_dest_map)
+    
+    def get_dependencies_in_order(self) -> List[Ip]:
+        """
+        Apply a topological sorting algorithm to determine the order of compilation (Khan's algorithm)
+        :return: List of IPs in order of compilation
+        """
+        all_ip = self.ip_database.get_all_ip()
+        dependencies = {}
+        self.get_dependencies(dependencies)
+        # Create a graph and a dictionary to keep track of in-degrees of nodes
+        graph = defaultdict(list)
+        in_degree = {package: 0 for package in all_ip}
+        # Populate the graph and in-degrees based on dependencies
+        for dep in dependencies:
+            graph[dep].append(dependencies[dep])
+            in_degree[dependencies[dep]] += 1
+        # Find all nodes with in-degree 0
+        queue = deque([ip for ip in all_ip if in_degree[ip] == 0])
+        topo_order = []
+        while queue:
+            node = queue.popleft()
+            topo_order.append(node)
+            # Decrease the in-degree of adjacent nodes
+            for neighbor in graph[node]:
+                in_degree[neighbor] -= 1
+                # If in-degree becomes 0, add it to the queue
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+        # If topological sort includes all nodes, return the order
+        if len(topo_order) == len(all_ip):
+            # Remove self from the topological order if it exists
+            if self in topo_order:
+                topo_order.remove(self)
+            return topo_order
+        else:
+            # There is a cycle and topological sorting is not possible
+            raise Exception(f"A cycle was detected in {self} dependencies")
+
 
 class IpDataBase():
     def __init__(self, rmh: 'RootManager'):
@@ -430,6 +525,7 @@ class IpDataBase():
 
     def add_ip(self, ip: Ip):
         self._ip_list.append(ip)
+        ip.ip_database = self
     
     @property
     def rmh(self) -> 'RootManager':
@@ -533,7 +629,12 @@ class IpDataBase():
                         self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
     
     def find_all_missing_dependencies_on_server(self):
-        # TODO Check all specs for same IP definition for contradictions
+        ordered_deps = {}
+        for dep in self._dependencies_to_find_online:
+            if dep not in ordered_deps:
+                ordered_deps[dep] = []
+            ordered_deps[dep].append(dep.version_spec)
+        # TODO Check all specs for same IP definition for contradictions using ordered_deps
         unique_dependencies = {dep.ip_name + dep.vendor_name: dep for dep in self._dependencies_to_find_online}
         self._dependencies_to_find_online = list(unique_dependencies.values())
         ip_definitions_not_found = []

@@ -2,16 +2,13 @@
 # All rights reserved.
 #######################################################################################################################
 import os
-import unittest
-from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict
 
 import pytest
 import yaml
 from semantic_version import SimpleSpec
 
-from mio_client.models.ip import Ip, Spec, Structure, HdlSource, DesignUnderTest, Target
-from pydantic import constr, BaseModel
+from ip import Ip
 
 
 def get_fixture_data(file: str) -> Dict:

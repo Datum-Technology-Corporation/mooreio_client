@@ -101,8 +101,8 @@ class Command:
         :return: None
         :raises TypeError: If phase is not an instance of Phase.
         """
-        if not isinstance(phase, Phase):
-            raise TypeError("phase must be an instance of Phase")
+        #if not isinstance(phase, Phase):
+        #    raise TypeError("phase must be an instance of Phase")
         self._current_phase = phase
 
     def do_phase_init(self, phase):
