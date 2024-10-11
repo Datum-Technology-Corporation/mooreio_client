@@ -6,7 +6,7 @@ import pathlib
 import sys
 
 from mio_client.commands import eda, ip, misc, project, team, user, web
-from mio_client.core.root import DefaultRootManager, RootManager
+from mio_client.core.root_manager import RootManager
 
 #######################################################################################################################
 # User Manual Top
@@ -14,8 +14,8 @@ from mio_client.core.root import DefaultRootManager, RootManager
 VERSION = "2.0.0"
 
 HELP_TEXT = f"""
-                                          Moore.io (`mio`) Client - v{VERSION}
-                                     User Manual: https://mio-client.readthedocs.io/
+                                        Moore.io (`mio`) Client - v{VERSION}
+                                   User Manual: https://mio-client.readthedocs.io/
              https://mooreio.com - Copyright 2020-2024 Datum Technology Corporation - https://datumtc.ca
 Usage:
   mio [--version] [--help]
@@ -32,41 +32,27 @@ Options:
     Run as if mio was started in WD (Working Directory) instead of the Present Working Directory `pwd`.
 
   --dbg
-    Enables debugging outputs from mio.
+    Enables tracing outputs from mio.
 
 Full Command List (`mio help CMD` for help on a specific command):
    Help and Shell/Editor Integration
-      doctor         Runs a set of checks to ensure mio installation has what it needs to operate properly
       help           Prints documentation for mio commands
-
-   Project and Code Management
-      init           Starts project creation dialog
-      gen            Generates source code using UVMx
 
    IP and Credentials Management
       install        Installs all IP dependencies from IP Marketplace
       login          Starts session with IP Marketplace
-      package        Creates a compressed (and potentially encrypted) archive of an IP
       publish        Publishes IP to Server (must have mio admin account)
 
    EDA Automation
-      !              Repeats last command
-      regr           Runs regression against an IP
-      sim            Performs necessary steps to simulate an IP with any simulator
-
-   Manage Results and other EDA Tool Outputs
-      clean          Manages outputs from tools (other than job results)
-      cov            Manages coverage data from EDA tools
-      dox            Generates HDL source code documentation via Doxygen
-      results        Manages results from EDA tools"""
+      sim            Performs necessary steps to simulate an IP with any simulator"""
 
 
 #######################################################################################################################
-# Entry point
+# Main
 #######################################################################################################################
 URL_BASE = 'https://mooreio.com'
 URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
-root_manager: RootManager = None
+root_manager: RootManager
 def main(args=None) -> int:
     """
     Main entry point. Performs the following steps in order:
@@ -76,7 +62,6 @@ def main(args=None) -> int:
     - Find the command which matches the parsed arguments
     - Create the Root instance
     - Run the command via the Root instance
-
     :return: Exit code
     """
     global root_manager
@@ -97,7 +82,13 @@ def main(args=None) -> int:
         print_help_text()
         return 0
 
-    command = next((cmd for cmd in commands if cmd.name().lower() == args.command), None)
+    command = next(
+        (
+            cmd for cmd in commands
+            if cmd.name().lower() == args.command
+        ),
+        None
+    )
     if not command:
         print(f"Unknown command '{args.command}' specified.", file=sys.stderr)
         return 1
@@ -112,7 +103,7 @@ def main(args=None) -> int:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
 
-    root_manager = DefaultRootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION)
+    root_manager = RootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION)
     command.parsed_cli_arguments = args
 
     if args.dbg:
@@ -127,7 +118,6 @@ def main(args=None) -> int:
 def create_top_level_parser():
     """
     Creates a top-level CLI argument parser.
-
     :return: argparse.ArgumentParser object representing the top-level parser
     """
     parser = argparse.ArgumentParser(prog="mio", description="", add_help=False)
@@ -137,11 +127,9 @@ def create_top_level_parser():
     parser.add_argument("-C"   , "--wd"     , help="Run as if mio was started in <path> instead of the current working directory.", type=pathlib.Path, required=False)
     return parser
 
-
 def register_all_commands(subparsers):
     """
     Register all commands to the subparsers.
-
     :param subparsers: An instance of argparse.ArgumentParser that contains the subparsers.
     :return: A list of registered commands.
     """
@@ -157,15 +145,12 @@ def register_all_commands(subparsers):
         command.add_to_subparsers(subparsers)
     return commands
 
-
 def register_commands(existing_commands, new_commands):
     """
     Registers new commands into an existing list of commands.
-
     :param existing_commands: A list of existing commands.
     :param new_commands: A list of new commands to be registered.
     :return: None
-
     Raises:
         ValueError: If a command name in `new_commands` is already registered in `existing_commands`.
 
@@ -178,14 +163,15 @@ def register_commands(existing_commands, new_commands):
         else:
             raise ValueError(f"Command '{command}' is already registered.")
 
-
 def print_help_text():
     print(HELP_TEXT)
-
 
 def print_version_text():
     print(f"Moore.io Client v{VERSION}")
 
 
+#######################################################################################################################
+# Entry point
+#######################################################################################################################
 if __name__ == "__main__":
     sys.exit(main())

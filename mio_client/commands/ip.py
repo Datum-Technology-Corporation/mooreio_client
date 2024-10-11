@@ -1,13 +1,10 @@
 import warnings
-from base64 import b64encode
 from enum import Enum
-from http import HTTPMethod
-from pathlib import Path
 
 from semantic_version import SimpleSpec
 
-from mio_client.models.command import Command, IpCommand
-from mio_client.models.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
+from command import Command
+from core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
 
 LIST_HELP_TEXT = """Moore.io IP List Command

@@ -1,35 +1,27 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import importlib
+import inspect
+import os
+import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List
-from xmlrpc.client import DateTime
 from datetime import datetime
-import semantic_version
 from semantic_version import Version
-from subprocess import run
-
 
 
 class Job:
-    def __init__(self, rmh: 'RootManager', command: 'Command', wd: Path, name: str, binary: Path, arguments: List[str]):
+    def __init__(self, rmh: 'RootManager', wd: Path, name: str, binary: Path, arguments: List[str]):
         self._rmh = rmh
-        self._command = command
         self._wd = wd
         self._name = name
         self._binary = binary
         self._arguments = arguments
-        self._return_code = None
-        self._timestamp_start = None
-        self._timestamp_end = None
         self._hostname = None
         self._is_part_of_set = False
         self._parent_set = None
-    
-    @property
-    def command(self) -> 'Command':
-        return self._command
     
     @property
     def wd(self) -> Path:
@@ -46,27 +38,6 @@ class Job:
     @property
     def arguments(self) -> List[str]:
         return self._arguments
-
-    @property
-    def return_code(self) -> int:
-        return self._return_code
-    @return_code.setter
-    def return_code(self, value: int):
-        self._return_code = value
-
-    @property
-    def timestamp_start(self) -> datetime:
-        return self._timestamp_start
-    @timestamp_start.setter
-    def timestamp_start(self, value: datetime):
-        self._timestamp_start = value
-
-    @property
-    def timestamp_end(self) -> datetime:
-        return self._timestamp_end
-    @timestamp_end.setter
-    def timestamp_end(self, value: datetime):
-        self._timestamp_end = value
         
     @property
     def hostname(self):
@@ -115,8 +86,8 @@ class JobSet:
 
 class JobSchedulerConfiguration:
     def __init__(self, rmh: 'RootManager'):
-        self._output_to_terminal = False
-        self._max_number_of_parallel_processes = 1
+        self._output_to_terminal:bool = True
+        self._max_number_of_parallel_processes:int = 1
 
     @property
     def output_to_terminal(self) -> bool:
@@ -133,118 +104,126 @@ class JobSchedulerConfiguration:
         self._max_number_of_parallel_processes = value
 
 
-class JobSchedulerDatabase:
-    def __init__(self, rmh: 'RootManager'):
-        self._rmh = rmh
-        self._task_schedulers = []
+class JobResults:
+    _return_code: int = 0
+    _stdout: str = ""
+    _stderr: str = ""
+    _timestamp_start: datetime = None
+    _timestamp_end: datetime = None
 
-    def add_task_scheduler(self, task_scheduler: 'JobScheduler'):
-        task_scheduler.db = self
-        self._task_schedulers.append(task_scheduler)
-        task_scheduler.init()
+    @property
+    def return_code(self) -> int:
+        return self._return_code
 
-    def get_task_scheduler(self, name: str) -> 'JobScheduler':
-        for task_scheduler in self._task_schedulers:
-            if task_scheduler.name == name:
-                return task_scheduler
-        raise Exception(f"No Task Scheduler '{name}' exists in the Task Scheduler Database")
+    @return_code.setter
+    def return_code(self, value: int):
+        self._return_code = value
+
+    @property
+    def stdout(self) -> str:
+        return self._stdout
+
+    @stdout.setter
+    def stdout(self, value: str):
+        self._stdout = value
+
+    @property
+    def stderr(self) -> str:
+        return self._stderr
+
+    @stderr.setter
+    def stderr(self, value: str):
+        self._stderr = value
+
+    @property
+    def timestamp_start(self) -> datetime:
+        return self._timestamp_start
+
+    @timestamp_start.setter
+    def timestamp_start(self, value: datetime):
+        self._timestamp_start = value
+
+    @property
+    def timestamp_end(self) -> datetime:
+        return self._timestamp_end
+
+    @timestamp_end.setter
+    def timestamp_end(self, value: datetime):
+        self._timestamp_end = value
 
 
 class JobScheduler(ABC):
-    def __init__(self, rmh: 'RootManager', name: str):
+    _is_scheduler:bool = True
+    def __init__(self, rmh: 'RootManager', name: str=""):
         self._rmh = rmh
         self._name = name
         self._version = None
         self._db = None
-    
+
     @property
     def name(self) -> str:
         return self._name
-    
+
     @property
     def version(self) -> Version:
         return self._version
-    
+
     @property
-    def db(self) -> JobSchedulerDatabase:
+    def db(self) -> 'JobSchedulerDatabase':
         return self._db
+
     @db.setter
-    def db(self, value: JobSchedulerDatabase):
+    def db(self, value: 'JobSchedulerDatabase'):
         self._db = value
-    
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        pass
+
     @abstractmethod
     def init(self):
         pass
-    
+
     @abstractmethod
-    def dispatch_task(self, task: Job, configuration: JobSchedulerConfiguration):
+    def dispatch_job(self, task: Job, configuration: JobSchedulerConfiguration) -> JobResults:
         pass
-    
+
     @abstractmethod
-    def dispatch_task_set(self, task_set: JobSet, configuration: JobSchedulerConfiguration):
+    def dispatch_job_set(self, task_set: JobSet, configuration: JobSchedulerConfiguration):
         pass
 
 
-class LocalProcessSchedulerConfiguration(JobSchedulerConfiguration):
-    pass
-
-
-class LocalProcessScheduler(JobScheduler):
+class JobSchedulerDatabase:
     def __init__(self, rmh: 'RootManager'):
-        super().__init__(rmh, "Local process")
+        self._rmh = rmh
+        self._task_schedulers: list[JobScheduler] = []
 
-    def init(self):
-        pass
+    def discover_schedulers(self):
+        scheduler_directory = os.path.join(os.path.dirname(__file__), '..', 'schedulers')
+        for filename in os.listdir(scheduler_directory):
+            if filename.endswith('.py') and not filename.startswith('__'):
+                module_name = f'schedulers.{filename[:-3]}'
+                try:
+                    module = importlib.import_module(module_name)
+                    new_schedulers = module.get_schedulers()
+                    for scheduler in new_schedulers:
+                        try:
+                            scheduler_instance = scheduler(self._rmh)
+                            self.add_scheduler(scheduler_instance)
+                        except Exception as e:
+                            print(f"Scheduler '{scheduler}' has errors and is not being loaded: {e}", file=sys.stderr)
+                except Exception as e:
+                    print(f"Scheduler module '{module_name}' has errors and is not being loaded: {e}", file=sys.stderr)
+                    continue
 
-    def dispatch_task(self, task: Job, configuration: LocalProcessSchedulerConfiguration):
-        task.timestamp_start = datetime.now()
-        command_str = [task.binary] + task.arguments
-        result = run(args=command_str, cwd=task.wd, shell=True)
-        task.timestamp_end = datetime.now()
-        task.return_code = result.returncode
+    def add_scheduler(self, task_scheduler: 'JobScheduler'):
+        task_scheduler.db = self
+        if task_scheduler.is_available():
+            self._task_schedulers.append(task_scheduler)
+            task_scheduler.init()
 
-    def dispatch_task_set(self, task_set: JobSet, configuration: LocalProcessSchedulerConfiguration):
-        pass
-        # TODO IMPLEMENT
-
-
-
-# TODO IMPLEMENT!
-class LsfSchedulerConfiguration(JobSchedulerConfiguration):
-    pass
-
-
-# TODO IMPLEMENT!
-class LsfScheduler(JobScheduler):
-    def __init__(self, rmh: 'RootManager'):
-        super().__init__(rmh, "LSF")
-
-    def init(self):
-        pass
-
-    def dispatch_task(self, task: Job, configuration: LsfSchedulerConfiguration):
-        pass
-
-    def dispatch_task_set(self, task_set: JobSet, configuration: LsfSchedulerConfiguration):
-        pass
-
-
-# TODO IMPLEMENT!
-class GridEngineSchedulerConfiguration(JobSchedulerConfiguration):
-    pass
-
-
-# TODO IMPLEMENT!
-class GridEngineScheduler(JobScheduler):
-    def __init__(self, rmh: 'RootManager'):
-        super().__init__(rmh, "GRID Engine")
-
-    def init(self):
-        pass
-
-    def dispatch_task(self, task: Job, configuration: GridEngineSchedulerConfiguration):
-        pass
-
-    def dispatch_task_set(self, task_set: JobSet, configuration: GridEngineSchedulerConfiguration):
-        pass
-
+    def find_scheduler(self, name: str) -> 'JobScheduler':
+        for task_scheduler in self._task_schedulers:
+            if task_scheduler.name == name:
+                return task_scheduler
+        raise Exception(f"No Task Scheduler '{name}' exists in the Task Scheduler Database")

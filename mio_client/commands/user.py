@@ -3,7 +3,7 @@
 #######################################################################################################################
 import os
 
-from mio_client.models.command import Command
+from command import Command
 
 PASSWORD_ENV_VAR_NAME="MIO_AUTHENTICATION_PASSWORD"
 

@@ -1,9 +1,10 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from mio_client.commands import web, user, ip
+import eda
+from mio_client.commands import user, ip
 from mio_client.core.phase import Phase
-from mio_client.models.command import Command
+from command import Command
 
 
 ALL_COMMANDS = [
@@ -54,6 +55,8 @@ class Help(Command):
             self.print_text_and_exit(phase, ip.INSTALL_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "uninstall":
             self.print_text_and_exit(phase, ip.UNINSTALL_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "sim":
+            self.print_text_and_exit(phase, eda.SIM_HELP_TEXT)
 
     def needs_authentication(self) -> bool:
         return False
