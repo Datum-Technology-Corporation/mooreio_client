@@ -25,8 +25,8 @@ class LsfScheduler(JobScheduler):
     def init(self):
         pass
 
-    def dispatch_job(self, task: Job, configuration: LsfSchedulerConfiguration) -> JobResults:
+    def dispatch_job(self, job: Job, configuration: LsfSchedulerConfiguration) -> JobResults:
         pass
 
-    def dispatch_job_set(self, task_set: JobSet, configuration: LsfSchedulerConfiguration):
+    def dispatch_job_set(self, job_set: JobSet, configuration: LsfSchedulerConfiguration):
         pass

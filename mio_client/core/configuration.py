@@ -56,6 +56,7 @@ class LogicSimulation(Model):
     test_result_path_template: str
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
+    metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     synopsys_vcs_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST

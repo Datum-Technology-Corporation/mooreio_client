@@ -251,6 +251,14 @@ class Ip(Model):
             return f"{self.ip.name}__v{self.ip.version}"
 
     @property
+    def image_name(self):
+        version_no_dots = str(self.ip.version).replace(".", "p")
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"img__{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
+        else:
+            return f"img__{self.ip.name}__v{self.ip.version}"
+
+    @property
     def work_directory_name(self):
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}__{self.ip.name}"
@@ -263,6 +271,21 @@ class Ip(Model):
             return f"{self.ip.vendor}_{self.ip.name}"
         else:
             return f"{self.ip.name}"
+
+    @property
+    def as_ip_definition(self):
+        version_str = str(self.ip.version)
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor}/{self.ip.name}@{version_str}"
+        else:
+            return f"{self.ip.name}@{self.ip.version}"
+
+    @property
+    def has_vhdl_content(self) -> bool:
+        return_bool:bool = False
+        if len(self.resolved_top_vhdl_files) > 0:
+            return_bool = True
+        return return_bool
 
     @staticmethod
     def parse_ip_definition(definition: str) -> IpDefinition:

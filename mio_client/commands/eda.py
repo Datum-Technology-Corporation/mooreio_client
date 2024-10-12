@@ -7,7 +7,7 @@ from phase import Phase
 from scheduler import JobScheduler
 from service import ServiceType
 from simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, LogicSimulatorElaborationConfiguration, \
-    LogicSimulatorElaborationAndCompilationConfiguration, LogicSimulatorSimulationConfiguration
+    LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration
 from simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
@@ -98,7 +98,7 @@ class Simulate(Command):
     _do_simulate: bool = False
     _compilation_configuration: LogicSimulatorCompilationConfiguration
     _elaboration_configuration: LogicSimulatorElaborationConfiguration
-    _compilation_and_elaboration_configuration: LogicSimulatorElaborationAndCompilationConfiguration
+    _compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
     _simulation_configuration: LogicSimulatorSimulationConfiguration
     _compilation_report: LogicSimulatorCompilationReport
     _elaboration_report: LogicSimulatorElaborationReport
@@ -139,7 +139,7 @@ class Simulate(Command):
         return self._elaboration_configuration
 
     @property
-    def compilation_and_elaboration_configuration(self) -> LogicSimulatorElaborationAndCompilationConfiguration:
+    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationConfiguration:
         return self._compilation_and_elaboration_configuration
 
     @property
@@ -200,23 +200,19 @@ class Simulate(Command):
                 self._do_simulate = True
             else:
                 self._do_simulate = False
-        if self.parsed_cli_arguments.app == "dsim":
-            if self.do_compile and self.do_elaborate:
-                self._do_compile = False
-                self._do_elaborate = False
-                self._do_compile_and_elaborate = True
 
     def phase_post_validate_configuration_space(self, phase):
         if not self.parsed_cli_arguments.app:
             if not self.rmh.configuration.logic_simulation.default_simulator:
                 phase.error = Exception(f"No simulator specified (-a/--app) and no default simulator in the Configuration")
+                return
             else:
                 self.parsed_cli_arguments.app = self.rmh.configuration.logic_simulation.default_simulator.value
 
     def phase_post_scheduler_discovery(self, phase:Phase):
         try:
             # TODO Add support for other schedulers
-            self._scheduler = self.rmh.scheduler_database.find_scheduler("local_process")
+            self._scheduler = self.rmh.scheduler_database.find_scheduler("sub_process")
         except Exception as e:
             phase.error = e
 
@@ -230,6 +226,18 @@ class Simulate(Command):
         self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
         if not self.ip:
             phase.error = Exception(f"IP '{self.ip_definition}' could not be found")
+        else:
+            if self.ip.has_vhdl_content:
+                # VHDL must be compiled and elaborated separately
+                if self.do_compile_and_elaborate:
+                    self._do_compile = True
+                    self._do_elaborate = True
+                    self._do_compile_and_elaborate = False
+            else:
+                if self.do_compile and self.do_elaborate:
+                    self._do_compile = False
+                    self._do_elaborate = False
+                    self._do_compile_and_elaborate = True
     
     def phase_main(self, phase:Phase):
         if self.do_prepare_dut:
@@ -268,7 +276,7 @@ class Simulate(Command):
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
     def compile_and_elaborate(self, phase:Phase):
-        self._compilation_and_elaboration_configuration = LogicSimulatorElaborationAndCompilationConfiguration()
+        self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationConfiguration()
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
 
     def simulate(self, phase:Phase):
@@ -330,10 +338,28 @@ class Simulate(Command):
                 print(f"\033[31m{fatal}\033[0m")
     
     def print_elaboration_report(self, phase:Phase):
-        pass
+        errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_errors}W\033[0m" if self.elaboration_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
+        print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.elaboration_report.log_path}")
+        if not self.elaboration_report.success:
+            print('*' * 119)
+            for error in self.elaboration_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.elaboration_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")
     
     def print_compilation_and_elaboration_report(self, phase:Phase):
-        pass
+        errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_errors}W\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
+        print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_and_elaboration_report.log_path}")
+        if not self.compilation_and_elaboration_report.success:
+            print('*' * 119)
+            for error in self.compilation_and_elaboration_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.compilation_and_elaboration_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")
 
     def print_simulation_report(self, phase:Phase):
         pass
