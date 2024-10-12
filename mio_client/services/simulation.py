@@ -4,7 +4,7 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 from semantic_version import Version
 
@@ -16,10 +16,16 @@ from abc import ABC, abstractmethod
 from model import Model
 
 
+#######################################################################################################################
+# API Entry Point
+#######################################################################################################################
 def get_services():
     return [SimulatorMetricsDSim]
 
 
+#######################################################################################################################
+# Support Types
+#######################################################################################################################
 class LogicSimulators(Enum):
     DSIM = "Metrics DSim"
     VIVADO = "Xilinx Vivado"
@@ -29,7 +35,9 @@ class LogicSimulators(Enum):
     RIVIERA_PRO = "Aldec Riviera-PRO"
 
 
-
+#######################################################################################################################
+# Models
+#######################################################################################################################
 class LogicSimulatorReport(Model, ABC):
     name: str
     success: Optional[bool] = False
@@ -40,15 +48,13 @@ class LogicSimulatorReport(Model, ABC):
     warnings: Optional[List[int]] = []
     fatals: Optional[List[int]] = []
     work_directory: Optional[Path] = Path()
-
+    scheduler_cfg: Optional[JobSchedulerConfiguration] = None
 
 class LogicSimulatorLibraryCreationReport(LogicSimulatorReport):
     pass
 
-
 class LogicSimulatorLibraryDeletionReport(LogicSimulatorReport):
     pass
-
 
 class LogicSimulatorCompilationReport(LogicSimulatorReport):
     ordered_dependencies: Optional[list[Ip]] = []
@@ -60,25 +66,24 @@ class LogicSimulatorCompilationReport(LogicSimulatorReport):
     vhdl_file_list_path: Optional[Path] = Path()
     sv_log_path: Optional[Path] = Path()
     vhdl_log_path: Optional[Path] = Path()
-    scheduler_cfg: Optional[JobSchedulerConfiguration] = None
-
 
 class LogicSimulatorElaborationReport(LogicSimulatorReport):
-    pass
-
+    log_path: Optional[Path] = Path()
+    elaboration_success: Optional[bool] = False
 
 class LogicSimulatorCompilationAndElaborationReport(LogicSimulatorReport):
-    pass
-
+    ordered_dependencies: Optional[list[Ip]] = []
+    has_files_to_compile: Optional[bool] = False
+    file_list_path: Optional[Path] = Path()
+    log_path: Optional[Path] = Path()
+    compilation_and_elaboration_success: Optional[bool] = False
 
 class LogicSimulatorSimulationReport(LogicSimulatorReport):
     test_name: str
     seed: int
 
-
 class LogicSimulatorEncryptionReport(LogicSimulatorReport):
     pass
-
 
 
 class LogicSimulatorConfiguration(ABC):
@@ -100,7 +105,7 @@ class LogicSimulatorCompilationConfiguration(LogicSimulatorConfiguration):
 class LogicSimulatorElaborationConfiguration(LogicSimulatorConfiguration):
     pass
 
-class LogicSimulatorElaborationAndCompilationConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorCompilationAndElaborationConfiguration(LogicSimulatorCompilationConfiguration):
     pass
 
 class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
@@ -116,12 +121,16 @@ class LogicSimulatorFileList(Model):
     defines_values: Optional[dict[str, str]] = {}
     directories: Optional[list[Path]] = []
     files: Optional[list[Path]] = []
-    
-    
+
 class LogicSimulatorMasterFileList(LogicSimulatorFileList):
     sub_file_lists: Optional[List[LogicSimulatorFileList]] = []
 
 
+
+
+#######################################################################################################################
+# Logic Simulator Abstract Base Class
+#######################################################################################################################
 class LogicSimulator(Service, ABC):
     def __init__(self, rmh: 'RootManager', vendor_name: str, name: str, full_name: str,):
         super().__init__(rmh, vendor_name, name, full_name)
@@ -233,19 +242,28 @@ class LogicSimulator(Service, ABC):
         return report
 
     def elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, scheduler: JobScheduler) -> LogicSimulatorElaborationReport:
-        report = LogicSimulatorElaborationReport()
+        report = LogicSimulatorElaborationReport(name=f"Elaboration for '{ip}' using '{self.full_name}'")
+        report.work_directory = self.work_path / f"{ip.work_directory_name}"
+        report.log_path = self.elaboration_results_path / f"{ip.result_file_name}.elab.{self.name}.log"
         self.do_elaborate(ip, config, report, scheduler)
         self.parse_elaboration_logs(ip, config, report)
         return report
 
-    def compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, scheduler: JobScheduler) -> LogicSimulatorCompilationAndElaborationReport:
-        report = LogicSimulatorCompilationAndElaborationReport()
+    def compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, scheduler: JobScheduler) -> LogicSimulatorCompilationAndElaborationReport:
+        report = LogicSimulatorCompilationAndElaborationReport(name=f"Compilation+Elaboration for '{ip}' using '{self.full_name}'")
+        report.ordered_dependencies = ip.get_dependencies_in_order()
+        self.build_sv_flist(ip, config, report)
+        if not report.has_files_to_compile:
+            raise Exception(f"No files to compile for IP '{ip}'")
+        report.work_directory = self.work_path / f"{ip.work_directory_name}"
+        report.log_path = self.compilation_and_elaboration_results_path / f"{ip.result_file_name}.cmpelab.{self.name}.log"
+        self.rmh.create_directory(report.work_directory)
         self.do_compile_and_elaborate(ip, config, report, scheduler)
         self.parse_compilation_and_elaboration_logs(ip, config, report)
         return report
 
     def simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, scheduler: JobScheduler) -> LogicSimulatorSimulationReport:
-        report = LogicSimulatorSimulationReport()
+        report = LogicSimulatorSimulationReport(name=f"Simulation for '{ip}' using '{self.full_name}'")
         self.do_simulate(ip, config, report, scheduler)
         self.parse_simulation_logs(ip, config, report)
         return report
@@ -282,26 +300,22 @@ class LogicSimulator(Service, ABC):
         report.success = (len(report.errors) == 0) and (len(report.fatals) == 0)
 
     def parse_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport) -> None:
-        report.name = f"Elaboration for '{ip}' using '{self.full_name}'"
-        #for log_path in log_paths:
-        #    report.errors   += self.rmh.search_file_for_patterns(log_path, self.elaboration_error_patterns)
-        #    report.warnings += self.rmh.search_file_for_patterns(log_path, self.elaboration_warning_patterns)
-        #    report.fatals   += self.rmh.search_file_for_patterns(log_path, self.elaboration_fatal_patterns)
-        #report.num_errors = len(report.errors)
-        #report.num_warnings = len(report.warnings)
-        #report.num_fatals = len(report.fatals)
-        #report.success = (len(report.errors) == 0) and (len(report.fatals) == 0)
+        report.errors   += self.rmh.search_file_for_patterns(report.log_path, self.elaboration_error_patterns)
+        report.warnings += self.rmh.search_file_for_patterns(report.log_path, self.elaboration_warning_patterns)
+        report.fatals   += self.rmh.search_file_for_patterns(report.log_path, self.elaboration_fatal_patterns)
+        report.num_errors = len(report.errors)
+        report.num_warnings = len(report.warnings)
+        report.num_fatals = len(report.fatals)
+        report.success = (len(report.errors) == 0) and (len(report.fatals) == 0)
 
-    def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, report: LogicSimulatorCompilationAndElaborationReport) -> None:
-        report.name = f"Compilation and Elaboration for '{ip}' using '{self.full_name}'"
-        #for log_path in log_paths:
-        #    report.errors   += self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_error_patterns)
-        #    report.warnings += self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_warning_patterns)
-        #    report.fatals   += self.rmh.search_file_for_patterns(log_path, self.compilation_and_elaboration_fatal_patterns)
-        #report.num_errors = len(report.errors)
-        #report.num_warnings = len(report.warnings)
-        #report.num_fatals = len(report.fatals)
-        #report.success = (len(report.errors) == 0) and (len(report.fatals) == 0)
+    def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport) -> None:
+        report.errors   += self.rmh.search_file_for_patterns(report.log_path, self.compilation_and_elaboration_error_patterns)
+        report.warnings += self.rmh.search_file_for_patterns(report.log_path, self.compilation_and_elaboration_warning_patterns)
+        report.fatals   += self.rmh.search_file_for_patterns(report.log_path, self.compilation_and_elaboration_fatal_patterns)
+        report.num_errors = len(report.errors)
+        report.num_warnings = len(report.warnings)
+        report.num_fatals = len(report.fatals)
+        report.success = (len(report.errors) == 0) and (len(report.fatals) == 0)
 
     def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport) -> None:
         report.name = f"Simulation for '{ip}' using '{self.full_name}'"
@@ -325,25 +339,36 @@ class LogicSimulator(Service, ABC):
         #report.num_fatals = len(report.fatals)
         #report.success = (len(report.errors) == 0) and (len(report.fatals) == 0)
 
-    def build_sv_flist(self, ip:Ip, config:LogicSimulatorCompilationConfiguration, report:LogicSimulatorCompilationReport):
-        file_list = LogicSimulatorMasterFileList(name=ip.lib_name)
+    def build_sv_flist(self, ip:Ip,
+                       config:Union[LogicSimulatorCompilationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration],
+                       report:Union[LogicSimulatorCompilationReport, LogicSimulatorCompilationAndElaborationReport]):
+        has_files_to_compile:bool = False
+        file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
         for dep in report.ordered_dependencies:
-            sub_file_list = LogicSimulatorFileList(name=dep.lib_name)
+            sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
             for directory in dep.resolved_hdl_directories:
                 sub_file_list.directories.append(directory)
             for file in dep.resolved_top_sv_files:
                 sub_file_list.files.append(file)
-                report.has_sv_files_to_compile = True
+                has_files_to_compile = True
             # TODO Add defines from targets
             file_list.sub_file_lists.append(sub_file_list)
-        file_list.defines_boolean += config.defines_boolean
-        file_list.defines_values.update(config.defines_values)
+        if isinstance(config, LogicSimulatorCompilationConfiguration):
+            file_list.defines_boolean += config.defines_boolean
+            file_list.defines_values.update(config.defines_values)
+        else:
+            file_list.defines_boolean += config.defines_boolean
+            file_list.defines_values.update(config.defines_values)
         for directory in ip.resolved_hdl_directories:
             file_list.directories.append(directory)
         for file in ip.resolved_top_sv_files:
             file_list.files.append(file)
-            report.has_sv_files_to_compile = True
-        if report.has_sv_files_to_compile:
+            has_files_to_compile = True
+        if isinstance(report, LogicSimulatorCompilationReport):
+            report.has_sv_files_to_compile = has_files_to_compile
+        else:
+            report.has_files_to_compile = has_files_to_compile
+        if has_files_to_compile:
             # Load the Jinja2 templates from disk
             template = self.rmh.j2_env.get_template(f"flist.sv.{self.name}.j2")
             # Render the templates with the master file lists
@@ -352,12 +377,15 @@ class LogicSimulator(Service, ABC):
             flist_path = self.work_temp_path / f"{ip.result_file_name}.sv.{self.name}.flist"
             with open(flist_path, "w") as flist:
                 flist.write(filelist_rendered)
-            report.sv_file_list_path = flist_path
+            if isinstance(report, LogicSimulatorCompilationReport):
+                report.sv_file_list_path = flist_path
+            else:
+                report.file_list_path = flist_path
 
     def build_vhdl_flist(self, ip:Ip, config:LogicSimulatorCompilationConfiguration, report:LogicSimulatorCompilationReport):
-        file_list = LogicSimulatorMasterFileList(name=ip.lib_name)
+        file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
         for dep in report.ordered_dependencies:
-            sub_file_list = LogicSimulatorFileList(name=dep.lib_name)
+            sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
             for directory in dep.resolved_hdl_directories:
                 sub_file_list.directories.append(directory)
             for file in dep.resolved_top_vhdl_files:
@@ -490,7 +518,7 @@ class LogicSimulator(Service, ABC):
         pass
 
     @abstractmethod
-    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler):
+    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler):
         pass
 
     @abstractmethod
@@ -502,6 +530,11 @@ class LogicSimulator(Service, ABC):
         pass
 
 
+
+
+#######################################################################################################################
+# Logic Simulator Implementation: Metrics Design Automation© DSim (TM)
+#######################################################################################################################
 class SimulatorMetricsDSim(LogicSimulator):
     def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim")
@@ -569,6 +602,16 @@ class SimulatorMetricsDSim(LogicSimulator):
         # TODO Get version string from dsim
         return Version('1.0.0')
 
+    def set_job_env(self, job:Job):
+        job.env_vars["DSIM_HOME"] = self.rmh.configuration.logic_simulation.metrics_dsim_installation_path
+        job.env_vars["DSIM_LICENSE"] = self.rmh.configuration.logic_simulation.metrics_dsim_license_path
+        job.env_vars["LLVM_HOME"] = "${DSIM_HOME}/llvm_small"
+        job.env_vars["STD_LIBS"] = "$DSIM_HOME/std_pkgs/lib"
+        job.env_vars["UVM_HOME"] = "${DSIM_HOME}/uvm/" + self.rmh.configuration.logic_simulation.uvm_version.value
+        job.env_vars["DSIM_LD_LIBRARY_PATH"] = "${DSIM_HOME}/lib:${LD_LIBRARY_PATH}:${DSIM_HOME}/llvm_small/lib"
+        job.env_vars["LD_LIBRARY_PATH"] = "${DSIM_LD_LIBRARY_PATH}"
+        job.pre_path = "${DSIM_HOME}/bin:${DSIM_HOME}/" + self.rmh.configuration.logic_simulation.uvm_version.value + "/bin:${DSIM_HOME}/llvm_small/bin"
+
     def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler):
         pass
 
@@ -579,28 +622,56 @@ class SimulatorMetricsDSim(LogicSimulator):
         scheduler_cfg = JobSchedulerConfiguration(self.rmh)
         if report.has_sv_files_to_compile:
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_sv_arguments + [
-                f"-lib {ip.lib_name}",
                 f"-F {report.sv_file_list_path}",
+                f"-lib {ip.lib_name}",
                 f"-l {report.sv_log_path}"
             ]
-            job_cmp_sv = Job(self.rmh, report.work_directory, "dsim_sv_compilation", os.path.join(self.installation_path, "bin", "dvlcom"), args)
+            job_cmp_sv = Job(self.rmh, report.work_directory, f"dsim_sv_compilation_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dvlcom"), args)
+            self.set_job_env(job_cmp_sv)
             results_cmp_sv = scheduler.dispatch_job(job_cmp_sv, scheduler_cfg)
             report.sv_compilation_success = (results_cmp_sv.return_code == 0)
         if report.has_vhdl_files_to_compile:
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_vhdl_arguments + [
-                f"-lib {ip.lib_name}",
                 f"-F {report.vhdl_file_list_path}",
+                f"-lib {ip.lib_name}",
                 f"-l {report.vhdl_log_path}"
             ]
-            job_cmp_vhdl = Job(self.rmh, report.work_directory, "dsim_vhdl_compilation", os.path.join(self.installation_path, "bin", "dvhcom"), args)
+            job_cmp_vhdl = Job(self.rmh, report.work_directory, f"dsim_vhdl_compilation_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dvhcom"), args)
+            self.set_job_env(job_cmp_vhdl)
             results_cmp_vhdl = scheduler.dispatch_job(job_cmp_vhdl, scheduler_cfg)
             report.vhdl_compilation_success = (results_cmp_vhdl.return_code == 0)
 
     def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport, scheduler: JobScheduler):
-        pass
+        scheduler_cfg = JobSchedulerConfiguration(self.rmh)
+        top_str = f" -top {ip.lib_name}.".join(ip.hdl_src.top)
+        args = self.rmh.configuration.logic_simulation.metrics_dsim_default_elaboration_arguments + [
+            f"-genimage {ip.image_name}",
+            f"{top_str}",
+            f"-l {report.log_path}"
+        ]
+        job_elaborate = Job(self.rmh, report.work_directory, f"dsim_elaboration_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dsim"), args)
+        self.set_job_env(job_elaborate)
+        results_elaborate = scheduler.dispatch_job(job_elaborate, scheduler_cfg)
+        report.elaboration_success = (results_elaborate.return_code == 0)
+        report.success = report.elaboration_success
 
-    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorElaborationAndCompilationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler):
-        pass
+    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler):
+        if not ip.has_vhdl_content:
+            scheduler_cfg = JobSchedulerConfiguration(self.rmh)
+            top_str = f" -top {ip.lib_name}.".join(ip.hdl_src.top)
+            args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_and_elaboration_arguments + [
+                f"-genimage {ip.image_name}",
+                f"-F {report.file_list_path}",
+                f"{top_str}",
+                f"-l {report.log_path}"
+            ]
+            job_compile_and_elaborate = Job(self.rmh, report.work_directory, f"dsim_compilation_and_elaboration_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dsim"), args)
+            self.set_job_env(job_compile_and_elaborate)
+            results_elaborate = scheduler.dispatch_job(job_compile_and_elaborate, scheduler_cfg)
+            report.compilation_and_elaboration_success = (results_elaborate.return_code == 0)
+            report.success = report.compilation_and_elaboration_success
+        else:
+            raise Exception(f"Cannot perform Compilation+Elaboration with DSim for IPs containing VHDL content: IP '{ip}'")
 
     def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport, scheduler: JobScheduler):
         pass

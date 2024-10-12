@@ -19,6 +19,10 @@ class Job:
         self._name = name
         self._binary = binary
         self._arguments = arguments
+        self._env_vars = {}
+        self._pre_path:str = ""
+        self._post_path:str = ""
+        self._print_to_screen:bool = False
         self._hostname = None
         self._is_part_of_set = False
         self._parent_set = None
@@ -34,6 +38,34 @@ class Job:
     @property
     def binary(self) -> Path:
         return self._binary
+
+    @property
+    def env_vars(self) -> dict:
+        return self._env_vars
+    @env_vars.setter
+    def env_vars(self, value: dict):
+        self._env_vars = value
+
+    @property
+    def pre_path(self) -> str:
+        return self._pre_path
+    @pre_path.setter
+    def pre_path(self, value: str):
+        self._pre_path = value
+
+    @property
+    def post_path(self) -> str:
+        return self._post_path
+    @post_path.setter
+    def post_path(self, value: str):
+        self._post_path = value
+
+    @property
+    def print_to_screen(self) -> bool:
+        return self._print_to_screen
+    @print_to_screen.setter
+    def print_to_screen(self, value: bool):
+        self._print_to_screen = value
 
     @property
     def arguments(self) -> List[str]:
@@ -185,11 +217,11 @@ class JobScheduler(ABC):
         pass
 
     @abstractmethod
-    def dispatch_job(self, task: Job, configuration: JobSchedulerConfiguration) -> JobResults:
+    def dispatch_job(self, job: Job, configuration: JobSchedulerConfiguration) -> JobResults:
         pass
 
     @abstractmethod
-    def dispatch_job_set(self, task_set: JobSet, configuration: JobSchedulerConfiguration):
+    def dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
         pass
 
 
@@ -226,4 +258,4 @@ class JobSchedulerDatabase:
         for task_scheduler in self._task_schedulers:
             if task_scheduler.name == name:
                 return task_scheduler
-        raise Exception(f"No Task Scheduler '{name}' exists in the Task Scheduler Database")
+        raise Exception(f"No Job Scheduler '{name}' exists in the Job Scheduler Database")
