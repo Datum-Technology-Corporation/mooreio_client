@@ -143,7 +143,7 @@ class HdlSource(Model):
     top_vhdl_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
     top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     tests_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    tests_name_template: Optional[jinja2.Template] = UNDEFINED_CONST
+    tests_name_template: Optional[str] = UNDEFINED_CONST
     so_libs: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
 
 
@@ -430,6 +430,12 @@ class Ip(Model):
                 raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
             else:
                 self._resolved_hdl_directories.append(directory_path)
+            if self.hdl_src.tests_path != UNDEFINED_CONST:
+                tests_directory_path = directory_path / self.hdl_src.tests_path
+                if not self.rmh.directory_exists(tests_directory_path):
+                    raise Exception(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
+                else:
+                    self._resolved_hdl_directories.append(tests_directory_path)
         for file in self.hdl_src.top_sv_files:
             full_path = self.resolved_src_path / file
             if not self.rmh.file_exists(full_path):
@@ -527,6 +533,7 @@ class Ip(Model):
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
         # If topological sort includes all nodes, return the order
+        # TODO Remove IP that aren't related to this IP
         if len(topo_order) == len(all_ip):
             # Remove self from the topological order if it exists
             if self in topo_order:

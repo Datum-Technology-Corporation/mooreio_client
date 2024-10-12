@@ -95,6 +95,19 @@ class TestCliSim:
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-CE'])
         assert result.return_code == 0
 
+    def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False, cov:bool=False):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        optional_args = []
+        if waves:
+            optional_args.append('-w')
+        if cov:
+            optional_args.append('-c')
+        result = self.run_cmd(capsys, [
+            f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
+        ] + optional_args)
+        assert result.return_code == 0
+
     def check_ip_database(self, exp_count:int):
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
             raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
@@ -111,5 +124,16 @@ class TestCliSim:
     def test_cli_cmpelab_ip(self, capsys):
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmpelab_ip(capsys, test_project_path, "def_ss")
+
+    def test_cli_cmp_elab_sim_ip(self, capsys):
+        test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
+        self.cmp_ip(capsys, test_project_path, "def_ss_tb")
+        self.elab_ip(capsys, test_project_path, "def_ss_tb")
+        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1)
+
+    def test_cli_cmpelab_sim_ip(self, capsys):
+        test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
+        self.cmpelab_ip(capsys, test_project_path, "def_ss_tb")
+        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1)
 
 

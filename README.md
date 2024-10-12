@@ -82,7 +82,7 @@ The Design Pattern for the Moore.io Client mimics UVM's phases and component str
 is created by the CLI argument parser and given a Command instance to execute. The RM operates in 3 steps:
 
 1. Discovery: finding the project file, loading/validating the configuration space and finding/loading IP files
-2. Main: RM gives control to the Command which invokes Service(s) (simulators, synthesizers, etc.) to perform Task(s) (compilation, simulation, etc.) via a JobScheduler instance (LocalProcess, LSF, GRID) which accepts Jobs (shell commands) 
+2. Main: RM gives control to the Command which invokes Service(s) (simulators, synthesizers, etc.) to perform Task(s) (compilation, simulation, etc.) via a JobScheduler instance (SubProcess, LSF, GRID) which accepts Jobs (shell commands) 
 3. Post: RM and Command parse results, generate reports, clean up files, close sockets, stop processes and print out final notes to the user  
 
 Each step is broken up into phases, with each phase having a 'pre' and 'post' phase associated to it:

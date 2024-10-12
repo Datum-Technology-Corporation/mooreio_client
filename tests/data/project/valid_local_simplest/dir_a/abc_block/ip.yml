@@ -11,5 +11,5 @@ structure:
 
 hdl_src:
   directories: ["."]
-  top_sv_files: ["block_top.sv"]
+  top_sv_files: ["abc_block_top.sv"]
 
