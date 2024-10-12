@@ -1,7 +1,7 @@
-class smoke_test_c extends uvm_test;
-  `uvm_component_utils(smoke_test_c)
+class def_ss_smoke_test_c extends uvm_test;
+  `uvm_component_utils(def_ss_smoke_test_c)
   
-  function new(string name="smoke_test", uvm_component parent=null);
+  function new(string name="def_ss_smoke_test", uvm_component parent=null);
     super.new(name, parent);
   endfunction
   

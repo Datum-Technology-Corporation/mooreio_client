@@ -127,13 +127,13 @@ class TestCliSim:
 
     def test_cli_cmp_elab_sim_ip(self, capsys):
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmp_ip(capsys, test_project_path, "def_ss")
-        self.elab_ip(capsys, test_project_path, "def_ss")
-        self.sim_ip(capsys, test_project_path, "def_ss", "smoke", 1)
+        self.cmp_ip(capsys, test_project_path, "def_ss_tb")
+        self.elab_ip(capsys, test_project_path, "def_ss_tb")
+        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1)
 
     def test_cli_cmpelab_sim_ip(self, capsys):
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmpelab_ip(capsys, test_project_path, "def_ss")
-        self.sim_ip(capsys, test_project_path, "def_ss", "smoke", 1)
+        self.cmpelab_ip(capsys, test_project_path, "def_ss_tb")
+        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1)
 
 

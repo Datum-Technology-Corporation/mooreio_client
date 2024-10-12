@@ -1,4 +1,6 @@
 module def_ss_tb();
+  import def_ss_tb_pkg::*;
+
   logic       clk, rst_n;
   wire [7:0]  data_0, data_1;
 

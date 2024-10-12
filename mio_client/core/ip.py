@@ -143,7 +143,7 @@ class HdlSource(Model):
     top_vhdl_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
     top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     tests_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    tests_name_template: Optional[jinja2.Template] = UNDEFINED_CONST
+    tests_name_template: Optional[str] = UNDEFINED_CONST
     so_libs: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
 
 
@@ -533,6 +533,7 @@ class Ip(Model):
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
         # If topological sort includes all nodes, return the order
+        # TODO Remove IP that aren't related to this IP
         if len(topo_order) == len(all_ip):
             # Remove self from the topological order if it exists
             if self in topo_order:

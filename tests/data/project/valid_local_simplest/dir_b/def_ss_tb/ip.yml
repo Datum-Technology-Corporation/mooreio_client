@@ -19,4 +19,4 @@ hdl_src:
   top_sv_files: ["def_ss_tb_pkg.sv"]
   top: ["def_ss_tb"]
   tests_path: "tests"
-
+  tests_name_template: "def_ss_{{ name }}_test_c"

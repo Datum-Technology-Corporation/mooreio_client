@@ -1,7 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from ip import Ip, IpDefinition
+from core.ip import Ip, IpDefinition, IpPkgType
 from command import Command
 from phase import Phase
 from scheduler import JobScheduler
@@ -226,6 +226,9 @@ class Simulate(Command):
         if not self.ip:
             phase.error = Exception(f"IP '{self.ip_definition}' could not be found")
         else:
+            if self.do_simulate and (self.ip.ip.pkg_type != IpPkgType.DV_TB):
+                phase.error = Exception(f"IP '{self.ip}' is not a Test Bench")
+                return
             if self.ip.has_vhdl_content:
                 # VHDL must be compiled and elaborated separately
                 if self.do_compile_and_elaborate:
@@ -288,7 +291,7 @@ class Simulate(Command):
         self.simulation_configuration.gui_mode = self.parsed_cli_arguments.gui
         self.simulation_configuration.enable_waveform_capture = self.parsed_cli_arguments.waves
         self.simulation_configuration.enable_coverage = self.parsed_cli_arguments.cov
-        self.simulation_configuration.test_name = self.parsed_cli_arguments.test
+        self.simulation_configuration.test_name = self.parsed_cli_arguments.test.strip().lower()
         # TODO Parse and load values from CLI args into simulation config for boolean and value arguments
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
 

@@ -97,6 +97,7 @@ class LogicSimulatorSimulationReport(LogicSimulatorReport):
     waveform_file_path: Optional[Path] = Path()
     args_boolean:Optional[list[str]] = []
     args_value:Optional[dict[str, str] ]= {}
+    test_results_path: Optional[Path] = Path()
     log_path: Optional[Path] = Path()
     coverage_directory: Optional[Path] = Path()
     simulation_success: Optional[bool] = False
@@ -291,7 +292,6 @@ class LogicSimulator(Service, ABC):
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         test_template = Template(ip.hdl_src.tests_name_template)
         test_result_dir_template = Template(self.rmh.configuration.logic_simulation.test_result_path_template)
-        test = config.test_name
         final_args_boolean = config.args_boolean
         final_args_value = config.args_values
         final_args = []
@@ -302,17 +302,18 @@ class LogicSimulator(Service, ABC):
         # TODO Add arg values from IP target
         # TODO Load Shared Objects
         # TODO Load Moore.io Licensing DPI Shared Object for DSim
-        report.test_name = test_template.render(name=test)
-        final_args.append(f"UVM_TESTNAME={report.test_name}")
-        final_args.append(f"UVM_VERBOSITY=UVM_{config.verbosity.value.upper()}")
-        final_args.append(f"UVM_MAX_QUIT_COUNT=UVM_{config.max_errors}")
-        test_result_directory_name = test_result_dir_template.render(vendor=ip.vendor, ip=ip.name, test=test,
+        report.test_name = test_template.render(name=config.test_name)
+        test_result_directory_name = test_result_dir_template.render(vendor=ip.ip.vendor, ip=ip.ip.name, test=config.test_name,
                                                                      seed=config.seed, args=final_args)
+        final_args_boolean.append("UVM_NO_RELNOTES")
+        final_args_value["UVM_TESTNAME"] = report.test_name
+        final_args_value["UVM_VERBOSITY"] = f"UVM_{config.verbosity.value.upper()}"
+        final_args_value["UVM_MAX_QUIT_COUNT"] = str(config.max_errors)
         report.test_results_path = self.simulation_results_path / test_result_directory_name
-        final_args.append(f"__MIO_TEST_RESULTS_PATH={report.test_results_path}")
-        final_args.append(f"__MIO_SIM_RESULTS_PATH={self.simulation_results_path}")
+        final_args_value["__MIO_TEST_RESULTS_PATH"] = str(report.test_results_path)
+        final_args_value["__MIO_SIM_RESULTS_PATH"] = str(self.simulation_results_path)
         if self.rmh.user.authenticated:
-            final_args.append(f"__MIO_USER_TOKEN={self.rmh.user.access_token}")
+            final_args_value["__MIO_USER_TOKEN"] = self.rmh.user.access_token
         report.log_path = report.test_results_path / f"sim.{self.name}.log"
         report.waveform_file_path = report.test_results_path / f"waves.{self.name}"
         report.coverage_directory = report.test_results_path / f"cov.{self.name}"
@@ -645,13 +646,13 @@ class SimulatorMetricsDSim(LogicSimulator):
         return [r'^.*=F:.*$']
     @property
     def simulation_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$', r'^UVM_ERROR.*$']
+        return [r'^.*=E:.*$', r'^UVM_ERROR @.*$']
     @property
     def simulation_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$', r'^UVM_WARNING.*$']
+        return [r'^.*=W:.*$', r'^UVM_WARNING @.*$']
     @property
     def simulation_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$', r'^UVM_FATAL.*$']
+        return [r'^.*=F:.*$', r'^UVM_FATAL @.*$']
     @property
     def encryption_error_patterns(self) -> List[str]:
         return [r'^.*=E:.*$']
@@ -711,12 +712,15 @@ class SimulatorMetricsDSim(LogicSimulator):
             report.vhdl_compilation_success = True
 
     def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
-        top_str = f" -top {ip.lib_name}.".join(ip.hdl_src.top)
+        top_str = ""
+        for top in ip.hdl_src.top:
+            top_str = f"{top_str} -top {ip.lib_name}.{top}"
         args = self.rmh.configuration.logic_simulation.metrics_dsim_default_elaboration_arguments + [
-            f"-genimage {ip.image_name}",
+            f"-genimage {ip.lib_name}",
             f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
             f"{top_str}",
-            f"-l {report.log_path}"
+            f"-lib {ip.lib_name}",
+            f"-l {report.log_path}",
         ]
         job_elaborate = Job(self.rmh, report.work_directory, f"dsim_elaboration_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dsim"), args)
         self.set_job_env(job_elaborate)
@@ -725,12 +729,15 @@ class SimulatorMetricsDSim(LogicSimulator):
 
     def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         if not ip.has_vhdl_content:
-            top_str = f" -top {ip.lib_name}.".join(ip.hdl_src.top)
+            top_str = ""
+            for top in ip.hdl_src.top:
+                top_str = f"{top_str} -top {ip.lib_name}.{top}"
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_and_elaboration_arguments + [
-                f"-genimage {ip.image_name}",
+                f"-genimage {ip.lib_name}",
                 f"-F {report.file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
                 f"{top_str}",
+                f"-lib {ip.lib_name}",
                 f"-l {report.log_path}"
             ]
             job_compile_and_elaborate = Job(self.rmh, report.work_directory, f"dsim_compilation_and_elaboration_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dsim"), args)
@@ -747,7 +754,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         for arg in report.args_value:
             args_str += f" +{arg}={report.args_value[arg]}"
         args = self.rmh.configuration.logic_simulation.metrics_dsim_default_simulation_arguments + [
-            f"-image {ip.image_name}",
+            f"-image {ip.lib_name}",
             f"{args_str}",
             f"-sv_seed {config.seed}",
             #f"-sv_lib %UVM_HOME%/src/dpi/libuvm_dpi.so",
