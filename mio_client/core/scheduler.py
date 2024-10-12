@@ -191,6 +191,7 @@ class JobScheduler(ABC):
         self._name = name
         self._version = None
         self._db = None
+        self._jobs_dispatched:List[Job] = []
 
     @property
     def name(self) -> str:
@@ -208,6 +209,10 @@ class JobScheduler(ABC):
     def db(self, value: 'JobSchedulerDatabase'):
         self._db = value
 
+    @property
+    def jobs_dispatched(self) -> List[Job]:
+        return self._jobs_dispatched
+
     @abstractmethod
     def is_available(self) -> bool:
         pass
@@ -216,12 +221,19 @@ class JobScheduler(ABC):
     def init(self):
         pass
 
-    @abstractmethod
     def dispatch_job(self, job: Job, configuration: JobSchedulerConfiguration) -> JobResults:
+        self.jobs_dispatched.append(job)
+        return self.do_dispatch_job(job, configuration)
+
+    def dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
+        return self.do_dispatch_job_set(job_set, configuration)
+
+    @abstractmethod
+    def do_dispatch_job(self, job: Job, configuration: JobSchedulerConfiguration) -> JobResults:
         pass
 
     @abstractmethod
-    def dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
+    def do_dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
         pass
 
 
@@ -259,3 +271,7 @@ class JobSchedulerDatabase:
             if task_scheduler.name == name:
                 return task_scheduler
         raise Exception(f"No Job Scheduler '{name}' exists in the Job Scheduler Database")
+
+    def get_default_scheduler(self) -> 'JobScheduler':
+        # TODO Add support for other schedulers
+        return self.find_scheduler("sub_process")

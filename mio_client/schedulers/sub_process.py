@@ -31,7 +31,7 @@ class SubProcessScheduler(JobScheduler):
     def init(self):
         pass
 
-    def dispatch_job(self, job: Job, configuration: SubProcessSchedulerConfiguration) -> JobResults:
+    def do_dispatch_job(self, job: Job, configuration: SubProcessSchedulerConfiguration) -> JobResults:
         results = JobResults()
         results.timestamp_start = datetime.now()
         command_list = [job.binary] + job.arguments
@@ -50,7 +50,7 @@ class SubProcessScheduler(JobScheduler):
         results.return_code = result.returncode
         return results
 
-    def dispatch_job_set(self, job_set: JobSet, configuration: SubProcessSchedulerConfiguration):
+    def do_dispatch_job_set(self, job_set: JobSet, configuration: SubProcessSchedulerConfiguration):
         pass
         # TODO IMPLEMENT
 

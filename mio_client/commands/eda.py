@@ -7,7 +7,7 @@ from phase import Phase
 from scheduler import JobScheduler
 from service import ServiceType
 from simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, LogicSimulatorElaborationConfiguration, \
-    LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration
+    LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration, UvmVerbosity
 from simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
@@ -211,8 +211,7 @@ class Simulate(Command):
 
     def phase_post_scheduler_discovery(self, phase:Phase):
         try:
-            # TODO Add support for other schedulers
-            self._scheduler = self.rmh.scheduler_database.find_scheduler("sub_process")
+            self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
         except Exception as e:
             phase.error = e
 
@@ -269,6 +268,7 @@ class Simulate(Command):
             self.compilation_configuration.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
             self.compilation_configuration.enable_coverage = True
+        # TODO Parse and load values from CLI args into compilation config for boolean and value defines
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
     def elaborate(self, phase:Phase):
@@ -277,10 +277,19 @@ class Simulate(Command):
 
     def compile_and_elaborate(self, phase:Phase):
         self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationConfiguration()
+        # TODO Parse and load values from CLI args into compilation+elaboration config for boolean and value defines
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
 
     def simulate(self, phase:Phase):
         self._simulation_configuration = LogicSimulatorSimulationConfiguration()
+        self.simulation_configuration.seed = self.parsed_cli_arguments.seed if self.parsed_cli_arguments.seed is not None else 1
+        self.simulation_configuration.verbosity = self.parsed_cli_arguments.verbosity if self.parsed_cli_arguments.verbosity is not None else UvmVerbosity.MEDIUM
+        self.simulation_configuration.max_errors = self.parsed_cli_arguments.errors if self.parsed_cli_arguments.errors is not None else 10
+        self.simulation_configuration.gui_mode = self.parsed_cli_arguments.gui
+        self.simulation_configuration.enable_waveform_capture = self.parsed_cli_arguments.waves
+        self.simulation_configuration.enable_coverage = self.parsed_cli_arguments.cov
+        self.simulation_configuration.test_name = self.parsed_cli_arguments.test
+        # TODO Parse and load values from CLI args into simulation config for boolean and value arguments
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
 
     def phase_report(self, phase:Phase):

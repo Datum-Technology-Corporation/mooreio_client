@@ -25,9 +25,9 @@ class GridEngineScheduler(JobScheduler):
     def init(self):
         pass
 
-    def dispatch_job(self, job: Job, configuration: GridEngineSchedulerConfiguration) -> JobResults:
+    def do_dispatch_job(self, job: Job, configuration: GridEngineSchedulerConfiguration) -> JobResults:
         pass
 
-    def dispatch_job_set(self, job_set: JobSet, configuration: GridEngineSchedulerConfiguration):
+    def do_dispatch_job_set(self, job_set: JobSet, configuration: GridEngineSchedulerConfiguration):
         pass
 

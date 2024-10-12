@@ -14,5 +14,5 @@ structure:
 
 hdl_src:
   directories: ["."]
-  top_sv_files: ["ss_top.sv"]
+  top_sv_files: ["def_ss_top.sv"]
 
