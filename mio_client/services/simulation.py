@@ -76,6 +76,8 @@ class LogicSimulatorCompilationReport(LogicSimulatorReport):
     vhdl_file_list_path: Optional[Path] = Path()
     sv_log_path: Optional[Path] = Path()
     vhdl_log_path: Optional[Path] = Path()
+    defines_boolean: Optional[list[str]] = []
+    defines_value: Optional[dict[str, str]] = {}
 
 class LogicSimulatorElaborationReport(LogicSimulatorReport):
     log_path: Optional[Path] = Path()
@@ -87,6 +89,8 @@ class LogicSimulatorCompilationAndElaborationReport(LogicSimulatorReport):
     file_list_path: Optional[Path] = Path()
     log_path: Optional[Path] = Path()
     compilation_and_elaboration_success: Optional[bool] = False
+    defines_boolean: Optional[list[str]] = []
+    defines_value: Optional[dict[str, str]] = {}
 
 class LogicSimulatorSimulationReport(LogicSimulatorReport):
     test_name: Optional[str] = "__UNDEFINED__"
@@ -135,7 +139,7 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
     gui_mode: bool = False
     max_errors: int = 10
     args_boolean:list[str] = []
-    args_values:dict[str, str] = {}
+    args_value:dict[str, str] = {}
     test_name: str = "__UNDEFINED__"
     seed: int = randint(1, ((1 << 31)-1))
     verbosity: UvmVerbosity = UvmVerbosity.DEBUG
@@ -246,6 +250,9 @@ class LogicSimulator(Service, ABC):
         self.build_vhdl_flist(ip, config, report)
         if (not report.has_sv_files_to_compile) and (not report.has_vhdl_files_to_compile):
             raise Exception(f"No files to compile for IP '{ip}'")
+        # TODO Add defines values from IP target
+        report.defines_boolean = config.defines_boolean
+        report.defines_value = config.defines_value
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         report.sv_log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmp.sv.{self.name}.log"
         report.vhdl_log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmp.vhdl.{self.name}.log"
@@ -276,6 +283,9 @@ class LogicSimulator(Service, ABC):
         self.build_sv_flist(ip, config, report)
         if not report.has_files_to_compile:
             raise Exception(f"No files to compile for IP '{ip}'")
+        # TODO Add defines values from IP target
+        report.defines_boolean = config.defines_boolean
+        report.defines_value = config.defines_value
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         report.log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.log"
         self.rmh.create_directory(report.work_directory)
@@ -292,14 +302,14 @@ class LogicSimulator(Service, ABC):
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         test_template = Template(ip.hdl_src.tests_name_template)
         test_result_dir_template = Template(self.rmh.configuration.logic_simulation.test_result_path_template)
+        # TODO Add arg values from IP target
         final_args_boolean = config.args_boolean
-        final_args_value = config.args_values
+        final_args_value = config.args_value
         final_args = []
         for arg in final_args_boolean:
             final_args.append(arg)
         for arg in final_args_value:
             final_args.append(f"{arg}={final_args_value[arg]}")
-        # TODO Add arg values from IP target
         # TODO Load Shared Objects
         # TODO Load Moore.io Licensing DPI Shared Object for DSim
         report.test_name = test_template.render(name=config.test_name)
@@ -684,8 +694,14 @@ class SimulatorMetricsDSim(LogicSimulator):
         pass
 
     def do_compile(self, ip: Ip, config:LogicSimulatorCompilationConfiguration, report:LogicSimulatorCompilationReport, scheduler:JobScheduler, scheduler_config: JobSchedulerConfiguration):
+        defines_str = ""
+        for define in report.defines_boolean:
+            defines_str += f" +define+{define}"
+        for define in report.defines_value:
+            defines_str += f" +define+{define}={report.defines_value[define]}"
         if report.has_sv_files_to_compile:
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_sv_arguments + [
+                defines_str,
                 f"-F {report.sv_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
                 f"-lib {ip.lib_name}",
@@ -699,6 +715,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             report.sv_compilation_success = True
         if report.has_vhdl_files_to_compile:
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_vhdl_arguments + [
+                defines_str,
                 f"-F {report.vhdl_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
                 f"-lib {ip.lib_name}",
@@ -718,7 +735,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         args = self.rmh.configuration.logic_simulation.metrics_dsim_default_elaboration_arguments + [
             f"-genimage {ip.lib_name}",
             f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
-            f"{top_str}",
+            top_str,
             f"-lib {ip.lib_name}",
             f"-l {report.log_path}",
         ]
@@ -729,14 +746,20 @@ class SimulatorMetricsDSim(LogicSimulator):
 
     def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         if not ip.has_vhdl_content:
+            defines_str = ""
+            for define in report.defines_boolean:
+                defines_str += f" +define+{define}"
+            for define in report.defines_value:
+                defines_str += f" +define+{define}={report.defines_value[define]}"
             top_str = ""
             for top in ip.hdl_src.top:
                 top_str = f"{top_str} -top {ip.lib_name}.{top}"
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_and_elaboration_arguments + [
                 f"-genimage {ip.lib_name}",
+                defines_str,
                 f"-F {report.file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
-                f"{top_str}",
+                top_str,
                 f"-lib {ip.lib_name}",
                 f"-l {report.log_path}"
             ]
@@ -755,11 +778,10 @@ class SimulatorMetricsDSim(LogicSimulator):
             args_str += f" +{arg}={report.args_value[arg]}"
         args = self.rmh.configuration.logic_simulation.metrics_dsim_default_simulation_arguments + [
             f"-image {ip.lib_name}",
-            f"{args_str}",
+            args_str,
             f"-sv_seed {config.seed}",
-            #f"-sv_lib %UVM_HOME%/src/dpi/libuvm_dpi.so",
             f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
-            f"-sv_lib libcurl.so",
+            #f"-sv_lib libcurl.so",
             f"-timescale {self.rmh.configuration.logic_simulation.timescale}",
             f"-l {report.log_path}"
         ]

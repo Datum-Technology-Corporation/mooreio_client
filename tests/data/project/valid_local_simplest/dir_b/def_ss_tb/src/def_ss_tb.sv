@@ -1,10 +1,12 @@
 module def_ss_tb();
   import def_ss_tb_pkg::*;
 
-  logic       clk, rst_n;
-  wire [7:0]  data_0, data_1;
+  logic  clk, rst_n;
+  wire [(`DATA_WIDTH-1):0]  data_0, data_1;
 
-  def_ss_top  dut(
+  def_ss_top #(
+    .DATA_WIDTH(`DATA_WIDTH)
+  )  dut(
     .clk     (clk   ),
     .rst_n   (rst_n ),
     .o_data_0(data_0),

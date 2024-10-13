@@ -95,7 +95,8 @@ class TestCliSim:
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-CE'])
         assert result.return_code == 0
 
-    def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False, cov:bool=False):
+    def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
+               cov:bool=False, args_boolean:list[str]=[], args_value:dict[str,str]={}):
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         optional_args = []
@@ -103,9 +104,37 @@ class TestCliSim:
             optional_args.append('-w')
         if cov:
             optional_args.append('-c')
+        plus_args = ["-+"]
+        for arg in args_boolean:
+            plus_args.append(f"+{arg}")
+        for arg in args_value:
+            plus_args.append(f"+{arg}={args_value[arg]}")
         result = self.run_cmd(capsys, [
             f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
-        ] + optional_args)
+        ] + optional_args + plus_args)
+        assert result.return_code == 0
+
+    def one_shot_sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
+               cov:bool=False, defines_boolean:list[str]=[], defines_value:dict[str,str]={},args_boolean:list[str]=[], args_value:dict[str,str]={}):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        optional_args = []
+        if waves:
+            optional_args.append('-w')
+        if cov:
+            optional_args.append('-c')
+        plus_args = ["-+"]
+        for define in defines_boolean:
+            plus_args.append(f"+define+{define}")
+        for define in defines_value:
+            plus_args.append(f"+define+{define}={defines_value[define]}")
+        for arg in args_boolean:
+            plus_args.append(f"+{arg}")
+        for arg in args_value:
+            plus_args.append(f"+{arg}={args_value[arg]}")
+        result = self.run_cmd(capsys, [
+            f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
+        ] + optional_args + plus_args)
         assert result.return_code == 0
 
     def check_ip_database(self, exp_count:int):
@@ -134,6 +163,24 @@ class TestCliSim:
     def test_cli_cmpelab_sim_ip(self, capsys):
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmpelab_ip(capsys, test_project_path, "def_ss_tb")
-        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1)
+        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1, waves=True, cov=True)
+
+    def test_cli_sim_args_ip(self, capsys):
+        test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
+        defines_boolean = [
+            "ABC_BLOCK_ENABLED",
+        ]
+        defines_value = {
+            "DATA_WIDTH": "32",
+        }
+        args_boolean = [
+            "INCLUDE_SECOND_MESSAGE"
+        ]
+        args_value = {
+            "LUCKY_NUMBER": "42",
+        }
+        self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1, waves=True,
+                             cov=True, defines_boolean=defines_boolean, defines_value=defines_value,
+                             args_boolean=args_boolean, args_value=args_value)
 
 

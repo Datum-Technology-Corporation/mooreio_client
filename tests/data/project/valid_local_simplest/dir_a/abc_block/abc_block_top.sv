@@ -1,9 +1,11 @@
-module abc_block_top(
-  input          clk ,
-  input        rst_n ,
-  output [7:0] o_data
+module abc_block_top #(
+  parameter DATA_WIDTH=8
+) (
+  input   clk,
+  input rst_n,
+  output [(DATA_WIDTH-1):0] o_data
 );
-  logic [7:0]  data;
+  logic [(DATA_WIDTH-1):0]  data;
   assign o_data = data;
 
   always@(posedge clk) begin
@@ -11,7 +13,9 @@ module abc_block_top(
       data <= 0;
     end
     else begin
-      data <= $urandom();
+      `ifdef ABC_BLOCK_ENABLED
+        data <= $urandom();
+      `endif
     end
   end
 endmodule
