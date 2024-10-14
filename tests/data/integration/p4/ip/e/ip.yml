@@ -11,7 +11,7 @@ dependencies:
   "datron/c_block": ">=1.0.0"
 
 structure:
-  src_path: "."
+  hdl_src_path: "."
 
 hdl_src:
   directories: ["."]

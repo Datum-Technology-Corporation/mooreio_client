@@ -2,13 +2,14 @@ ip:
   sync: true
   sync_id: 4
   pkg_type: dv_lib
+  encrypted: ["dsim"]
   vendor: "bravo"
   name: "a_vlib"
   version: "1.0.0"
   full_name: "A VIP Library"
 
 structure:
-  src_path: "."
+  hdl_src_path: "src"
 
 hdl_src:
   directories: ["."]

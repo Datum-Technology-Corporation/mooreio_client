@@ -15,7 +15,7 @@ from core.service import Service, ServiceType
 from core.ip import Ip
 from abc import ABC, abstractmethod
 
-from model import Model
+from model import Model, UNDEFINED_CONST
 
 
 #######################################################################################################################
@@ -93,7 +93,7 @@ class LogicSimulatorCompilationAndElaborationReport(LogicSimulatorReport):
     defines_value: Optional[dict[str, str]] = {}
 
 class LogicSimulatorSimulationReport(LogicSimulatorReport):
-    test_name: Optional[str] = "__UNDEFINED__"
+    test_name: Optional[str] = UNDEFINED_CONST
     seed: Optional[int] = -1
     verbosity: Optional[UvmVerbosity] = UvmVerbosity.DEBUG
     coverage: Optional[bool] = False
@@ -108,7 +108,14 @@ class LogicSimulatorSimulationReport(LogicSimulatorReport):
     
 
 class LogicSimulatorEncryptionReport(LogicSimulatorReport):
-    pass
+    mlicense_key: Optional[str] = UNDEFINED_CONST
+    path_to_encrypted_files: Optional[Path] = Path()
+    sv_encryption_success: Optional[bool] = False
+    vhdl_encryption_success: Optional[bool] = False
+    has_sv_files_to_encrypt: Optional[bool] = False
+    has_vhdl_files_to_encrypt: Optional[bool] = False
+    sv_files_to_encrypt: Optional[list[Path]] = []
+    vhdl_files_to_encrypt: Optional[list[Path]] = []
 
 
 class LogicSimulatorConfiguration(ABC):
@@ -343,7 +350,54 @@ class LogicSimulator(Service, ABC):
         return report
 
     def encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, scheduler: JobScheduler) -> LogicSimulatorEncryptionReport:
-        report = LogicSimulatorEncryptionReport()
+        report = LogicSimulatorEncryptionReport(name=f"Encryption for '{ip}' using '{self.full_name}'")
+        report.path_to_encrypted_files = self.work_temp_path / f'encrypt_{ip.lib_name}'
+        self.rmh.copy_directory(ip.resolved_src_path, report.path_to_encrypted_files)
+        # Find all SystemVerilog files within `ip.resolved_src_path` (recursively)
+        sv_file_extensions = ["v", "vh", "sv", "svh"]
+        for ext in sv_file_extensions:
+            report.sv_files_to_encrypt += list(report.path_to_encrypted_files.rglob(f"*.{ext}"))
+        report.has_sv_files_to_encrypt = len(report.sv_files_to_encrypt) > 0
+        # Find all VHDL files within `ip.resolved_src_path` (recursively)
+        vhdl_file_extensions = ["vhd", "vhdl"]
+        for ext in vhdl_file_extensions:
+            report.vhdl_files_to_encrypt += list(report.path_to_encrypted_files.rglob(f"*.{ext}"))
+        report.has_vhdl_files_to_encrypt = len(report.vhdl_files_to_encrypt) > 0
+        if (not report.has_sv_files_to_encrypt) and (not report.has_vhdl_files_to_encrypt):
+            raise Exception(f"No SystemVerilog or VHDL files found to encrypt for IP '{ip}'")
+        for file_path in report.sv_files_to_encrypt:
+            with file_path.open("r") as file:
+                file_content = file.read()
+                file_content = f"`pragma protect begin\n{file_content}\n`pragma protect end\n"
+                with file_path.open("w") as file:
+                    file.write(file_content)
+        for file_path in report.vhdl_files_to_encrypt:
+            with file_path.open("r") as file:
+                file_content = file.read()
+                file_content = f"`protect begin\n{file_content}\n`protect end\n"
+                with file_path.open("w") as file:
+                    file.write(file_content)
+        if ip.ip.mlicensed:
+            # Search and replace in all SystemVerilog
+            search_string = "`__MIO_LICENSE_KEY_CHECK_PHONY__"
+            replace_string = f'`__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}")'
+            for file_path in report.sv_files_to_encrypt:
+                with file_path.open("r") as file:
+                    file_content = file.read()
+                if search_string in file_content:
+                    file_content = file_content.replace(search_string, replace_string)
+                    with file_path.open("w") as file:
+                        file.write(file_content)
+            # Search and replace in all VHDL files
+            search_string = "-- __MIO_LICENSE_KEY_CHECK__"
+            replace_string = f'__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}");'  # TODO This is just theory
+            for file_path in report.vhdl_files_to_encrypt:
+                with file_path.open("r") as file:
+                    file_content = file.read()
+                if search_string in file_content:
+                    file_content = file_content.replace(search_string, replace_string)
+                    with file_path.open("w") as file:
+                        file.write(file_content)
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.output_to_terminal = False
         self.do_encrypt(ip, config, report, scheduler, scheduler_config)
@@ -404,15 +458,10 @@ class LogicSimulator(Service, ABC):
         report.success &= (report.num_errors == 0) and (report.num_fatals == 0)
 
     def parse_encryption_logs(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: LogicSimulatorEncryptionReport) -> None:
-        report.name = f"Encryption for '{ip}' using '{self.full_name}'"
-        #for log_path in log_paths:
-        #    report.errors   += self.rmh.search_file_for_patterns(log_path, self.encryption_error_patterns  )
-        #    report.warnings += self.rmh.search_file_for_patterns(log_path, self.encryption_warning_patterns)
-        #    report.fatals   += self.rmh.search_file_for_patterns(log_path, self.encryption_fatal_patterns  )
-        #report.num_errors = len(report.errors)
-        #report.num_warnings = len(report.warnings)
-        #report.num_fatals = len(report.fatals)
-        #report.success &= (report.num_errors == 0) and (report.num_fatals == 0)
+        if report.sv_encryption_success and report.vhdl_encryption_success:
+            report.success = True
+        else:
+            report.success = False
 
     def build_sv_flist(self, ip:Ip,
                        config:Union[LogicSimulatorCompilationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration],
@@ -797,4 +846,53 @@ class SimulatorMetricsDSim(LogicSimulator):
         report.simulation_success = (results_simulate.return_code == 0)
 
     def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: LogicSimulatorEncryptionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
-        pass
+        if report.has_sv_files_to_encrypt:
+            report.sv_encryption_success = True
+            for file in report.sv_files_to_encrypt:
+                file_encrypted = Path(f"{file}.encrypted")
+                sv_args = []
+                sv_args.append(str(file))
+                sv_args.append(f"-i {self.rmh.configuration.encryption.metrics_dsim_sv_key_path}")
+                sv_args.append(f"-o {file_encrypted}")
+                job_encrypt_sv = Job(self.rmh, report.work_directory, f"dsim_encryption_sv_{ip.lib_name}_{file.name}",
+                                     os.path.join(self.installation_path, "bin", "dvlencrypt"), sv_args)
+                self.set_job_env(job_encrypt_sv)
+                results_encrypt_sv = scheduler.dispatch_job(job_encrypt_sv, scheduler_config)
+                report.sv_encryption_success &= (results_encrypt_sv.return_code == 0)
+                if report.sv_encryption_success and os.path.isfile(file_encrypted) and os.path.getsize(file_encrypted) > 0:
+                    with open(file, 'rb') as original_file, open(file_encrypted, 'rb') as encrypted_file:
+                        if original_file.read() != encrypted_file.read():
+                            self.rmh.move_file(file_encrypted, file)
+                        else:
+                            report.sv_encryption_success = False
+                            raise Exception(f"Failed to encrypt file {file}")
+                else:
+                    report.sv_encryption_success = False
+                    raise Exception(f"Failed to encrypt file {file}")
+        else:
+            report.sv_encryption_success = True
+        if report.has_vhdl_files_to_encrypt:
+            report.vhdl_encryption_success = True
+            for file in report.vhdl_files_to_encrypt:
+                file_encrypted = Path(f"{file}.encrypted")
+                vhdl_args = []
+                vhdl_args.append(str(file))
+                vhdl_args.append(f"-i {self.rmh.configuration.encryption.metrics_dsim_vhdl_key_path}")
+                vhdl_args.append(f"-o {file_encrypted}")
+                job_encrypt_vhdl = Job(self.rmh, report.work_directory, f"dsim_encryption_vhdl_{ip.lib_name}_{file.name}",
+                                       os.path.join(self.installation_path, "bin", "dvhencrypt"), vhdl_args)
+                self.set_job_env(job_encrypt_vhdl)
+                results_encrypt_vhdl = scheduler.dispatch_job(job_encrypt_vhdl, scheduler_config)
+                report.vhdl_encryption_success &= (results_encrypt_vhdl.return_code == 0)
+                if report.vhdl_encryption_success and os.path.isfile(file_encrypted) and os.path.getsize(file_encrypted) > 0:
+                    with open(file, 'rb') as original_file, open(file_encrypted, 'rb') as encrypted_file:
+                        if original_file.read() != encrypted_file.read():
+                            self.rmh.move_file(file_encrypted, file)
+                        else:
+                            report.vhdl_encryption_success = False
+                            raise Exception(f"Failed to encrypt file {file}")
+                else:
+                    report.vhdl_encryption_success = False
+                    raise Exception(f"Failed to encrypt file {file}")
+        else:
+            report.vhdl_encryption_success = True

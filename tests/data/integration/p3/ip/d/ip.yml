@@ -8,7 +8,7 @@ ip:
   version: "2.0.1"
 
 structure:
-  src_path: "."
+  hdl_src_path: "."
 
 hdl_src:
   directories: ["."]

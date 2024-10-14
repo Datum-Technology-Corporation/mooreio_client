@@ -25,7 +25,8 @@ from enum import Enum
 #from mio_client.core.root import RootManager
 from mio_client.core.version import SemanticVersion, SemanticVersionSpec
 from configuration import Ip
-
+from service import ServiceType
+from simulation import LogicSimulatorEncryptionConfiguration
 
 MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
 
@@ -134,7 +135,7 @@ class Structure(Model):
     scripts_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     docs_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     examples_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    hdl_src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
 
 
 class HdlSource(Model):
@@ -172,7 +173,7 @@ class About(Model):
     sync: bool
     sync_id: Optional[PositiveInt] = 0
     sync_revision: Optional[str] = UNDEFINED_CONST
-    encrypted: Optional[bool] = False
+    encrypted: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     mlicensed: Optional[bool] = False
     pkg_type: IpPkgType
     vendor: str
@@ -406,7 +407,7 @@ class Ip(Model):
         return self._uninstalled
 
     def check(self):
-        self._resolved_src_path = self.root_path / self.structure.src_path
+        self._resolved_src_path = self.root_path / self.structure.hdl_src_path
         if not self.rmh.directory_exists(self.resolved_src_path):
             raise Exception(f"IP '{self}' src path '{self.resolved_src_path}' does not exist")
         if self.structure.scripts_path != UNDEFINED_CONST:
@@ -465,6 +466,40 @@ class Ip(Model):
     
     def get_dependencies_to_find_on_remote(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
+
+    def create_encrypted_compressed_tarball(self, mlicense_key:str="") -> Path:
+        try:
+            if self.resolved_src_path == self.root_path:
+                raise Exception(f"Cannot encrypt IPs where the source root is also the IP root: {self}")
+            tgz_file_path = self.rmh.md / f"temp/{self.archive_name}.tgz"
+            with tarfile.open(tgz_file_path, "w:gz") as tar:
+                for sim_spec in self.ip.encrypted:
+                    try:
+                        simulator = self.ip_database.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, sim_spec)
+                        encryption_config = LogicSimulatorEncryptionConfiguration()
+                        if self.ip.mlicensed and (mlicense_key==""):
+                            raise Exception(f"Cannot package Moore.io Licensed IP without a valid key")
+                        else:
+                            encryption_config.mlicense_key = mlicense_key
+                        scheduler = self.ip_database.rmh.scheduler_database.get_default_scheduler()
+                        encryption_report = simulator.encrypt(self, encryption_config, scheduler)
+                        if not encryption_report.success:
+                            raise Exception(f"Failed to encrypt")
+                        else:
+                            tar.add(encryption_report.path_to_encrypted_files, arcname=f"{self.structure.hdl_src_path}.{simulator.name}")
+                            self.ip_database.rmh.remove_directory(encryption_report.path_to_encrypted_files)
+                    except Exception as e:
+                        raise Exception(f"Could not encrypt IP {self} for simulator '{sim_spec}': {e}")
+                tar.add(self.file_path, arcname=self.file_path.name)
+                if self.has_docs:
+                    tar.add(self.resolved_docs_path, arcname=self.resolved_docs_path.name)
+                if self.has_examples:
+                    tar.add(self.resolved_examples_path, arcname=self.resolved_examples_path.name)
+                if self.has_scripts:
+                    tar.add(self.resolved_scripts_path, arcname=self.resolved_scripts_path.name)
+        except Exception as e:
+            raise Exception(f"Failed to create encrypted compressed tarball for {self}: {e}")
+        return tgz_file_path
     
     def create_unencrypted_compressed_tarball(self) -> Path:
         try:
@@ -730,14 +765,18 @@ class IpDataBase():
             else:
                 raise Exception(f"Failed to get IP version '{ip_definition.find_results.version_id}' from server")
     
-    def publish_new_version_to_remote(self, ip:Ip, client:str="public") -> IpPublishingCertificate:
-        certificate = self.get_publishing_certificate(ip, client)
+    def publish_new_version_to_server(self, ip:Ip) -> IpPublishingCertificate:
+        certificate = self.get_publishing_certificate(ip)
         if not certificate.granted:
             raise Exception(f"IP {ip} is not available for publishing")
         else:
-            # TODO Implement encrypted IP publishing
-            # if certification.license_type == IpLicenseType.COMMERCIAL:
-            tgz_path = ip.create_unencrypted_compressed_tarball()
+            if ip.ip.mlicensed or (len(ip.ip.encrypted) > 0):
+                if certificate.license_type != IpLicenseType.COMMERCIAL:
+                    raise Exception(f"Attempting to publish commercial/private IP to an Open-Source license.")
+                else:
+                    tgz_path = ip.create_encrypted_compressed_tarball()
+            else:
+                tgz_path = ip.create_unencrypted_compressed_tarball()
             certificate.tgz_file_path = tgz_path
             try:
                 with open(tgz_path,'rb') as f:

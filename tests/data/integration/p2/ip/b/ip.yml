@@ -11,7 +11,7 @@ dependencies:
   "bravo/a_vlib": "1.0.0"
 
 structure:
-  src_path: "."
+  hdl_src_path: "."
 
 hdl_src:
   directories: ["."]

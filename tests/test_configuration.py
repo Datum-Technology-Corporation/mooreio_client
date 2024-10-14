@@ -71,6 +71,7 @@ class TestConfiguration:
         assert hasattr(config_instance, 'docs')
         assert hasattr(config_instance.docs, 'root_path')
         assert hasattr(config_instance, 'encryption')
-        assert hasattr(config_instance.encryption, 'metrics_dsim_key_path')
+        assert hasattr(config_instance.encryption, 'metrics_dsim_sv_key_path')
+        assert hasattr(config_instance.encryption, 'metrics_dsim_vhdl_key_path')
         assert hasattr(config_instance, 'authentication')
         assert hasattr(config_instance.authentication, 'offline')

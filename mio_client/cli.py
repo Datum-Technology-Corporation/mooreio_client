@@ -41,6 +41,7 @@ Full Command List (`mio help CMD` for help on a specific command):
    IP and Credentials Management
       install        Installs all IP dependencies from IP Marketplace
       login          Starts session with IP Marketplace
+      package        Creates a compressed (and encrypted) archive of an IP
       publish        Publishes IP to Server (must have mio admin account)
 
    EDA Automation

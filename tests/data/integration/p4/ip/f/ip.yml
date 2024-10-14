@@ -11,7 +11,7 @@ dependencies:
   "acme/e_ss": "*"
 
 structure:
-  src_path: "."
+  hdl_src_path: "."
 
 hdl_src:
   directories: ["."]

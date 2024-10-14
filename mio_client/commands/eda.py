@@ -41,9 +41,9 @@ Options:
    -c          , --cov                  Enable code & functional coverage capture.
    -g          , --gui                  Invokes simulator in graphical or 'GUI' mode.
    
-   -S   Simulate  target IP.
-   -E   Elaborate target IP.
-   -C   Compile   target IP.
+   -S   Simulate
+   -E   Elaborate
+   -C   Compile
    -D   Prepare Device-Under-Test (DUT) for logic simulation. Ex: invoke FuseSoC to prepare core(s) for compilation.
    
 Examples:

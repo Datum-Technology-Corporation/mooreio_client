@@ -82,6 +82,14 @@ class TestCliMisc:
         assert "Usage" in result.text
         assert "Examples" in result.text
 
+    def test_cli_help_command_package(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'package'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "IP Package Command" in result.text
+        assert "Usage" in result.text
+        assert "Examples" in result.text
+
     def test_cli_help_command_publish(self, capsys):
         result = self.run_cmd(capsys, ['help', 'publish'])
         assert result.return_code == 0
@@ -106,6 +114,15 @@ class TestCliMisc:
         assert "Moore.io" in result.text
         assert "IP Uninstall Command" in result.text
         assert "Usage" in result.text
+        assert "Examples" in result.text
+
+    def test_cli_help_command_sim(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'sim'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "IP Simulation Command" in result.text
+        assert "Usage" in result.text
+        assert "Options" in result.text
         assert "Examples" in result.text
 
 

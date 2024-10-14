@@ -27,7 +27,8 @@ local_paths=["hdl/"]
 root_path="docs/"
 
 [encryption]
-metrics_dsim_key_path="~/metrics/dsim/key"
+metrics_dsim_sv_key_path="~/metrics/dsim/key"
+metrics_dsim_vhdl_key_path="/tools/dsim/key.data"
 
 [authentication]
 offline=false

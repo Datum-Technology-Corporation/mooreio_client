@@ -66,7 +66,7 @@ class TestIp:
         assert hasattr(ip_instance.structure, 'scripts_path')
         assert hasattr(ip_instance.structure, 'docs_path')
         assert hasattr(ip_instance.structure, 'examples_path')
-        assert hasattr(ip_instance.structure, 'src_path')
+        assert hasattr(ip_instance.structure, 'hdl_src_path')
         assert hasattr(ip_instance, 'hdl_src')
         assert hasattr(ip_instance.hdl_src, 'directories')
         assert hasattr(ip_instance.hdl_src, 'top_sv_files')

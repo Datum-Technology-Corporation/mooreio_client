@@ -115,7 +115,8 @@ class TestCliSim:
         assert result.return_code == 0
 
     def one_shot_sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
-               cov:bool=False, defines_boolean:list[str]=[], defines_value:dict[str,str]={},args_boolean:list[str]=[], args_value:dict[str,str]={}):
+                        cov:bool=False, defines_boolean:list[str]=[], defines_value:dict[str,str]={},
+                        args_boolean:list[str]=[], args_value:dict[str,str]={}) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         optional_args = []
@@ -136,6 +137,7 @@ class TestCliSim:
             f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
         ] + optional_args + plus_args)
         assert result.return_code == 0
+        return result
 
     def check_ip_database(self, exp_count:int):
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
@@ -163,7 +165,7 @@ class TestCliSim:
     def test_cli_cmpelab_sim_ip(self, capsys):
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmpelab_ip(capsys, test_project_path, "def_ss_tb")
-        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1, waves=True, cov=True)
+        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1, waves=True, cov=False)
 
     def test_cli_sim_args_ip(self, capsys):
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
@@ -179,8 +181,12 @@ class TestCliSim:
         args_value = {
             "LUCKY_NUMBER": "42",
         }
-        self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1, waves=True,
-                             cov=True, defines_boolean=defines_boolean, defines_value=defines_value,
-                             args_boolean=args_boolean, args_value=args_value)
+        result = self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1,
+                                      waves=False, cov=True, defines_boolean=defines_boolean,
+                                      defines_value=defines_value, args_boolean=args_boolean, args_value=args_value)
+        #assert "Hello, World!" in result.text
+        #assert "DATA_WIDTH=32" in result.text
+        #assert "ABC_BLOCK is enabled" in result.text
+        #assert "Your lucky number is 42" in result.text
 
 

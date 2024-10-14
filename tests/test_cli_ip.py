@@ -2,6 +2,7 @@
 # All rights reserved.
 #######################################################################################################################
 import os
+import tarfile
 from pathlib import Path
 from unittest import SkipTest
 
@@ -47,6 +48,17 @@ class TestCliIp:
         assert mio_client.cli.root_manager.user.authenticated == False
         return result
 
+    def package_ip(self, capsys, project_path: Path, ip_name: str, destination:Path):
+        result = self.run_cmd(capsys, [f'--wd={project_path}', 'package', ip_name, str(destination)])
+        assert result.return_code == 0
+        assert "Packaged IP" in result.text
+        assert "successfully" in result.text
+        assert destination.exists()
+        assert destination.is_file()
+        assert destination.stat().st_size > 0, "Packaged IP file is empty"
+        with tarfile.open(destination, "r:gz") as tar:
+            assert tar.getmembers(), "Packaged IP file is not a valid compressed tarball or is empty"
+
     def publish_ip(self, capsys, project_path: Path, ip_name: str):
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name])
         assert result.return_code == 0
@@ -81,14 +93,7 @@ class TestCliIp:
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
             raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
 
-    def test_cli_list_ip(self, capsys):
-        test_project_path = os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest")
-        result = self.run_cmd(capsys, [f'--wd={test_project_path}', 'list'])
-        assert result.return_code == 0
-        assert "Found 2" in result.text
-
-    #@SkipTest
-    def test_cli_publish_ip(self, capsys):
+    def reset_workspace(self):
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
         p2_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p2"))
         p3_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p3"))
@@ -97,6 +102,30 @@ class TestCliIp:
         self.remove_directory(p2_path / ".mio")
         self.remove_directory(p3_path / ".mio")
         self.remove_directory(p4_path / ".mio")
+        self.remove_directory(p1_path / "sim")
+        self.remove_directory(p2_path / "sim")
+        self.remove_directory(p3_path / "sim")
+        self.remove_directory(p4_path / "sim")
+
+    def test_cli_list_ip(self, capsys):
+        test_project_path = os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest")
+        result = self.run_cmd(capsys, [f'--wd={test_project_path}', 'list'])
+        assert result.return_code == 0
+        assert "Found 2" in result.text
+
+    def test_cli_package_ip(self, capsys):
+        self.reset_workspace()
+        p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
+        wd_path = Path(os.path.join(os.path.dirname(__file__), "wd"))
+        self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
+
+    #@SkipTest
+    def test_cli_publish_ip(self, capsys):
+        self.reset_workspace()
+        p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
+        p2_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p2"))
+        p3_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p3"))
+        p4_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p4"))
 
         # 1. Login
         self.login(capsys, 'admin', 'admin')
