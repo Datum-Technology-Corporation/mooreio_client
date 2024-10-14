@@ -20,7 +20,7 @@ structure:
   scripts_path : "bin/"
   docs_path    : "docs/"
   examples_path: "examples/"
-  src_path     : "src/"
+  hdl_src_path : "src/"
 
 hdl_src:
   directories: ["./", "comps/", "obj/", "seq/"]

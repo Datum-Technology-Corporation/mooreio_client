@@ -16,17 +16,18 @@ import yaml
 from pydantic import constr, PositiveInt, ValidationError
 from semantic_version import SimpleSpec
 
-from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
+from .model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
     VALID_POSIX_PATH_REGEX, UNDEFINED_CONST
 #from mio_client.core.root import RootManager
 
 from enum import Enum
 
 #from mio_client.core.root import RootManager
-from mio_client.core.version import SemanticVersion, SemanticVersionSpec
-from configuration import Ip
-from service import ServiceType
-from simulation import LogicSimulatorEncryptionConfiguration
+from .version import SemanticVersion, SemanticVersionSpec
+from .configuration import Ip
+from .service import ServiceType
+from ..services.simulation import LogicSimulatorEncryptionConfiguration
+
 
 MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
 

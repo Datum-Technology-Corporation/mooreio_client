@@ -70,7 +70,7 @@ venv:
 # Run all pytest test suites
 test:
 	$(call print_banner, Running all pytest tests)
-	$(PYTEST) --junitxml=reports/report.xml --cov=mio_client -cov-report=xml:reports/coverage.xml -n auto ./tests/
+	$(PYTEST) -n auto
 
 # Lints codebase
 lint:

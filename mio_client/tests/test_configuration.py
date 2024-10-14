@@ -7,7 +7,7 @@ from typing import Dict
 import pytest
 import toml
 
-from configuration import Configuration
+from mio_client.core.configuration import Configuration
 
 
 def get_fixture_data(file: str) -> Dict:
@@ -60,7 +60,8 @@ class TestConfiguration:
         assert hasattr(config_instance.logic_simulation, 'test_result_path_template')
         assert hasattr(config_instance.logic_simulation, 'uvm_version')
         assert hasattr(config_instance.logic_simulation, 'timescale')
-        assert hasattr(config_instance.logic_simulation, 'metrics_dsim_path')
+        assert hasattr(config_instance.logic_simulation, 'metrics_dsim_license_path')
+        assert hasattr(config_instance.logic_simulation, 'metrics_dsim_installation_path')
         assert hasattr(config_instance, 'synthesis')
         assert hasattr(config_instance.synthesis, 'root_path')
         assert hasattr(config_instance, 'lint')

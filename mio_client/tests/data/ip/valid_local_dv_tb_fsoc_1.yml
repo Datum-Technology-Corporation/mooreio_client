@@ -1,32 +1,38 @@
 ip:
   sync: false
-  pkg_type: dv_agent
+  pkg_type: dv_tb
   vendor: "acme"
-  name: "uvma_abc"
+  name: "uvmt_abc"
   full_name: "Duis aute irure dolor in "
   version: "1.0.0"
+
+dut:
+  type: fsoc
+  name: "openhwgroup.org:systems:core-v-mcu"
+  target: "sim"
 
 dependencies:
   "datron/xyz": ">=1.2"
   "gigamicro/jkl": "5.1"
 
 structure:
-  scripts_path : "bin"
-  docs_path    : "docs"
-  examples_path: "examples"
-  src_path     : "src"
+  scripts_path : "bin/"
+  docs_path    : "docs/"
+  examples_path: "examples/"
+  hdl_src_path : "src/"
 
 hdl_src:
   directories: [".", "comps", "obj", "seq"]
-  top_sv_files: ["uvma_cvmcu_cpi_pkg.sv"]
-  so_libs: []
+  top_sv_files: ["uvmt_cvmcu_cpi_pkg.sv"]
+  top: ["uvmt_cvmcu_chip_tb", "uvmx_sim_summary"]
+  tests_path: "tests"
+  test_name_template: "uvmt_cvmcu_chip_{{ name }}_test_c"
 
 targets:
   default:
     cmp:
       ABC_NUMBER: 150
       XYZ: true
-    elab: {}
     sim:
       NUM_PKTS: 10
       PKT_MAX_SIZE: 1024
@@ -35,8 +41,6 @@ targets:
     elab:
       BIT_WIDTH: 32
   xyz:
-    cmp:
-      XYZ: false
     sim:
       PKT_MAX_SIZE: 128
       PKT_MIN_SIZE: 64

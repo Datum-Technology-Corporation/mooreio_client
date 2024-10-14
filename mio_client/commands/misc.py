@@ -1,14 +1,13 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-import eda
-from mio_client.commands import user, ip
-from mio_client.core.phase import Phase
-from command import Command
+from . import user, ip, eda
+from ..core.phase import Phase
+from ..core.command import Command
 
 
 ALL_COMMANDS = [
-    "help", "login", "logout", "list", "publish", "install", "uninstall"
+    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "sim"
 ]
 
 HELP_TEXT = """Moore.io Help Command

@@ -5,7 +5,7 @@ from typing import Optional
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, constr
-from mio_client.core.model import Model, VALID_NAME_REGEX
+from .model import Model, VALID_NAME_REGEX
 
 
 class User(Model):

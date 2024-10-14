@@ -15,13 +15,13 @@ from pydantic import ValidationError
 import os
 import getpass
 
-from core.command import Command
-from configuration import Configuration
-from core.ip import IpDataBase, IpLocationType
-from core.phase import Phase
-from core.scheduler import JobSchedulerDatabase
-from core.service import ServiceDataBase
-from core.user import User
+from .command import Command
+from .configuration import Configuration
+from .ip import IpDataBase, IpLocationType
+from .phase import Phase
+from .scheduler import JobSchedulerDatabase
+from .service import ServiceDataBase
+from .user import User
 
 
 class PhaseEndProcessException(Exception):

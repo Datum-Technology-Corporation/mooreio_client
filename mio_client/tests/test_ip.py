@@ -8,7 +8,7 @@ import pytest
 import yaml
 from semantic_version import SimpleSpec
 
-from ip import Ip
+from mio_client.core.ip import Ip
 
 
 def get_fixture_data(file: str) -> Dict:

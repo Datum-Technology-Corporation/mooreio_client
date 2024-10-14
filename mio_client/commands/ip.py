@@ -4,8 +4,8 @@ from pathlib import Path
 
 from semantic_version import SimpleSpec
 
-from command import Command
-from core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
+from ..core.command import Command
+from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
 
 LIST_HELP_TEXT = """Moore.io IP List Command

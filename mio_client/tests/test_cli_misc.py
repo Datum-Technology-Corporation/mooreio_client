@@ -7,8 +7,7 @@ from pathlib import Path
 import pytest
 
 import mio_client.cli
-from mio_client import cli
-from tests.common import OutputCapture
+from .common import OutputCapture
 
 
 class TestCliMisc:
@@ -17,7 +16,7 @@ class TestCliMisc:
         pass
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = cli.main(args)
+        return_code = mio_client.cli.main(args)
         text = capsys.readouterr().out.rstrip()
         return OutputCapture(return_code, text)
 
@@ -120,7 +119,7 @@ class TestCliMisc:
         result = self.run_cmd(capsys, ['help', 'sim'])
         assert result.return_code == 0
         assert "Moore.io" in result.text
-        assert "IP Simulation Command" in result.text
+        assert "Logic Simulation Command" in result.text
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text

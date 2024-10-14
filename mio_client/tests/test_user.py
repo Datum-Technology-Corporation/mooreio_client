@@ -6,8 +6,7 @@ from typing import Dict
 
 import pytest
 import yaml
-
-from user import User
+from mio_client.core.user import User
 
 
 def get_fixture_data(file: str) -> Dict:

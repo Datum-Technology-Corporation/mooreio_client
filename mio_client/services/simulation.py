@@ -10,12 +10,12 @@ from typing import List, Optional, Dict, Union
 from jinja2 import Template
 from semantic_version import Version
 
-from core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
-from core.service import Service, ServiceType
-from core.ip import Ip
+from ..core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
+from ..core.service import Service, ServiceType
+from ..core.ip import Ip
 from abc import ABC, abstractmethod
 
-from model import Model, UNDEFINED_CONST
+from ..core.model import Model, UNDEFINED_CONST
 
 
 #######################################################################################################################
@@ -378,6 +378,7 @@ class LogicSimulator(Service, ABC):
                 with file_path.open("w") as file:
                     file.write(file_content)
         if ip.ip.mlicensed:
+            found_key_check = False
             # Search and replace in all SystemVerilog
             search_string = "`__MIO_LICENSE_KEY_CHECK_PHONY__"
             replace_string = f'`__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}")'
@@ -388,8 +389,9 @@ class LogicSimulator(Service, ABC):
                     file_content = file_content.replace(search_string, replace_string)
                     with file_path.open("w") as file:
                         file.write(file_content)
+                    found_key_check = True
             # Search and replace in all VHDL files
-            search_string = "-- __MIO_LICENSE_KEY_CHECK__"
+            search_string = "-- __MIO_LICENSE_KEY_CHECK_PHONY__"
             replace_string = f'__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}");'  # TODO This is just theory
             for file_path in report.vhdl_files_to_encrypt:
                 with file_path.open("r") as file:
@@ -398,6 +400,9 @@ class LogicSimulator(Service, ABC):
                     file_content = file_content.replace(search_string, replace_string)
                     with file_path.open("w") as file:
                         file.write(file_content)
+                    found_key_check = True
+            if not found_key_check:
+                raise Exception(f"Did not find Moore.io License Key Check insertion points in HDL source code")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.output_to_terminal = False
         self.do_encrypt(ip, config, report, scheduler, scheduler_config)

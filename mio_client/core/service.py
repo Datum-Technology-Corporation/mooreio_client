@@ -7,7 +7,6 @@ from enum import Enum
 import importlib
 import inspect
 import os
-
 import semantic_version
 from semantic_version import Version
 

@@ -10,8 +10,7 @@ import pytest
 import shutil
 
 import mio_client.cli
-from mio_client import cli
-from tests.common import OutputCapture
+from .common import OutputCapture
 
 
 class TestCliIp:
@@ -29,7 +28,7 @@ class TestCliIp:
             print(f"An error occurred while removing directory '{path}': {e}")
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = cli.main(args)
+        return_code = mio_client.cli.main(args)
         text = capsys.readouterr().out.rstrip()
         return OutputCapture(return_code, text)
 
@@ -119,7 +118,7 @@ class TestCliIp:
         wd_path = Path(os.path.join(os.path.dirname(__file__), "wd"))
         self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
 
-    #@SkipTest
+    @pytest.mark.integration
     def test_cli_publish_ip(self, capsys):
         self.reset_workspace()
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))

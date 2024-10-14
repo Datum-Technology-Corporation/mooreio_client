@@ -2,18 +2,9 @@
 # All rights reserved.
 #######################################################################################################################
 from typing import List, Optional
-
-import jinja2
-import toml
 from pydantic import BaseModel, constr, FilePath, PositiveInt
-from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
+from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
-from pathlib import Path
-from pydantic import DirectoryPath
-import semantic_version
-
-from mio_client.core.version import SemanticVersion
-
 from enum import Enum
 
 

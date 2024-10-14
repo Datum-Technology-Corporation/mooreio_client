@@ -3,14 +3,14 @@
 #######################################################################################################################
 import re
 
-from core.ip import Ip, IpDefinition, IpPkgType
-from command import Command
-from phase import Phase
-from scheduler import JobScheduler
-from service import ServiceType
-from simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, LogicSimulatorElaborationConfiguration, \
+from ..core.ip import Ip, IpDefinition, IpPkgType
+from ..core.command import Command
+from ..core.phase import Phase
+from ..core.scheduler import JobScheduler
+from ..core.service import ServiceType
+from ..services.simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, LogicSimulatorElaborationConfiguration, \
     LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration, UvmVerbosity
-from simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
+from ..services.simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
 SIM_HELP_TEXT = """Moore.io Logic Simulation Command

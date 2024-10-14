@@ -9,8 +9,7 @@ import pytest
 import shutil
 
 import mio_client.cli
-from mio_client import cli
-from tests.common import OutputCapture
+from .common import OutputCapture
 
 
 class TestCliSim:
@@ -28,7 +27,7 @@ class TestCliSim:
             print(f"An error occurred while removing directory '{path}': {e}")
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = cli.main(args)
+        return_code = mio_client.cli.main(args)
         text = capsys.readouterr().out.rstrip()
         return OutputCapture(return_code, text)
 
