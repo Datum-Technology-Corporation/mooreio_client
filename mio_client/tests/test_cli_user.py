@@ -31,6 +31,7 @@ class TestCliUser:
         result = self.run_cmd(capsys, ['logout'])
         return result
 
+    @pytest.mark.single_process
     @pytest.mark.integration
     def test_cli_login_logout(self, capsys):
         result = self.login(capsys, 'admin', 'admin')

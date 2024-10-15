@@ -1,8 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from root_manager import RootManager
-from scheduler import JobSchedulerConfiguration, JobScheduler, Job, JobResults, JobSet
+from mio_client.core.scheduler import JobSchedulerConfiguration, JobScheduler, JobResults, Job, JobSet
 
 
 def get_schedulers():
@@ -16,7 +15,7 @@ class GridEngineSchedulerConfiguration(JobSchedulerConfiguration):
 
 # TODO IMPLEMENT!
 class GridEngineScheduler(JobScheduler):
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "grid_engine")
 
     def is_available(self) -> bool:

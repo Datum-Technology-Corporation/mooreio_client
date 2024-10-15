@@ -10,12 +10,12 @@ from typing import List, Optional, Dict, Union
 from jinja2 import Template
 from semantic_version import Version
 
-from ..core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
-from ..core.service import Service, ServiceType
-from ..core.ip import Ip
+from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
+from mio_client.core.service import Service, ServiceType
+from mio_client.core.ip import Ip
 from abc import ABC, abstractmethod
 
-from ..core.model import Model, UNDEFINED_CONST
+from mio_client.core.model import Model, UNDEFINED_CONST
 
 
 #######################################################################################################################

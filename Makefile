@@ -70,7 +70,8 @@ venv:
 # Run all pytest test suites
 test:
 	$(call print_banner, Running all pytest tests)
-	$(PYTEST) -n auto
+	$(PYTEST) -v --tb=long -rA -s --showlocals --dist=loadscope
+#	$(PYTEST) -n auto --dist=loadscope
 
 # Lints codebase
 lint:

@@ -26,6 +26,10 @@ class TestCliSim:
         except OSError as e:
             print(f"An error occurred while removing directory '{path}': {e}")
 
+    def reset_workspace(self):
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", ".mio")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", "sim")))
+
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = mio_client.cli.main(args)
         text = capsys.readouterr().out.rstrip()
@@ -103,11 +107,14 @@ class TestCliSim:
             optional_args.append('-w')
         if cov:
             optional_args.append('-c')
-        plus_args = ["-+"]
-        for arg in args_boolean:
-            plus_args.append(f"+{arg}")
-        for arg in args_value:
-            plus_args.append(f"+{arg}={args_value[arg]}")
+        if len(args_boolean) > 0 or len(args_value) > 0:
+            plus_args = ["-+"]
+            for arg in args_boolean:
+                plus_args.append(f"+{arg}")
+            for arg in args_value:
+                plus_args.append(f"+{arg}={args_value[arg]}")
+        else:
+            plus_args = []
         result = self.run_cmd(capsys, [
             f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
         ] + optional_args + plus_args)
@@ -123,15 +130,18 @@ class TestCliSim:
             optional_args.append('-w')
         if cov:
             optional_args.append('-c')
-        plus_args = ["-+"]
-        for define in defines_boolean:
-            plus_args.append(f"+define+{define}")
-        for define in defines_value:
-            plus_args.append(f"+define+{define}={defines_value[define]}")
-        for arg in args_boolean:
-            plus_args.append(f"+{arg}")
-        for arg in args_value:
-            plus_args.append(f"+{arg}={args_value[arg]}")
+        if len(defines_boolean) > 0 or len(defines_value) > 0 or len(args_boolean) > 0 or len(args_value) > 0:
+            plus_args = ["-+"]
+            for define in defines_boolean:
+                plus_args.append(f"+define+{define}")
+            for define in defines_value:
+                plus_args.append(f"+define+{define}={defines_value[define]}")
+            for arg in args_boolean:
+                plus_args.append(f"+{arg}")
+            for arg in args_value:
+                plus_args.append(f"+{arg}={args_value[arg]}")
+        else:
+            plus_args = []
         result = self.run_cmd(capsys, [
             f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
         ] + optional_args + plus_args)
@@ -142,31 +152,43 @@ class TestCliSim:
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
             raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
 
+    @pytest.mark.single_process
     def test_cli_cmp_ip(self, capsys):
+        self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmp_ip(capsys, test_project_path, "def_ss")
 
+    @pytest.mark.single_process
     def test_cli_cmp_elab_ip(self, capsys):
+        self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmp_ip(capsys, test_project_path, "def_ss")
         self.elab_ip(capsys, test_project_path, "def_ss")
 
+    @pytest.mark.single_process
     def test_cli_cmpelab_ip(self, capsys):
+        self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmpelab_ip(capsys, test_project_path, "def_ss")
 
+    @pytest.mark.single_process
     def test_cli_cmp_elab_sim_ip(self, capsys):
+        self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmp_ip(capsys, test_project_path, "def_ss_tb")
         self.elab_ip(capsys, test_project_path, "def_ss_tb")
         self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1)
 
+    @pytest.mark.single_process
     def test_cli_cmpelab_sim_ip(self, capsys):
+        self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmpelab_ip(capsys, test_project_path, "def_ss_tb")
         self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1, waves=True, cov=False)
 
+    @pytest.mark.single_process
     def test_cli_sim_args_ip(self, capsys):
+        self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         defines_boolean = [
             "ABC_BLOCK_ENABLED",

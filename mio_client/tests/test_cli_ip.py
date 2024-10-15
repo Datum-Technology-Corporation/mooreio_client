@@ -48,7 +48,10 @@ class TestCliIp:
         return result
 
     def package_ip(self, capsys, project_path: Path, ip_name: str, destination:Path):
+        if destination.exists():
+            destination.unlink()
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'package', ip_name, str(destination)])
+        fucking_text = result.text
         assert result.return_code == 0
         assert "Packaged IP" in result.text
         assert "successfully" in result.text
@@ -106,12 +109,15 @@ class TestCliIp:
         self.remove_directory(p3_path / "sim")
         self.remove_directory(p4_path / "sim")
 
+    @pytest.mark.single_process
     def test_cli_list_ip(self, capsys):
+        self.reset_workspace()
         test_project_path = os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest")
         result = self.run_cmd(capsys, [f'--wd={test_project_path}', 'list'])
         assert result.return_code == 0
-        assert "Found 2" in result.text
+        assert "Found 3" in result.text
 
+    @pytest.mark.single_process
     def test_cli_package_ip(self, capsys):
         self.reset_workspace()
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
@@ -119,6 +125,7 @@ class TestCliIp:
         self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
 
     @pytest.mark.integration
+    @pytest.mark.single_process
     def test_cli_publish_ip(self, capsys):
         self.reset_workspace()
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))

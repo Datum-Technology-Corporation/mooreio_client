@@ -54,7 +54,7 @@ Full Command List (`mio help CMD` for help on a specific command):
 URL_BASE = 'https://mooreio.com'
 URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
 root_manager: RootManager
-def main(args=None) -> int:
+def main() -> int:
     """
     Main entry point. Performs the following steps in order:
     - Create CLI argument parser
@@ -71,7 +71,7 @@ def main(args=None) -> int:
         parser = create_top_level_parser()
         subparsers = parser.add_subparsers(dest='command', help='Sub-command help')
         commands = register_all_commands(subparsers)
-        args = parser.parse_args(args)
+        args = parser.parse_args()
     except Exception as e:
         print(f"Error during parsing of CLI arguments: {e}", file=sys.stderr)
         return 1
