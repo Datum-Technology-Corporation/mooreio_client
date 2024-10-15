@@ -1,10 +1,11 @@
 import warnings
 from enum import Enum
+from pathlib import Path
 
 from semantic_version import SimpleSpec
 
-from command import Command
-from core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
+from ..core.command import Command
+from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
 
 LIST_HELP_TEXT = """Moore.io IP List Command
@@ -15,6 +16,18 @@ Usage:
 
 Examples:
    mio list"""
+
+
+PACKAGE_HELP_TEXT = """Moore.io IP Package Command
+   Command for encrypting/compressing entire IP on local disk.  To enable IP encryption, add an 'encrypted' entry to the
+   'hdl_src' section of your descriptor (ip.yml).  Moore.io will only attempt to encrypt using the simulators listed
+   under 'encrypted' of the 'ip' section.
+   
+Usage:
+   mio package IP DEST
+   
+Examples:
+   mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory."""
 
 
 PUBLISH_HELP_TEXT = """Moore.io IP Publish Command
@@ -74,7 +87,7 @@ class InstallMode(Enum):
 
 
 def get_commands():
-    return [List, Publish, Install, Uninstall]
+    return [List, Package, Publish, Install, Uninstall]
 
 
 class List(Command):
@@ -101,6 +114,70 @@ class List(Command):
             ip_text = f"  {ip_qualified_name} v{ip.ip.version} - {ip.ip.pkg_type.value}: {ip.ip.full_name}"
             print(ip_text)
         phase.end_process = True
+
+
+class Package(Command):
+    _ip_definition: 'IpDefinition'
+    _ip: 'Ip'
+    _destination: Path
+
+    @property
+    def ip_definition(self) -> 'IpDefinition':
+        return self._ip_definition
+
+    @property
+    def ip(self) -> 'Ip':
+        return self._ip
+
+    @property
+    def destination(self) -> Path:
+        return self._destination
+
+    @staticmethod
+    def name() -> str:
+        return "package"
+
+    @staticmethod
+    def add_to_subparsers(subparsers):
+        parser_package = subparsers.add_parser('package', help=PACKAGE_HELP_TEXT, add_help=False)
+        parser_package.add_argument('ip'            , help='Target IP'                          )
+        parser_package.add_argument('dest'          , help='Destination path'                   )
+
+    def needs_authentication(self) -> bool:
+        return False
+
+    def phase_init(self, phase):
+        try:
+            self._destination = Path(self.parsed_cli_arguments.dest)
+            self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+        except Exception as e:
+            phase.error = e
+
+    def phase_post_ip_discovery(self, phase):
+        try:
+            if self.ip_definition.vendor_name_is_specified:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name)
+            else:
+                self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
+        except Exception as e:
+            phase.error = e
+        else:
+            if self.ip.location_type != IpLocationType.PROJECT_USER:
+                phase.error = Exception(f"Can only package IP local to the project")
+
+    def phase_main(self, phase):
+        try:
+            if (len(self.ip.ip.encrypted) > 0) or self.ip.ip.mlicensed:
+                tgz_path = self.ip.create_encrypted_compressed_tarball()
+            else:
+                tgz_path = self.ip.create_unencrypted_compressed_tarball()
+            self.rmh.move_file(tgz_path, self.destination)
+        except Exception as e:
+            phase.error = Exception(f"Failed to package IP '{self.ip}': {e}")
+
+    def phase_report(self, phase):
+        print(f"Packaged IP '{self.ip}' successfully.")
+
 
 
 class Publish(Command):
@@ -158,7 +235,7 @@ class Publish(Command):
     def phase_main(self, phase):
         try:
             # TODO Remove path unless in debug mode by making the IP model do all the compression/encryption in memory
-            self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_remote(self.ip)
+            self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip)
         except Exception as e:
             phase.error = Exception(f"Failed to publish IP '{self.ip}': {e}")
 

@@ -1,0 +1,21 @@
+ip:
+  sync: true
+  sync_id: 3
+  pkg_type: dv_agent
+  mlicensed: true
+  encrypted: true
+  vendor: "gigadyne"
+  name: "b_agent"
+  full_name: "B Agent"
+  version: "4.8.11"
+
+dependencies:
+  "bravo/a_vlib": "1.0.0"
+
+structure:
+  hdl_src_path: "."
+
+hdl_src:
+  directories: ["."]
+  top_sv_files: ["agent_interface.sv"]
+

@@ -3,18 +3,12 @@
 #######################################################################################################################
 import os
 import subprocess
-
-import sub_process
 from datetime import datetime
-from typing import final
-
-from root_manager import RootManager
-from scheduler import JobSchedulerConfiguration, JobScheduler, JobResults, Job, JobSet
+from mio_client.core.scheduler import JobSchedulerConfiguration, JobScheduler, JobResults, Job, JobSet
 
 
 def get_schedulers():
     return [SubProcessScheduler]
-
 
 
 class SubProcessSchedulerConfiguration(JobSchedulerConfiguration):
@@ -22,7 +16,7 @@ class SubProcessSchedulerConfiguration(JobSchedulerConfiguration):
 
 
 class SubProcessScheduler(JobScheduler):
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "sub_process")
 
     def is_available(self) -> bool:

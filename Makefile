@@ -5,6 +5,32 @@
 
 
 #######################################################################################################################
+# Documentation
+.PHONY: help
+#######################################################################################################################
+# Prints Usage instruction
+help:
+	$(call print_banner, Help)
+	@echo "Usage: make [target]"
+	@echo
+	@echo "Targets:"
+	@echo "  all     : Sets up the virtual environment, runs tests, lints code, generates docs, and builds the package"
+	@echo "  venv    : Sets up a virtual environment and installs dependencies"
+	@echo "  test    : Runs all pytest test suites"
+	@echo "  lint    : Lints codebase with flake8"
+	@echo "  docs    : Generates Sphinx documentation"
+	@echo "  build   : Builds package for PyPI"
+	@echo "  clean   : Cleans up build artifacts and caches"
+
+
+#######################################################################################################################
+# Setup
+#######################################################################################################################
+.ONESHELL:
+.DEFAULT_GOAL := test
+
+
+#######################################################################################################################
 # Constants
 #######################################################################################################################
 RED = "\033[31m"
@@ -46,50 +72,73 @@ SPHINX_BUILD   := sphinx-build
 
 
 #######################################################################################################################
-# Phonies
-#######################################################################################################################
-.PHONY: all venv test lint docs build clean publish help
-
-
-#######################################################################################################################
 # Composite targets
 #######################################################################################################################
-all: venv test lint docs build
+clean: clean-venv clean-build
+all: clean test lint build
 
 
 #######################################################################################################################
-# Targets
+# Environment Setup Targets
+.PHONY: venv reqs clean-venv
 #######################################################################################################################
 # Set up a virtual environment and install dependencies
-venv:
-	$(call print_banner, Setting up virtual environment)
+venv/bin/activate: requirements-dev.txt
+	$(call print_banner, Setting up virtual environment and installing dependencies)
 	python3 -m venv venv
-	$(call print_banner, Activating virtual environment and installing dependencies)
-	source ./venv/bin/activate && $(PIP) install -r ./requirements.txt && $(PIP) install -r ./requirements-dev.txt
+	chmod +x venv/bin/activate
+	. ./venv/bin/activate
+	$(PIP) install -r ./requirements.txt
+	$(PIP) install -r ./requirements-dev.txt
+venv: venv/bin/activate
+	. ./venv/bin/activate
 
+# Updates the contents of requirements-dev.txt
+reqs: venv
+	$(call print_banner, Updating requirements)
+	$(PIP) freeze > ./requirements-dev.txt
+
+# Delete venv
+clean-venv:
+	$(call print_banner, Deleting virtual environment)
+	rm -rf ./__pycache__
+	rm -rf ./venv
+
+
+#######################################################################################################################
+# Testing Targets
+#######################################################################################################################
+.PHONY: test lint
 # Run all pytest test suites
-test:
+test: venv
 	$(call print_banner, Running all pytest tests)
-	$(PYTEST) --junitxml=reports/report.xml --cov=mio_client -cov-report=xml:reports/coverage.xml -n auto ./tests/
+	$(PYTEST)
+#$(PYTEST) -v --tb=long -rA -s --showlocals --dist=loadscope
+#$(PYTEST) -n auto --dist=loadscope
 
 # Lints codebase
-lint:
+lint: venv
 	$(call print_banner, Linting codebase)
 	$(FLAKE8) mio_client
 
+
+#######################################################################################################################
+# Build Targets
+.PHONY: docs build clean-build publish
+#######################################################################################################################
 # Generates documentation
-docs:
+docs: venv
 	$(call print_banner, Generating documentation)
 	$(SPHINX_API_DOC) -o docs/source/api .
 	$(SPHINX_BUILD) -b html docs/source docs/build
 
 # Builds package for PyPI
-build:
+build: venv
 	$(call print_banner, Building package)
 	$(PYTHON) setup.py sdist bdist_wheel
 
 # Cleans up all build files
-clean:
+clean-build:
 	$(call print_banner, Cleaning up build files)
 	rm -rf docs/build
 	rm -rf build
@@ -98,22 +147,8 @@ clean:
 	find . -name '__pycache__' -exec rm -rf {} +
 
 # Publishes package to PyPI
-publish: clean build
+publish: clean docs build
 	$(call print_banner, Publishing package)
 	$(TWINE) upload dist/*
-
-# Prints User Manual
-help:
-	$(call print_banner, Help)
-	@echo "Usage: make [target]"
-	@echo
-	@echo "Targets:"
-	@echo "  all     : Sets up the virtual environment, runs tests, lints code, generates docs, and builds the package"
-	@echo "  venv    : Sets up a virtual environment and installs dependencies"
-	@echo "  test    : Runs all pytest test suites"
-	@echo "  lint    : Lints codebase with flake8"
-	@echo "  docs    : Generates Sphinx documentation"
-	@echo "  build   : Builds package for PyPI"
-	@echo "  clean   : Cleans up build artifacts and caches"
 	@echo "  publish : Cleans, builds, and publishes the package to PyPI"
 

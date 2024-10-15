@@ -1,0 +1,16 @@
+ip:
+  sync: true
+  sync_id: 5
+  pkg_type: lib
+  vendor: "datron"
+  name: "d_lib"
+  full_name: "D Library"
+  version: "2.0.1"
+
+structure:
+  hdl_src_path: "."
+
+hdl_src:
+  directories: ["."]
+  top_sv_files: ["lib_top.sv"]
+

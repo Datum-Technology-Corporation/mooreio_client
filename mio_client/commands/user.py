@@ -2,8 +2,8 @@
 # All rights reserved.
 #######################################################################################################################
 import os
+from ..core.command import Command
 
-from command import Command
 
 PASSWORD_ENV_VAR_NAME="MIO_AUTHENTICATION_PASSWORD"
 

@@ -1,14 +1,13 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-import eda
-from mio_client.commands import user, ip
-from mio_client.core.phase import Phase
-from command import Command
+from . import user, ip, eda
+from ..core.phase import Phase
+from ..core.command import Command
 
 
 ALL_COMMANDS = [
-    "help", "login", "logout", "list", "publish", "install", "uninstall"
+    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "sim"
 ]
 
 HELP_TEXT = """Moore.io Help Command
@@ -49,6 +48,8 @@ class Help(Command):
             self.print_text_and_exit(phase, user.LOGOUT_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "list":
             self.print_text_and_exit(phase, ip.LIST_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "package":
+            self.print_text_and_exit(phase, ip.PACKAGE_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "publish":
             self.print_text_and_exit(phase, ip.PUBLISH_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "install":
