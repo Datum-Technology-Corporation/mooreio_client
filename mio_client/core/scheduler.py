@@ -245,9 +245,9 @@ class JobSchedulerDatabase:
         scheduler_directory = os.path.join(os.path.dirname(__file__), '..', 'schedulers')
         for filename in os.listdir(scheduler_directory):
             if filename.endswith('.py') and not filename.startswith('__'):
-                module_name = f'schedulers.{filename[:-3]}'
+                module_name = f'.schedulers.{filename[:-3]}'
                 try:
-                    module = importlib.import_module(module_name)
+                    module = importlib.import_module(module_name, 'mio_client')
                     new_schedulers = module.get_schedulers()
                     for scheduler in new_schedulers:
                         try:

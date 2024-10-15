@@ -96,9 +96,9 @@ class ServiceDataBase:
         service_directory = os.path.join(os.path.dirname(__file__), '..', 'services')
         for filename in os.listdir(service_directory):
             if filename.endswith('.py') and not filename.startswith('__'):
-                module_name = f'services.{filename[:-3]}'
+                module_name = f'.services.{filename[:-3]}'
                 try:
-                    module = importlib.import_module(module_name)
+                    module = importlib.import_module(module_name, 'mio_client')
                     new_services = module.get_services()
                     for service in new_services:
                         try:
@@ -107,6 +107,7 @@ class ServiceDataBase:
                         except Exception as e:
                             print(f"Service '{service}' has errors and is not being loaded: {e}", file=sys.stderr)
                 except Exception as e:
+                    print(f"Service module '{module_name}' has errors and is not being loaded: {e}", file=sys.stderr)
                     continue
 
     def add_service(self, service:Service):

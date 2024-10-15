@@ -77,9 +77,10 @@ class IpPublishingCertificate(Model):
     certificator: str
     timestamp: datetime
     license_type: IpLicenseType
-    id: int
+    version_id: int
+    license_id: Optional[int] = -1
     license_key: Optional[str] = UNDEFINED_CONST
-    client: Optional[str] = UNDEFINED_CONST
+    customer_id: Optional[int] = -1
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -468,7 +469,7 @@ class Ip(Model):
     def get_dependencies_to_find_on_remote(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
 
-    def create_encrypted_compressed_tarball(self, mlicense_key:str="") -> Path:
+    def create_encrypted_compressed_tarball(self, certificate:IpPublishingCertificate=None) -> Path:
         try:
             if self.resolved_src_path == self.root_path:
                 raise Exception(f"Cannot encrypt IPs where the source root is also the IP root: {self}")
@@ -478,10 +479,13 @@ class Ip(Model):
                     try:
                         simulator = self.ip_database.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, sim_spec)
                         encryption_config = LogicSimulatorEncryptionConfiguration()
-                        if self.ip.mlicensed and (mlicense_key==""):
-                            raise Exception(f"Cannot package Moore.io Licensed IP without a valid key")
-                        else:
-                            encryption_config.mlicense_key = mlicense_key
+                        if certificate:
+                            if self.ip.mlicensed and (certificate.license_key==""):
+                                raise Exception(f"Cannot package Moore.io Licensed IP without a valid key")
+                            else:
+                                encryption_config.add_license_key_checks = True
+                                encryption_config.mlicense_key = certificate.license_key
+                                encryption_config.mlicense_customer = certificate.customer_id
                         scheduler = self.ip_database.rmh.scheduler_database.get_default_scheduler()
                         encryption_report = simulator.encrypt(self, encryption_config, scheduler)
                         if not encryption_report.success:
@@ -775,7 +779,9 @@ class IpDataBase():
                 if certificate.license_type != IpLicenseType.COMMERCIAL:
                     raise Exception(f"Attempting to publish commercial/private IP to an Open-Source license.")
                 else:
-                    tgz_path = ip.create_encrypted_compressed_tarball()
+                    if (certificate.license_id == -1) or (certificate.license_key == UNDEFINED_CONST) or (certificate.customer_id == -1):
+                        raise Exception(f"Invalid certificate received for Commercial IP")
+                    tgz_path = ip.create_encrypted_compressed_tarball(certificate)
             else:
                 tgz_path = ip.create_unencrypted_compressed_tarball()
             certificate.tgz_file_path = tgz_path
@@ -785,15 +791,27 @@ class IpDataBase():
             except Exception as e:
                 raise Exception(f"Failed to encode IP {ip} compressed tarball: {e}")
             else:
-                data = {
-                    'id' : certificate.id,
-                    'payload' : str(tgz_b64_encoded),
-                }
                 try:
-                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/payload', data)
-                    confirmation = IpPublishingConfirmation.model_validate(response.json())
-                    if not confirmation.success:
-                        raise Exception(f"Failed to push IP payload to remote for '{ip}'")
+                    if ip.ip.mlicensed:
+                        data = {
+                            'version_id' : certificate.version_id,
+                            'license_id' : certificate.license_id,
+                            'license_key' : certificate.license_key,
+                            'payload' : str(tgz_b64_encoded),
+                        }
+                        response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/commercial-payload', data)
+                        confirmation = IpPublishingConfirmation.model_validate(response.json())
+                        if not confirmation.success:
+                            raise Exception(f"Failed to push IP commercial payload to server for '{ip}'")
+                    else:
+                        data = {
+                            'version_id' : certificate.version_id,
+                            'payload' : str(tgz_b64_encoded),
+                        }
+                        response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/public-payload', data)
+                        confirmation = IpPublishingConfirmation.model_validate(response.json())
+                        if not confirmation.success:
+                            raise Exception(f"Failed to push IP public payload to server for '{ip}'")
                 except Exception as e:
                     raise Exception(f"Failed to push IP payload to remote for '{ip}': {e}")
         return certificate
@@ -804,7 +822,7 @@ class IpDataBase():
             "ip_name": ip.ip.name,
             "ip_id": ip.ip.sync_id,
             "ip_version": str(ip.ip.version),
-            "client": client
+            "customer": client
         }
         try:
             response = self.rmh.web_api_call(HTTPMethod.POST, "publish-ip/certificate", request)

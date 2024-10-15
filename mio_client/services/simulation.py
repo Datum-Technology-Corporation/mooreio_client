@@ -152,7 +152,9 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
     verbosity: UvmVerbosity = UvmVerbosity.DEBUG
 
 class LogicSimulatorEncryptionConfiguration(LogicSimulatorConfiguration):
-    pass
+    add_license_key_checks: bool = False
+    mlicense_key: str = UNDEFINED_CONST
+    mlicense_customer: int = -1
 
 
 class LogicSimulatorFileList(Model):
@@ -377,11 +379,11 @@ class LogicSimulator(Service, ABC):
                 file_content = f"`protect begin\n{file_content}\n`protect end\n"
                 with file_path.open("w") as file:
                     file.write(file_content)
-        if ip.ip.mlicensed:
+        if ip.ip.mlicensed and config.add_license_key_checks:
             found_key_check = False
             # Search and replace in all SystemVerilog
             search_string = "`__MIO_LICENSE_KEY_CHECK_PHONY__"
-            replace_string = f'`__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}")'
+            replace_string = f'`__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}", "{config.mlicense_customer}")'
             for file_path in report.sv_files_to_encrypt:
                 with file_path.open("r") as file:
                     file_content = file.read()
@@ -392,7 +394,7 @@ class LogicSimulator(Service, ABC):
                     found_key_check = True
             # Search and replace in all VHDL files
             search_string = "-- __MIO_LICENSE_KEY_CHECK_PHONY__"
-            replace_string = f'__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}");'  # TODO This is just theory
+            replace_string = f'__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}", "{config.mlicense_customer}");'  # TODO This is just theory
             for file_path in report.vhdl_files_to_encrypt:
                 with file_path.open("r") as file:
                     file_content = file.read()

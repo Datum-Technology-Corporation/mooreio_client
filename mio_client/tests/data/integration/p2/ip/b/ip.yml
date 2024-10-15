@@ -2,6 +2,8 @@ ip:
   sync: true
   sync_id: 3
   pkg_type: dv_agent
+  mlicensed: true
+  encrypted: true
   vendor: "gigadyne"
   name: "b_agent"
   full_name: "B Agent"
