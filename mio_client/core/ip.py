@@ -16,15 +16,17 @@ import yaml
 from pydantic import constr, PositiveInt, ValidationError
 from semantic_version import SimpleSpec
 
-from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
+from .model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
     VALID_POSIX_PATH_REGEX, UNDEFINED_CONST
 #from mio_client.core.root import RootManager
 
 from enum import Enum
 
 #from mio_client.core.root import RootManager
-from mio_client.core.version import SemanticVersion, SemanticVersionSpec
-from configuration import Ip
+from .version import SemanticVersion, SemanticVersionSpec
+from .configuration import Ip
+from .service import ServiceType
+from ..services.simulation import LogicSimulatorEncryptionConfiguration
 
 
 MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
@@ -75,9 +77,10 @@ class IpPublishingCertificate(Model):
     certificator: str
     timestamp: datetime
     license_type: IpLicenseType
-    id: int
+    version_id: int
+    license_id: Optional[int] = -1
     license_key: Optional[str] = UNDEFINED_CONST
-    client: Optional[str] = UNDEFINED_CONST
+    customer_id: Optional[int] = -1
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -134,7 +137,7 @@ class Structure(Model):
     scripts_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     docs_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     examples_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    hdl_src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
 
 
 class HdlSource(Model):
@@ -143,7 +146,7 @@ class HdlSource(Model):
     top_vhdl_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
     top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     tests_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    tests_name_template: Optional[jinja2.Template] = UNDEFINED_CONST
+    tests_name_template: Optional[str] = UNDEFINED_CONST
     so_libs: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
 
 
@@ -172,7 +175,7 @@ class About(Model):
     sync: bool
     sync_id: Optional[PositiveInt] = 0
     sync_revision: Optional[str] = UNDEFINED_CONST
-    encrypted: Optional[bool] = False
+    encrypted: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     mlicensed: Optional[bool] = False
     pkg_type: IpPkgType
     vendor: str
@@ -251,6 +254,14 @@ class Ip(Model):
             return f"{self.ip.name}__v{self.ip.version}"
 
     @property
+    def image_name(self):
+        version_no_dots = str(self.ip.version).replace(".", "p")
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"img__{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
+        else:
+            return f"img__{self.ip.name}__v{self.ip.version}"
+
+    @property
     def work_directory_name(self):
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}__{self.ip.name}"
@@ -263,6 +274,21 @@ class Ip(Model):
             return f"{self.ip.vendor}_{self.ip.name}"
         else:
             return f"{self.ip.name}"
+
+    @property
+    def as_ip_definition(self):
+        version_str = str(self.ip.version)
+        if self.ip.vendor != UNDEFINED_CONST:
+            return f"{self.ip.vendor}/{self.ip.name}@{version_str}"
+        else:
+            return f"{self.ip.name}@{self.ip.version}"
+
+    @property
+    def has_vhdl_content(self) -> bool:
+        return_bool:bool = False
+        if len(self.resolved_top_vhdl_files) > 0:
+            return_bool = True
+        return return_bool
 
     @staticmethod
     def parse_ip_definition(definition: str) -> IpDefinition:
@@ -383,7 +409,7 @@ class Ip(Model):
         return self._uninstalled
 
     def check(self):
-        self._resolved_src_path = self.root_path / self.structure.src_path
+        self._resolved_src_path = self.root_path / self.structure.hdl_src_path
         if not self.rmh.directory_exists(self.resolved_src_path):
             raise Exception(f"IP '{self}' src path '{self.resolved_src_path}' does not exist")
         if self.structure.scripts_path != UNDEFINED_CONST:
@@ -407,6 +433,12 @@ class Ip(Model):
                 raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
             else:
                 self._resolved_hdl_directories.append(directory_path)
+            if self.hdl_src.tests_path != UNDEFINED_CONST:
+                tests_directory_path = directory_path / self.hdl_src.tests_path
+                if not self.rmh.directory_exists(tests_directory_path):
+                    raise Exception(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
+                else:
+                    self._resolved_hdl_directories.append(tests_directory_path)
         for file in self.hdl_src.top_sv_files:
             full_path = self.resolved_src_path / file
             if not self.rmh.file_exists(full_path):
@@ -436,6 +468,43 @@ class Ip(Model):
     
     def get_dependencies_to_find_on_remote(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
+
+    def create_encrypted_compressed_tarball(self, certificate:IpPublishingCertificate=None) -> Path:
+        try:
+            if self.resolved_src_path == self.root_path:
+                raise Exception(f"Cannot encrypt IPs where the source root is also the IP root: {self}")
+            tgz_file_path = self.rmh.md / f"temp/{self.archive_name}.tgz"
+            with tarfile.open(tgz_file_path, "w:gz") as tar:
+                for sim_spec in self.ip.encrypted:
+                    try:
+                        simulator = self.ip_database.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, sim_spec)
+                        encryption_config = LogicSimulatorEncryptionConfiguration()
+                        if certificate:
+                            if self.ip.mlicensed and (certificate.license_key==""):
+                                raise Exception(f"Cannot package Moore.io Licensed IP without a valid key")
+                            else:
+                                encryption_config.add_license_key_checks = True
+                                encryption_config.mlicense_key = certificate.license_key
+                                encryption_config.mlicense_customer = certificate.customer_id
+                        scheduler = self.ip_database.rmh.scheduler_database.get_default_scheduler()
+                        encryption_report = simulator.encrypt(self, encryption_config, scheduler)
+                        if not encryption_report.success:
+                            raise Exception(f"Failed to encrypt")
+                        else:
+                            tar.add(encryption_report.path_to_encrypted_files, arcname=f"{self.structure.hdl_src_path}.{simulator.name}")
+                            self.ip_database.rmh.remove_directory(encryption_report.path_to_encrypted_files)
+                    except Exception as e:
+                        raise Exception(f"Could not encrypt IP {self} for simulator '{sim_spec}': {e}")
+                tar.add(self.file_path, arcname=self.file_path.name)
+                if self.has_docs:
+                    tar.add(self.resolved_docs_path, arcname=self.resolved_docs_path.name)
+                if self.has_examples:
+                    tar.add(self.resolved_examples_path, arcname=self.resolved_examples_path.name)
+                if self.has_scripts:
+                    tar.add(self.resolved_scripts_path, arcname=self.resolved_scripts_path.name)
+        except Exception as e:
+            raise Exception(f"Failed to create encrypted compressed tarball for {self}: {e}")
+        return tgz_file_path
     
     def create_unencrypted_compressed_tarball(self) -> Path:
         try:
@@ -504,6 +573,7 @@ class Ip(Model):
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
         # If topological sort includes all nodes, return the order
+        # TODO Remove IP that aren't related to this IP
         if len(topo_order) == len(all_ip):
             # Remove self from the topological order if it exists
             if self in topo_order:
@@ -700,14 +770,20 @@ class IpDataBase():
             else:
                 raise Exception(f"Failed to get IP version '{ip_definition.find_results.version_id}' from server")
     
-    def publish_new_version_to_remote(self, ip:Ip, client:str="public") -> IpPublishingCertificate:
-        certificate = self.get_publishing_certificate(ip, client)
+    def publish_new_version_to_server(self, ip:Ip) -> IpPublishingCertificate:
+        certificate = self.get_publishing_certificate(ip)
         if not certificate.granted:
             raise Exception(f"IP {ip} is not available for publishing")
         else:
-            # TODO Implement encrypted IP publishing
-            # if certification.license_type == IpLicenseType.COMMERCIAL:
-            tgz_path = ip.create_unencrypted_compressed_tarball()
+            if ip.ip.mlicensed or (len(ip.ip.encrypted) > 0):
+                if certificate.license_type != IpLicenseType.COMMERCIAL:
+                    raise Exception(f"Attempting to publish commercial/private IP to an Open-Source license.")
+                else:
+                    if (certificate.license_id == -1) or (certificate.license_key == UNDEFINED_CONST) or (certificate.customer_id == -1):
+                        raise Exception(f"Invalid certificate received for Commercial IP")
+                    tgz_path = ip.create_encrypted_compressed_tarball(certificate)
+            else:
+                tgz_path = ip.create_unencrypted_compressed_tarball()
             certificate.tgz_file_path = tgz_path
             try:
                 with open(tgz_path,'rb') as f:
@@ -715,15 +791,27 @@ class IpDataBase():
             except Exception as e:
                 raise Exception(f"Failed to encode IP {ip} compressed tarball: {e}")
             else:
-                data = {
-                    'id' : certificate.id,
-                    'payload' : str(tgz_b64_encoded),
-                }
                 try:
-                    response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/payload', data)
-                    confirmation = IpPublishingConfirmation.model_validate(response.json())
-                    if not confirmation.success:
-                        raise Exception(f"Failed to push IP payload to remote for '{ip}'")
+                    if ip.ip.mlicensed:
+                        data = {
+                            'version_id' : certificate.version_id,
+                            'license_id' : certificate.license_id,
+                            'license_key' : certificate.license_key,
+                            'payload' : str(tgz_b64_encoded),
+                        }
+                        response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/commercial-payload', data)
+                        confirmation = IpPublishingConfirmation.model_validate(response.json())
+                        if not confirmation.success:
+                            raise Exception(f"Failed to push IP commercial payload to server for '{ip}'")
+                    else:
+                        data = {
+                            'version_id' : certificate.version_id,
+                            'payload' : str(tgz_b64_encoded),
+                        }
+                        response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/public-payload', data)
+                        confirmation = IpPublishingConfirmation.model_validate(response.json())
+                        if not confirmation.success:
+                            raise Exception(f"Failed to push IP public payload to server for '{ip}'")
                 except Exception as e:
                     raise Exception(f"Failed to push IP payload to remote for '{ip}': {e}")
         return certificate
@@ -734,7 +822,7 @@ class IpDataBase():
             "ip_name": ip.ip.name,
             "ip_id": ip.ip.sync_id,
             "ip_version": str(ip.ip.version),
-            "client": client
+            "customer": client
         }
         try:
             response = self.rmh.web_api_call(HTTPMethod.POST, "publish-ip/certificate", request)

@@ -15,13 +15,13 @@ from pydantic import ValidationError
 import os
 import getpass
 
-from core.command import Command
-from configuration import Configuration
-from core.ip import IpDataBase, IpLocationType
-from core.phase import Phase
-from core.scheduler import JobSchedulerDatabase
-from core.service import ServiceDataBase
-from core.user import User
+from .command import Command
+from .configuration import Configuration
+from .ip import IpDataBase, IpLocationType
+from .phase import Phase
+from .scheduler import JobSchedulerDatabase
+from .service import ServiceDataBase
+from .user import User
 
 
 class PhaseEndProcessException(Exception):
@@ -298,7 +298,7 @@ class RootManager:
                 print(e.message)
             return 0
         except Exception as e:
-            print(f"\033[1;31m{e}\033[0m", file=sys.stderr)
+            print(f"\033[1;31m{e}\033[0m")#, file=sys.stderr)
             return 1
         else:
             return 0
@@ -1001,7 +1001,7 @@ class RootManager:
         current_path = self._wd
         try:
             while current_path != os.path.dirname(current_path):  # Stop if we're at the root directory
-                candidate_path = os.path.join(current_path, 'mio.toml')
+                candidate_path = Path(os.path.join(current_path, 'mio.toml'))
                 if self.file_exists(candidate_path):
                     self._project_configuration_path = Path(candidate_path)
                     return
@@ -1016,6 +1016,9 @@ class RootManager:
         self.create_directory(self.md / "temp")
 
     def phase_load_project_configuration(self, phase):
+        if not self.project_configuration_path:
+            phase.error = Exception("Could not find project root path")
+            return
         try:
             with open(self.project_configuration_path, 'r') as f:
                 self._project_configuration = toml.load(f)

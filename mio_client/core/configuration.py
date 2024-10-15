@@ -2,18 +2,9 @@
 # All rights reserved.
 #######################################################################################################################
 from typing import List, Optional
-
-import jinja2
-import toml
 from pydantic import BaseModel, constr, FilePath, PositiveInt
-from mio_client.core.model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
+from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
-from pathlib import Path
-from pydantic import DirectoryPath
-import semantic_version
-
-from mio_client.core.version import SemanticVersion
-
 from enum import Enum
 
 
@@ -56,6 +47,7 @@ class LogicSimulation(Model):
     test_result_path_template: str
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
+    metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     synopsys_vcs_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
@@ -113,7 +105,8 @@ class Docs(Model):
 
 
 class Encryption(Model):
-    metrics_dsim_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    metrics_dsim_sv_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    metrics_dsim_vhdl_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     synopsys_vcs_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     siemens_questa_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST

@@ -1,0 +1,19 @@
+ip:
+  sync: true
+  sync_id: 2
+  pkg_type: ss
+  vendor: "acme"
+  name: "e_ss"
+  full_name: "E Sub-System"
+  version: "2.6.1"
+
+dependencies:
+  "datron/c_block": ">=1.0.0"
+
+structure:
+  hdl_src_path: "."
+
+hdl_src:
+  directories: ["."]
+  top_sv_files: ["ss_top.sv"]
+

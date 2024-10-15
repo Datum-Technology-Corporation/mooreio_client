@@ -1,8 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from root_manager import RootManager
-from scheduler import JobSchedulerConfiguration, JobScheduler, JobResults, Job, JobSet
+from mio_client.core.scheduler import JobSchedulerConfiguration, JobScheduler, JobResults, Job, JobSet
 
 
 def get_schedulers():
@@ -16,7 +15,7 @@ class LsfSchedulerConfiguration(JobSchedulerConfiguration):
 
 # TODO IMPLEMENT!
 class LsfScheduler(JobScheduler):
-    def __init__(self, rmh: RootManager):
+    def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "lsf")
 
     def is_available(self) -> bool:
@@ -25,8 +24,8 @@ class LsfScheduler(JobScheduler):
     def init(self):
         pass
 
-    def dispatch_job(self, task: Job, configuration: LsfSchedulerConfiguration) -> JobResults:
+    def do_dispatch_job(self, job: Job, configuration: LsfSchedulerConfiguration) -> JobResults:
         pass
 
-    def dispatch_job_set(self, task_set: JobSet, configuration: LsfSchedulerConfiguration):
+    def do_dispatch_job_set(self, job_set: JobSet, configuration: LsfSchedulerConfiguration):
         pass

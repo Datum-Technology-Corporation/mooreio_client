@@ -1,0 +1,25 @@
+ip:
+  sync: true
+  sync_id: 6
+  pkg_type: dv_tb
+  vendor: "acme"
+  name: "g_tb"
+  full_name: "G FPGA TB"
+  version: "5.3.7"
+
+dut:
+  type: ip
+  name: "f_fpga"
+  version: "*"
+
+dependencies:
+  "gigadyne/b_agent": ">=4.7.2"
+
+structure:
+  hdl_src_path: "."
+
+hdl_src:
+  directories: ["."]
+  top_sv_files: ["fpga_tb.sv"]
+  top: ["fpga_tb"]
+

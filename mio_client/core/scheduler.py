@@ -2,7 +2,6 @@
 # All rights reserved.
 #######################################################################################################################
 import importlib
-import inspect
 import os
 import sys
 from abc import ABC, abstractmethod
@@ -19,6 +18,10 @@ class Job:
         self._name = name
         self._binary = binary
         self._arguments = arguments
+        self._env_vars = {}
+        self._pre_path:str = ""
+        self._post_path:str = ""
+        self._print_to_screen:bool = False
         self._hostname = None
         self._is_part_of_set = False
         self._parent_set = None
@@ -34,6 +37,34 @@ class Job:
     @property
     def binary(self) -> Path:
         return self._binary
+
+    @property
+    def env_vars(self) -> dict:
+        return self._env_vars
+    @env_vars.setter
+    def env_vars(self, value: dict):
+        self._env_vars = value
+
+    @property
+    def pre_path(self) -> str:
+        return self._pre_path
+    @pre_path.setter
+    def pre_path(self, value: str):
+        self._pre_path = value
+
+    @property
+    def post_path(self) -> str:
+        return self._post_path
+    @post_path.setter
+    def post_path(self, value: str):
+        self._post_path = value
+
+    @property
+    def print_to_screen(self) -> bool:
+        return self._print_to_screen
+    @print_to_screen.setter
+    def print_to_screen(self, value: bool):
+        self._print_to_screen = value
 
     @property
     def arguments(self) -> List[str]:
@@ -159,6 +190,7 @@ class JobScheduler(ABC):
         self._name = name
         self._version = None
         self._db = None
+        self._jobs_dispatched:List[Job] = []
 
     @property
     def name(self) -> str:
@@ -176,6 +208,10 @@ class JobScheduler(ABC):
     def db(self, value: 'JobSchedulerDatabase'):
         self._db = value
 
+    @property
+    def jobs_dispatched(self) -> List[Job]:
+        return self._jobs_dispatched
+
     @abstractmethod
     def is_available(self) -> bool:
         pass
@@ -184,12 +220,19 @@ class JobScheduler(ABC):
     def init(self):
         pass
 
+    def dispatch_job(self, job: Job, configuration: JobSchedulerConfiguration) -> JobResults:
+        self.jobs_dispatched.append(job)
+        return self.do_dispatch_job(job, configuration)
+
+    def dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
+        return self.do_dispatch_job_set(job_set, configuration)
+
     @abstractmethod
-    def dispatch_job(self, task: Job, configuration: JobSchedulerConfiguration) -> JobResults:
+    def do_dispatch_job(self, job: Job, configuration: JobSchedulerConfiguration) -> JobResults:
         pass
 
     @abstractmethod
-    def dispatch_job_set(self, task_set: JobSet, configuration: JobSchedulerConfiguration):
+    def do_dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
         pass
 
 
@@ -202,9 +245,9 @@ class JobSchedulerDatabase:
         scheduler_directory = os.path.join(os.path.dirname(__file__), '..', 'schedulers')
         for filename in os.listdir(scheduler_directory):
             if filename.endswith('.py') and not filename.startswith('__'):
-                module_name = f'schedulers.{filename[:-3]}'
+                module_name = f'.schedulers.{filename[:-3]}'
                 try:
-                    module = importlib.import_module(module_name)
+                    module = importlib.import_module(module_name, 'mio_client')
                     new_schedulers = module.get_schedulers()
                     for scheduler in new_schedulers:
                         try:
@@ -226,4 +269,8 @@ class JobSchedulerDatabase:
         for task_scheduler in self._task_schedulers:
             if task_scheduler.name == name:
                 return task_scheduler
-        raise Exception(f"No Task Scheduler '{name}' exists in the Task Scheduler Database")
+        raise Exception(f"No Job Scheduler '{name}' exists in the Job Scheduler Database")
+
+    def get_default_scheduler(self) -> 'JobScheduler':
+        # TODO Add support for other schedulers
+        return self.find_scheduler("sub_process")

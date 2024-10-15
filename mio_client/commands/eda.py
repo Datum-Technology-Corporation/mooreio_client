@@ -1,14 +1,16 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from ip import Ip, IpDefinition
-from command import Command
-from phase import Phase
-from scheduler import JobScheduler
-from service import ServiceType
-from simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, LogicSimulatorElaborationConfiguration, \
-    LogicSimulatorElaborationAndCompilationConfiguration, LogicSimulatorSimulationConfiguration
-from simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
+import re
+
+from ..core.ip import Ip, IpDefinition, IpPkgType
+from ..core.command import Command
+from ..core.phase import Phase
+from ..core.scheduler import JobScheduler
+from ..core.service import ServiceType
+from ..services.simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, LogicSimulatorElaborationConfiguration, \
+    LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration, UvmVerbosity
+from ..services.simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
 SIM_HELP_TEXT = """Moore.io Logic Simulation Command
@@ -39,9 +41,9 @@ Options:
    -c          , --cov                  Enable code & functional coverage capture.
    -g          , --gui                  Invokes simulator in graphical or 'GUI' mode.
    
-   -S   Simulate  target IP.
-   -E   Elaborate target IP.
-   -C   Compile   target IP.
+   -S   Simulate
+   -E   Elaborate
+   -C   Compile
    -D   Prepare Device-Under-Test (DUT) for logic simulation. Ex: invoke FuseSoC to prepare core(s) for compilation.
    
 Examples:
@@ -98,13 +100,17 @@ class Simulate(Command):
     _do_simulate: bool = False
     _compilation_configuration: LogicSimulatorCompilationConfiguration
     _elaboration_configuration: LogicSimulatorElaborationConfiguration
-    _compilation_and_elaboration_configuration: LogicSimulatorElaborationAndCompilationConfiguration
+    _compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
     _simulation_configuration: LogicSimulatorSimulationConfiguration
     _compilation_report: LogicSimulatorCompilationReport
     _elaboration_report: LogicSimulatorElaborationReport
     _compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
     _simulation_report: LogicSimulatorSimulationReport
     _success:bool = False
+    _defines_boolean:list[str] = []
+    _defines_value:dict[str, str] = {}
+    _args_boolean:list[str] = []
+    _args_value:dict[str, str] = {}
 
     @property
     def simulator(self) -> LogicSimulator:
@@ -139,7 +145,7 @@ class Simulate(Command):
         return self._elaboration_configuration
 
     @property
-    def compilation_and_elaboration_configuration(self) -> LogicSimulatorElaborationAndCompilationConfiguration:
+    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationConfiguration:
         return self._compilation_and_elaboration_configuration
 
     @property
@@ -167,6 +173,22 @@ class Simulate(Command):
         return self._success
 
     @property
+    def defines_boolean(self) -> list[str]:
+        return self._defines_boolean
+
+    @property
+    def defines_value(self) -> dict[str, str]:
+        return self._defines_value
+
+    @property
+    def args_boolean(self) -> list[str]:
+        return self._args_boolean
+
+    @property
+    def args_value(self) -> dict[str, str]:
+        return self._args_value
+
+    @property
     def ip_definition(self) -> IpDefinition:
         return self._ip_definition
 
@@ -176,47 +198,51 @@ class Simulate(Command):
     def needs_authentication(self) -> bool:
         return False
 
-    def phase_init(self, phase:Phase):
+    def phase_init(self, phase: Phase):
         self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
         if not self.parsed_cli_arguments.D and not self.parsed_cli_arguments.C and not self.parsed_cli_arguments.E and not self.parsed_cli_arguments.S:
             self._do_prepare_dut = True
-            self._do_compile   = True
+            self._do_compile = True
             self._do_elaborate = True
-            self._do_simulate  = True
+            self._do_simulate = True
         else:
-            if self.parsed_cli_arguments.D:
-                self._do_prepare_dut = True
-            else:
-                self._do_prepare_dut = False
-            if self.parsed_cli_arguments.C:
-                self._do_compile = True
-            else:
-                self._do_compile = False
-            if self.parsed_cli_arguments.E:
-                self._do_elaborate = True
-            else:
-                self._do_elaborate = False
-            if self.parsed_cli_arguments.S:
-                self._do_simulate = True
-            else:
-                self._do_simulate = False
-        if self.parsed_cli_arguments.app == "dsim":
-            if self.do_compile and self.do_elaborate:
-                self._do_compile = False
-                self._do_elaborate = False
-                self._do_compile_and_elaborate = True
+            self._do_prepare_dut = self.parsed_cli_arguments.D
+            self._do_compile = self.parsed_cli_arguments.C
+            self._do_elaborate = self.parsed_cli_arguments.E
+            self._do_simulate = self.parsed_cli_arguments.S
+
+        if self.parsed_cli_arguments.add_args:
+            for arg in self.parsed_cli_arguments.add_args:
+                patterns = {
+                    re.compile(r'^\+define\+(\w+)$'): self.defines_boolean,
+                    re.compile(r'^\+define\+(\w+)=(\w+)$'): self.defines_value,
+                    re.compile(r'^\+(\w+)$'): self.args_boolean,
+                    re.compile(r'^\+(\w+)=(\w+)$'): self.args_value
+                }
+                match_found = False
+                for pattern, target_list in patterns.items():
+                    match = pattern.match(arg)
+                    if match:
+                        if isinstance(target_list, list):
+                            target_list.append(match.group(1))
+                        else:
+                            target_list[match.group(1)] = match.group(2)
+                        match_found = True
+                        break
+                if not match_found:
+                    raise Exception(f"Argument '{arg}' does not match any of the expected patterns.")
 
     def phase_post_validate_configuration_space(self, phase):
         if not self.parsed_cli_arguments.app:
             if not self.rmh.configuration.logic_simulation.default_simulator:
                 phase.error = Exception(f"No simulator specified (-a/--app) and no default simulator in the Configuration")
+                return
             else:
                 self.parsed_cli_arguments.app = self.rmh.configuration.logic_simulation.default_simulator.value
 
     def phase_post_scheduler_discovery(self, phase:Phase):
         try:
-            # TODO Add support for other schedulers
-            self._scheduler = self.rmh.scheduler_database.find_scheduler("local_process")
+            self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
         except Exception as e:
             phase.error = e
 
@@ -230,6 +256,21 @@ class Simulate(Command):
         self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
         if not self.ip:
             phase.error = Exception(f"IP '{self.ip_definition}' could not be found")
+        else:
+            if self.do_simulate and (self.ip.ip.pkg_type != IpPkgType.DV_TB):
+                phase.error = Exception(f"IP '{self.ip}' is not a Test Bench")
+                return
+            if self.ip.has_vhdl_content:
+                # VHDL must be compiled and elaborated separately
+                if self.do_compile_and_elaborate:
+                    self._do_compile = True
+                    self._do_elaborate = True
+                    self._do_compile_and_elaborate = False
+            else:
+                if self.do_compile and self.do_elaborate:
+                    self._do_compile = False
+                    self._do_elaborate = False
+                    self._do_compile_and_elaborate = True
     
     def phase_main(self, phase:Phase):
         if self.do_prepare_dut:
@@ -261,6 +302,8 @@ class Simulate(Command):
             self.compilation_configuration.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
             self.compilation_configuration.enable_coverage = True
+        self.compilation_configuration.defines_boolean = self.defines_boolean
+        self.compilation_configuration.defines_value = self.defines_value
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
     def elaborate(self, phase:Phase):
@@ -268,11 +311,22 @@ class Simulate(Command):
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
     def compile_and_elaborate(self, phase:Phase):
-        self._compilation_and_elaboration_configuration = LogicSimulatorElaborationAndCompilationConfiguration()
+        self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationConfiguration()
+        self.compilation_and_elaboration_configuration.defines_boolean = self.defines_boolean
+        self.compilation_and_elaboration_configuration.defines_value = self.defines_value
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
 
     def simulate(self, phase:Phase):
         self._simulation_configuration = LogicSimulatorSimulationConfiguration()
+        self.simulation_configuration.seed = self.parsed_cli_arguments.seed if self.parsed_cli_arguments.seed is not None else 1
+        self.simulation_configuration.verbosity = self.parsed_cli_arguments.verbosity if self.parsed_cli_arguments.verbosity is not None else UvmVerbosity.MEDIUM
+        self.simulation_configuration.max_errors = self.parsed_cli_arguments.errors if self.parsed_cli_arguments.errors is not None else 10
+        self.simulation_configuration.gui_mode = self.parsed_cli_arguments.gui
+        self.simulation_configuration.enable_waveform_capture = self.parsed_cli_arguments.waves
+        self.simulation_configuration.enable_coverage = self.parsed_cli_arguments.cov
+        self.simulation_configuration.test_name = self.parsed_cli_arguments.test.strip().lower()
+        self.simulation_configuration.args_boolean = self.args_boolean
+        self.simulation_configuration.args_value = self.args_value
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
 
     def phase_report(self, phase:Phase):
@@ -330,10 +384,37 @@ class Simulate(Command):
                 print(f"\033[31m{fatal}\033[0m")
     
     def print_elaboration_report(self, phase:Phase):
-        pass
+        errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_errors}W\033[0m" if self.elaboration_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
+        print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.elaboration_report.log_path}")
+        if not self.elaboration_report.success:
+            print('*' * 119)
+            for error in self.elaboration_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.elaboration_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")
     
     def print_compilation_and_elaboration_report(self, phase:Phase):
-        pass
+        errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_errors}W\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
+        print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_and_elaboration_report.log_path}")
+        if not self.compilation_and_elaboration_report.success:
+            print('*' * 119)
+            for error in self.compilation_and_elaboration_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.compilation_and_elaboration_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")
 
     def print_simulation_report(self, phase:Phase):
-        pass
+        errors_str = f"\033[31m\033[1m{self.simulation_report.num_errors}E\033[0m" if self.simulation_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.simulation_report.num_errors}W\033[0m" if self.simulation_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.simulation_report.num_fatals > 0 else ""
+        print(f" Simulation results - {errors_str} {warnings_str}{fatal_str}: {self.simulation_report.log_path}")
+        if not self.simulation_report.success:
+            print('*' * 119)
+            for error in self.simulation_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.simulation_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")

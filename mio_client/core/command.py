@@ -2,11 +2,7 @@
 # All rights reserved.
 #######################################################################################################################
 from abc import abstractmethod
-
-from pydantic import BaseModel
-
-from mio_client.core.model import Model
-from mio_client.core.phase import Phase
+from .model import Model
 
 
 class CommandHistory(Model):
