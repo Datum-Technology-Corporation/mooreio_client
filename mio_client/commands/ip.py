@@ -38,11 +38,11 @@ Usage:
    mio publish IP [OPTIONS]
 
 Options:
-   -o ORG, --org ORG  # Specifies Client (Moore.io Organization) name.  Commercial IPs only.
+   -c ORG, --customer ORG  # Specifies Customer Organization name.  Commercial IPs only.
 
 Examples:
    mio publish uvma_my_ip          # Publish Public IP 'uvma_my_ip'.
-   mio publish uvma_my_ip -o acme  # Publish Commercial IP 'uvma_my_ip' for client 'acme'."""
+   mio publish uvma_my_ip -c acme  # Publish Commercial IP 'uvma_my_ip' for customer 'acme'."""
 
 
 INSTALL_HELP_TEXT = """Moore.io IP Install Command
@@ -184,6 +184,7 @@ class Publish(Command):
     _ip_definition: 'IpDefinition'
     _ip: 'Ip'
     _publishing_certificate: IpPublishingCertificate
+    _customer:str
 
     @property
     def ip_definition(self) -> 'IpDefinition':
@@ -192,6 +193,10 @@ class Publish(Command):
     @property
     def ip(self) -> 'Ip':
         return self._ip
+
+    @property
+    def customer(self) -> str:
+        return self._customer
 
     @property
     def publishing_certificate(self) -> IpPublishingCertificate:
@@ -206,8 +211,8 @@ class Publish(Command):
         parser_publish = subparsers.add_parser('publish', help=PUBLISH_HELP_TEXT, add_help=False)
         parser_publish.add_argument('ip', help='Target IP')
         parser_publish.add_argument(
-            '-o', "--org",
-            help='Client (Moore.io Organization) name.  Commercial IPs only.',
+            '-c', "--customer",
+            help='Customer (Moore.io Organization) name.  Commercial IPs only.',
             required=False
         )
 
@@ -231,11 +236,17 @@ class Publish(Command):
         else:
             if self.ip.location_type != IpLocationType.PROJECT_USER:
                 phase.error = Exception(f"Can only publish IP local to the project")
+            if self.ip.ip.mlicensed:
+                if not self.parsed_cli_arguments.customer:
+                    phase.error = Exception(f"Must specify customer (`-c`) when publishing commercial IP")
+                else:
+                    self._customer = self.parsed_cli_arguments.customer.strip().lower()
+            else:
+                self._customer = "public"
 
     def phase_main(self, phase):
         try:
-            # TODO Remove path unless in debug mode by making the IP model do all the compression/encryption in memory
-            self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip)
+             self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip, self.customer)
         except Exception as e:
             phase.error = Exception(f"Failed to publish IP '{self.ip}': {e}")
 
@@ -244,7 +255,7 @@ class Publish(Command):
 
     def phase_cleanup(self, phase):
         try:
-            # Turn into configuration parameter to store these somewhere for safekeeping
+            # TODO Turn into configuration parameter to store these somewhere for safekeeping
             #self.rmh.remove_file(self.self._publishing_certificate._tgz_path)
             pass
         except Exception as e:
@@ -308,7 +319,7 @@ class Install(Command):
 
     def phase_main(self, phase):
         if self.mode == InstallMode.REMOTE:
-            self.ip_definition.find_results = self.rmh.ip_database.ip_definition_is_available_on_remote(self.ip_definition)
+            self.ip_definition.find_results = self.rmh.ip_database.ip_definition_is_available_on_server(self.ip_definition)
             if self.ip_definition.find_results.found:
                 try:
                     self.rmh.ip_database.install_ip_from_server(self.ip_definition)

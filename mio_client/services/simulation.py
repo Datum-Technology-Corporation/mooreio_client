@@ -477,9 +477,18 @@ class LogicSimulator(Service, ABC):
         file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
-            for directory in dep.resolved_hdl_directories:
+            if dep.ip.mlicensed:
+                if self.name not in dep.resolved_encrypted_hdl_directories:
+                    raise Exception(f"IP '{dep}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+                else:
+                    directories = dep.resolved_encrypted_hdl_directories[self.name]
+                    files = dep.resolved_encrypted_top_sv_files[self.name]
+            else:
+                directories = dep.resolved_hdl_directories
+                files = dep.resolved_top_sv_files
+            for directory in directories:
                 sub_file_list.directories.append(directory)
-            for file in dep.resolved_top_sv_files:
+            for file in files:
                 sub_file_list.files.append(file)
                 has_files_to_compile = True
             # TODO Add defines from targets
@@ -490,9 +499,18 @@ class LogicSimulator(Service, ABC):
         else:
             file_list.defines_boolean += config.defines_boolean
             file_list.defines_values.update(config.defines_value)
-        for directory in ip.resolved_hdl_directories:
+        if ip.ip.mlicensed:
+            if self.name not in ip.resolved_encrypted_hdl_directories:
+                raise Exception(f"IP '{ip}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+            else:
+                directories = ip.resolved_encrypted_hdl_directories[self.name]
+                files = ip.resolved_encrypted_top_sv_files[self.name]
+        else:
+            directories = ip.resolved_hdl_directories
+            files = ip.resolved_top_sv_files
+        for directory in directories:
             file_list.directories.append(directory)
-        for file in ip.resolved_top_sv_files:
+        for file in files:
             file_list.files.append(file)
             has_files_to_compile = True
         if isinstance(report, LogicSimulatorCompilationReport):
@@ -517,18 +535,36 @@ class LogicSimulator(Service, ABC):
         file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
-            for directory in dep.resolved_hdl_directories:
+            if dep.ip.mlicensed:
+                if self.name not in dep.resolved_encrypted_hdl_directories:
+                    raise Exception(f"IP '{dep}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+                else:
+                    directories = dep.resolved_encrypted_hdl_directories[self.name]
+                    files = dep.resolved_encrypted_top_vhdl_files[self.name]
+            else:
+                directories = dep.resolved_hdl_directories
+                files = dep.resolved_top_vhdl_files
+            for directory in directories:
                 sub_file_list.directories.append(directory)
-            for file in dep.resolved_top_vhdl_files:
+            for file in files:
                 sub_file_list.files.append(file)
                 report.has_vhdl_files_to_compile = True
             # TODO Add defines from targets
             file_list.sub_file_lists.append(sub_file_list)
         file_list.defines_boolean += config.defines_boolean
         file_list.defines_values.update(config.defines_value)
-        for directory in ip.resolved_hdl_directories:
+        if ip.ip.mlicensed:
+            if self.name not in ip.resolved_encrypted_hdl_directories:
+                raise Exception(f"IP '{ip}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+            else:
+                directories = ip.resolved_encrypted_hdl_directories[self.name]
+                files = ip.resolved_encrypted_top_vhdl_files[self.name]
+        else:
+            directories = ip.resolved_hdl_directories
+            files = ip.resolved_top_vhdl_files
+        for directory in directories:
             file_list.directories.append(directory)
-        for file in ip.resolved_top_vhdl_files:
+        for file in files:
             file_list.files.append(file)
             report.has_vhdl_files_to_compile = True
         if report.has_vhdl_files_to_compile:

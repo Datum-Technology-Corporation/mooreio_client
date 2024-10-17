@@ -61,8 +61,11 @@ class TestCliIp:
         with tarfile.open(destination, "r:gz") as tar:
             assert tar.getmembers(), "Packaged IP file is not a valid compressed tarball or is empty"
 
-    def publish_ip(self, capsys, project_path: Path, ip_name: str):
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name])
+    def publish_ip(self, capsys, project_path: Path, ip_name: str, customer:str=""):
+        if customer!="":
+            result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name, f"-c {customer}"])
+        else:
+            result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name])
         assert result.return_code == 0
         assert "Published IP" in result.text
         assert "successfully" in result.text
@@ -124,7 +127,7 @@ class TestCliIp:
         wd_path = Path(os.path.join(os.path.dirname(__file__), "wd"))
         self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
 
-    @pytest.mark.integration
+    #@pytest.mark.integration
     @pytest.mark.single_process
     def test_cli_publish_ip(self, capsys):
         self.reset_workspace()
@@ -145,7 +148,7 @@ class TestCliIp:
         self.check_ip_database(2)
 
         # 4. Publish B from P2
-        self.publish_ip(capsys, p2_path, 'b_agent')
+        self.publish_ip(capsys, p2_path, 'b_agent', 'acme')
         self.check_ip_database(2)
 
         # 5. Install * from P3
@@ -169,6 +172,8 @@ class TestCliIp:
         self.check_ip_database(6)
 
         # 10. Install * from P4
+        self.logout(capsys)
+        self.login(capsys, 'user1', 'MioNumber1!')
         self.install_ip(capsys, p4_path)
         self.check_ip_database(7)
 
