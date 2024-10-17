@@ -127,7 +127,7 @@ class TestCliIp:
         wd_path = Path(os.path.join(os.path.dirname(__file__), "wd"))
         self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
 
-    #@pytest.mark.integration
+    @pytest.mark.integration
     @pytest.mark.single_process
     def test_cli_publish_ip(self, capsys):
         self.reset_workspace()
