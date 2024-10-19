@@ -12,7 +12,7 @@ from semantic_version import Version
 
 from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
 from mio_client.core.service import Service, ServiceType
-from mio_client.core.ip import Ip
+from mio_client.core.ip import Ip, IpLocationType
 from abc import ABC, abstractmethod
 
 from mio_client.core.model import Model, UNDEFINED_CONST
@@ -78,10 +78,12 @@ class LogicSimulatorCompilationReport(LogicSimulatorReport):
     vhdl_log_path: Optional[Path] = Path()
     defines_boolean: Optional[list[str]] = []
     defines_value: Optional[dict[str, str]] = {}
+    shared_objects: Optional[list[Path]] = []
 
 class LogicSimulatorElaborationReport(LogicSimulatorReport):
     log_path: Optional[Path] = Path()
     elaboration_success: Optional[bool] = False
+    shared_objects: Optional[list[Path]] = []
 
 class LogicSimulatorCompilationAndElaborationReport(LogicSimulatorReport):
     ordered_dependencies: Optional[list[Ip]] = []
@@ -91,6 +93,7 @@ class LogicSimulatorCompilationAndElaborationReport(LogicSimulatorReport):
     compilation_and_elaboration_success: Optional[bool] = False
     defines_boolean: Optional[list[str]] = []
     defines_value: Optional[dict[str, str]] = {}
+    shared_objects: Optional[list[Path]] = []
 
 class LogicSimulatorSimulationReport(LogicSimulatorReport):
     test_name: Optional[str] = UNDEFINED_CONST
@@ -105,6 +108,7 @@ class LogicSimulatorSimulationReport(LogicSimulatorReport):
     log_path: Optional[Path] = Path()
     coverage_directory: Optional[Path] = Path()
     simulation_success: Optional[bool] = False
+    shared_objects: Optional[list[Path]] = []
     
 
 class LogicSimulatorEncryptionReport(LogicSimulatorReport):
@@ -154,7 +158,7 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
 class LogicSimulatorEncryptionConfiguration(LogicSimulatorConfiguration):
     add_license_key_checks: bool = False
     mlicense_key: str = UNDEFINED_CONST
-    mlicense_customer: int = -1
+    mlicense_id: int = -1
 
 
 class LogicSimulatorFileList(Model):
@@ -166,6 +170,9 @@ class LogicSimulatorFileList(Model):
 
 class LogicSimulatorMasterFileList(LogicSimulatorFileList):
     sub_file_lists: Optional[List[LogicSimulatorFileList]] = []
+    needs_licensing: Optional[bool] = False
+    licensing_sv_path: Optional[Path] = Path()
+    licensing_vhdl_path: Optional[Path] = Path()
 
 
 
@@ -266,6 +273,7 @@ class LogicSimulator(Service, ABC):
         report.sv_log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmp.sv.{self.name}.log"
         report.vhdl_log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmp.vhdl.{self.name}.log"
         self.rmh.create_directory(report.work_directory)
+        report.shared_objects = self.get_all_shared_objects(ip, report.ordered_dependencies)
         self.do_compile(ip, config, report, scheduler, scheduler_config)
         report.success = (report.sv_compilation_success and report.vhdl_compilation_success)
         self.parse_compilation_logs(ip, config, report)
@@ -278,6 +286,7 @@ class LogicSimulator(Service, ABC):
         scheduler_config.output_to_terminal = False
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         report.log_path = self.simulation_logs_path / f"{ip.result_file_name}.elab.{self.name}.log"
+        report.shared_objects = self.get_all_shared_objects(ip)
         self.do_elaborate(ip, config, report, scheduler, scheduler_config)
         report.success = report.elaboration_success
         self.parse_elaboration_logs(ip, config, report)
@@ -298,6 +307,7 @@ class LogicSimulator(Service, ABC):
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         report.log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.log"
         self.rmh.create_directory(report.work_directory)
+        report.shared_objects = self.get_all_shared_objects(ip, report.ordered_dependencies)
         self.do_compile_and_elaborate(ip, config, report, scheduler, scheduler_config)
         report.success = report.compilation_and_elaboration_success
         self.parse_compilation_and_elaboration_logs(ip, config, report)
@@ -319,8 +329,6 @@ class LogicSimulator(Service, ABC):
             final_args.append(arg)
         for arg in final_args_value:
             final_args.append(f"{arg}={final_args_value[arg]}")
-        # TODO Load Shared Objects
-        # TODO Load Moore.io Licensing DPI Shared Object for DSim
         report.test_name = test_template.render(name=config.test_name)
         test_result_directory_name = test_result_dir_template.render(vendor=ip.ip.vendor, ip=ip.ip.name, test=config.test_name,
                                                                      seed=config.seed, args=final_args)
@@ -329,10 +337,10 @@ class LogicSimulator(Service, ABC):
         final_args_value["UVM_VERBOSITY"] = f"UVM_{config.verbosity.value.upper()}"
         final_args_value["UVM_MAX_QUIT_COUNT"] = str(config.max_errors)
         report.test_results_path = self.simulation_results_path / test_result_directory_name
-        final_args_value["__MIO_TEST_RESULTS_PATH"] = str(report.test_results_path)
-        final_args_value["__MIO_SIM_RESULTS_PATH"] = str(self.simulation_results_path)
+        final_args_value["__MIO_TEST_RESULTS_PATH__"] = str(report.test_results_path)
+        final_args_value["__MIO_SIM_RESULTS_PATH__"] = str(self.simulation_results_path)
         if self.rmh.user.authenticated:
-            final_args_value["__MIO_USER_TOKEN"] = self.rmh.user.access_token
+            final_args_value["__MIO_USER_TOKEN__"] = self.rmh.user.access_token
         report.log_path = report.test_results_path / f"sim.{self.name}.log"
         report.waveform_file_path = report.test_results_path / f"waves.{self.name}"
         report.coverage_directory = report.test_results_path / f"cov.{self.name}"
@@ -341,6 +349,7 @@ class LogicSimulator(Service, ABC):
         self.rmh.create_directory(report.test_results_path)
         if config.enable_coverage:
             self.rmh.create_directory(report.coverage_directory)
+        report.shared_objects = self.get_all_shared_objects(ip)
         self.do_simulate(ip, config, report, scheduler, scheduler_config)
         report.success = report.simulation_success
         report.waveform_capture = config.enable_waveform_capture
@@ -383,7 +392,7 @@ class LogicSimulator(Service, ABC):
             found_key_check = False
             # Search and replace in all SystemVerilog
             search_string = "`__MIO_LICENSE_KEY_CHECK_PHONY__"
-            replace_string = f'`__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}", "{config.mlicense_customer}")'
+            replace_string = f'`__MIO_LICENSE_KEY_CHECK__("{ip}", "{config.mlicense_key}", "{config.mlicense_id}")'
             for file_path in report.sv_files_to_encrypt:
                 with file_path.open("r") as file:
                     file_content = file.read()
@@ -394,7 +403,7 @@ class LogicSimulator(Service, ABC):
                     found_key_check = True
             # Search and replace in all VHDL files
             search_string = "-- __MIO_LICENSE_KEY_CHECK_PHONY__"
-            replace_string = f'__MIO_LICENSE_KEY_CHECK__("{config.mlicense_key}", "{config.mlicense_customer}");'  # TODO This is just theory
+            replace_string = f'__MIO_LICENSE_KEY_CHECK__("{ip}", "{config.mlicense_key}", "{config.mlicense_id}");'  # TODO This is just theory
             for file_path in report.vhdl_files_to_encrypt:
                 with file_path.open("r") as file:
                     file_content = file.read()
@@ -413,15 +422,7 @@ class LogicSimulator(Service, ABC):
         return report
 
     def parse_library_creation_logs(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LogicSimulatorLibraryCreationReport) -> None:
-        report.name = f"Library creation for '{ip}' using '{self.full_name}'"
-        #for log_path in log_paths:
-        #    report.errors   += self.rmh.search_file_for_patterns(log_path, self.library_creation_error_patterns)
-        #    report.warnings += self.rmh.search_file_for_patterns(log_path, self.library_creation_warning_patterns)
-        #    report.fatals   += self.rmh.search_file_for_patterns(log_path, self.library_creation_fatal_patterns)
-        #report.num_errors = len(report.errors)
-        #report.num_warnings = len(report.warnings)
-        #report.num_fatals = len(report.fatals)
-        #report.success = (len(report.errors) == 0) and (len(report.fatals) == 0)
+        pass
 
     def parse_compilation_logs(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport) -> None:
         if report.has_sv_files_to_compile:
@@ -481,6 +482,7 @@ class LogicSimulator(Service, ABC):
                 if self.name not in dep.resolved_encrypted_hdl_directories:
                     raise Exception(f"IP '{dep}' is licensed but has no encrypted HDL content defined for '{self.name}'")
                 else:
+                    file_list.needs_licensing = True
                     directories = dep.resolved_encrypted_hdl_directories[self.name]
                     files = dep.resolved_encrypted_top_sv_files[self.name]
             else:
@@ -503,6 +505,7 @@ class LogicSimulator(Service, ABC):
             if self.name not in ip.resolved_encrypted_hdl_directories:
                 raise Exception(f"IP '{ip}' is licensed but has no encrypted HDL content defined for '{self.name}'")
             else:
+                file_list.needs_licensing = True
                 directories = ip.resolved_encrypted_hdl_directories[self.name]
                 files = ip.resolved_encrypted_top_sv_files[self.name]
         else:
@@ -521,6 +524,10 @@ class LogicSimulator(Service, ABC):
             # Load the Jinja2 templates from disk
             template = self.rmh.j2_env.get_template(f"flist.sv.{self.name}.j2")
             # Render the templates with the master file lists
+            if file_list.needs_licensing:
+                file_list.licensing_sv_path = Path(os.path.join(self.rmh.install_path, 'data', f'mio_hdl_lic.{self.name}.sv'))
+                if not self.rmh.file_exists(file_list.licensing_sv_path):
+                    raise Exception(f"Cannot find License SV for {self.name}")
             filelist_rendered = template.render(data=file_list)
             # Save the rendered templates to disk
             flist_path = self.work_temp_path / f"{ip.result_file_name}.sv.{self.name}.flist"
@@ -539,6 +546,7 @@ class LogicSimulator(Service, ABC):
                 if self.name not in dep.resolved_encrypted_hdl_directories:
                     raise Exception(f"IP '{dep}' is licensed but has no encrypted HDL content defined for '{self.name}'")
                 else:
+                    file_list.needs_licensing = True
                     directories = dep.resolved_encrypted_hdl_directories[self.name]
                     files = dep.resolved_encrypted_top_vhdl_files[self.name]
             else:
@@ -557,6 +565,7 @@ class LogicSimulator(Service, ABC):
             if self.name not in ip.resolved_encrypted_hdl_directories:
                 raise Exception(f"IP '{ip}' is licensed but has no encrypted HDL content defined for '{self.name}'")
             else:
+                file_list.needs_licensing = True
                 directories = ip.resolved_encrypted_hdl_directories[self.name]
                 files = ip.resolved_encrypted_top_vhdl_files[self.name]
         else:
@@ -571,13 +580,50 @@ class LogicSimulator(Service, ABC):
             # Load the Jinja2 templates from disk
             template = self.rmh.j2_env.get_template(f"flist.vhdl.{self.name}.j2")
             # Render the templates with the master file lists
+            if file_list.needs_licensing:
+                file_list.licensing_vhdl_path = Path(os.path.join(self.rmh.install_path, 'data', f'mio_hdl_lic.{self.name}.vhdl'))
+                if not self.rmh.file_exists(file_list.licensing_vhdl_path):
+                    raise Exception(f"Cannot find License VHDL for {self.name}")
             filelist_rendered = template.render(data=file_list)
             # Save the rendered templates to disk
             flist_path = self.work_temp_path / f"{ip.result_file_name}.{self.name}.vhdl.flist"
             with open(flist_path, "w") as flist:
                 flist.write(filelist_rendered)
             report.vhdl_file_list_path = flist_path
-    
+
+    def get_all_shared_objects(self, ip:Ip, ordered_dependencies:List[Ip]=None) -> List[Path]:
+        needs_license_so = False
+        shared_objects = []
+        if ip.ip.mlicensed and ip.location_type == IpLocationType.PROJECT_INSTALLED:
+            needs_license_so = True
+            if self.name not in ip.resolved_encrypted_shared_objects:
+                raise Exception(f"Encrypted IP '{ip}' does not have a version of its shared objects for simulator '{self.name}'")
+            else:
+                shared_objects = ip.resolved_encrypted_shared_objects[self.name]
+        else:
+            shared_objects = ip.resolved_shared_objects
+        if not ordered_dependencies:
+            dependencies = ip.get_ordered_dependencies()
+        else:
+            dependencies = ordered_dependencies
+        for dep in dependencies:
+            if dep.ip.mlicensed and dep.location_type == IpLocationType.PROJECT_INSTALLED:
+                needs_license_so = True
+                if self.name not in dep.resolved_encrypted_shared_objects:
+                    raise Exception(
+                        f"Encrypted IP '{dep}' does not have a version of its shared objects for simulator '{self.name}'")
+                else:
+                    shared_objects += dep.resolved_encrypted_shared_objects[self.name]
+            else:
+                shared_objects += dep.resolved_shared_objects
+        if needs_license_so:
+            lic_so_path = Path(os.path.join(self.rmh.install_path, 'data', f'mio_hdl_lic_dpi.{self.name}.so'))
+            if not self.rmh.file_exists(lic_so_path):
+                raise Exception(f"Cannot find License DPI for {self.name}")
+            else:
+                shared_objects.append(lic_so_path)
+        return shared_objects
+
     @property
     @abstractmethod
     def library_creation_error_patterns(self) -> List[str]:
@@ -791,11 +837,16 @@ class SimulatorMetricsDSim(LogicSimulator):
             defines_str += f" +define+{define}"
         for define in report.defines_value:
             defines_str += f" +define+{define}={report.defines_value[define]}"
+        so_str = ""
+        if os.name == 'nt':  # DSim for Windows requires SOs at compile time
+            for so in report.shared_objects:
+                so_str += f" -sv_lib {so}"
         if report.has_sv_files_to_compile:
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_sv_arguments + [
                 defines_str,
                 f"-F {report.sv_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
+                so_str,
                 f"-lib {ip.lib_name}",
                 f"-l {report.sv_log_path}"
             ]
@@ -810,6 +861,7 @@ class SimulatorMetricsDSim(LogicSimulator):
                 defines_str,
                 f"-F {report.vhdl_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
+                so_str,
                 f"-lib {ip.lib_name}",
                 f"-l {report.vhdl_log_path}"
             ]
@@ -843,12 +895,18 @@ class SimulatorMetricsDSim(LogicSimulator):
                 defines_str += f" +define+{define}"
             for define in report.defines_value:
                 defines_str += f" +define+{define}={report.defines_value[define]}"
+            so_str = ""
             top_str = ""
             for top in ip.hdl_src.top:
                 top_str = f"{top_str} -top {ip.lib_name}.{top}"
+            so_str = ""
+            if os.name == 'nt':  # DSim for Windows requires SOs at compile time
+                for so in report.shared_objects:
+                    so_str += f" -sv_lib {so}"
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_and_elaboration_arguments + [
                 f"-genimage {ip.lib_name}",
                 defines_str,
+                so_str,
                 f"-F {report.file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
                 top_str,
@@ -868,9 +926,14 @@ class SimulatorMetricsDSim(LogicSimulator):
             args_str += f" +{arg}"
         for arg in report.args_value:
             args_str += f" +{arg}={report.args_value[arg]}"
+        so_str = ""
+        if os.name != 'nt':  # DSim for Linux requires SOs at runtime
+            for so in report.shared_objects:
+                so_str += f" -sv_lib {so}"
         args = self.rmh.configuration.logic_simulation.metrics_dsim_default_simulation_arguments + [
             f"-image {ip.lib_name}",
             args_str,
+            so_str,
             f"-sv_seed {config.seed}",
             f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
             #f"-sv_lib libcurl.so",

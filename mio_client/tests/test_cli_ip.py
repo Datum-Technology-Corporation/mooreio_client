@@ -94,6 +94,74 @@ class TestCliIp:
             assert "Uninstalled IP" in result.text
             assert "successfully" in result.text
 
+    def cmp_ip(self, capsys, project_path:Path, ip_name:str):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-C'])
+        assert result.return_code == 0
+
+    def elab_ip(self, capsys, project_path:Path, ip_name:str):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-E'])
+        assert result.return_code == 0
+
+    def cmpelab_ip(self, capsys, project_path:Path, ip_name:str):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-CE'])
+        assert result.return_code == 0
+
+    def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
+               cov:bool=False, args_boolean:list[str]=[], args_value:dict[str,str]={}):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        optional_args = []
+        if waves:
+            optional_args.append('-w')
+        if cov:
+            optional_args.append('-c')
+        if len(args_boolean) > 0 or len(args_value) > 0:
+            plus_args = ["-+"]
+            for arg in args_boolean:
+                plus_args.append(f"+{arg}")
+            for arg in args_value:
+                plus_args.append(f"+{arg}={args_value[arg]}")
+        else:
+            plus_args = []
+        result = self.run_cmd(capsys, [
+            f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
+        ] + optional_args + plus_args)
+        assert result.return_code == 0
+
+    def one_shot_sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
+                        cov:bool=False, defines_boolean:list[str]=[], defines_value:dict[str,str]={},
+                        args_boolean:list[str]=[], args_value:dict[str,str]={}) -> OutputCapture:
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        optional_args = []
+        if waves:
+            optional_args.append('-w')
+        if cov:
+            optional_args.append('-c')
+        if len(defines_boolean) > 0 or len(defines_value) > 0 or len(args_boolean) > 0 or len(args_value) > 0:
+            plus_args = ["-+"]
+            for define in defines_boolean:
+                plus_args.append(f"+define+{define}")
+            for define in defines_value:
+                plus_args.append(f"+define+{define}={defines_value[define]}")
+            for arg in args_boolean:
+                plus_args.append(f"+{arg}")
+            for arg in args_value:
+                plus_args.append(f"+{arg}={args_value[arg]}")
+        else:
+            plus_args = []
+        result = self.run_cmd(capsys, [
+            f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
+        ] + optional_args + plus_args)
+        assert result.return_code == 0
+        return result
+
     def check_ip_database(self, exp_count:int):
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
             raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
@@ -127,7 +195,7 @@ class TestCliIp:
         wd_path = Path(os.path.join(os.path.dirname(__file__), "wd"))
         self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
 
-    @pytest.mark.integration
+    #@pytest.mark.integration
     @pytest.mark.single_process
     def test_cli_publish_ip(self, capsys):
         self.reset_workspace()
@@ -177,11 +245,15 @@ class TestCliIp:
         self.install_ip(capsys, p4_path)
         self.check_ip_database(7)
 
-        # 11. Uninstall E from P4
+        # 11. Simulate P4
+        self.one_shot_sim_ip(capsys, p4_path, 'g_tb', 'smoke', 1)
+        self.check_ip_database(7)
+
+        # 12. Uninstall E from P4
         self.uninstall_ip(capsys, p4_path, 'e_ss')
         self.check_ip_database(5)
 
-        # 12. Uninstall * from P4
+        # 13. Uninstall * from P4
         self.uninstall_ip(capsys, p4_path)
         self.check_ip_database(3)
 

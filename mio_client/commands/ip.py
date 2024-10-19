@@ -4,6 +4,7 @@ from pathlib import Path
 
 from semantic_version import SimpleSpec
 
+from simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration
 from ..core.command import Command
 from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
@@ -168,7 +169,8 @@ class Package(Command):
     def phase_main(self, phase):
         try:
             if (len(self.ip.ip.encrypted) > 0) or self.ip.ip.mlicensed:
-                tgz_path = self.ip.create_encrypted_compressed_tarball()
+                encryption_config = LogicSimulatorEncryptionConfiguration()
+                tgz_path = self.ip.create_encrypted_compressed_tarball(encryption_config)
             else:
                 tgz_path = self.ip.create_unencrypted_compressed_tarball()
             self.rmh.move_file(tgz_path, self.destination)
@@ -246,7 +248,8 @@ class Publish(Command):
 
     def phase_main(self, phase):
         try:
-             self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip, self.customer)
+            encryption_config = LogicSimulatorEncryptionConfiguration()
+            self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip, encryption_config, self.customer)
         except Exception as e:
             phase.error = Exception(f"Failed to publish IP '{self.ip}': {e}")
 

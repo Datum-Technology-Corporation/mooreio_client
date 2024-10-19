@@ -26,7 +26,6 @@ from enum import Enum
 from .version import SemanticVersion, SemanticVersionSpec
 from .configuration import Ip
 from .service import ServiceType
-from ..services.simulation import LogicSimulatorEncryptionConfiguration
 
 
 MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
@@ -211,9 +210,11 @@ class Ip(Model):
         self._has_scripts: bool = False
         self._has_examples: bool = False
         self._resolved_hdl_directories: List[Path] = []
+        self._resolved_shared_objects: List[Path] = []
         self._resolved_top_sv_files: List[Path] = []
         self._resolved_top_vhdl_files: List[Path] = []
         self._resolved_encrypted_hdl_directories: dict[str, List[Path]] = {}
+        self._resolved_encrypted_shared_objects: dict[str, List[Path]] = {}
         self._resolved_encrypted_top_sv_files: dict[str, List[Path]] = {}
         self._resolved_encrypted_top_vhdl_files: dict[str, List[Path]] = {}
         self._resolved_top: List[str] = []
@@ -380,6 +381,10 @@ class Ip(Model):
         return self._resolved_hdl_directories
 
     @property
+    def resolved_shared_objects(self) -> List[Path]:
+        return self._resolved_shared_objects
+
+    @property
     def resolved_top_sv_files(self) -> List[Path]:
         return self._resolved_top_sv_files
 
@@ -390,6 +395,10 @@ class Ip(Model):
     @property
     def resolved_encrypted_hdl_directories(self) -> dict[str, List[Path]]:
         return self._resolved_encrypted_hdl_directories
+
+    @property
+    def resolved_encrypted_shared_objects(self) -> dict[str, List[Path]]:
+        return self._resolved_encryped_shared_objects
 
     @property
     def resolved_encrypted_top_sv_files(self) -> dict[str, List[Path]]:
@@ -505,6 +514,20 @@ class Ip(Model):
                     if simulator not in self._resolved_encrypted_top_vhdl_files:
                         self._resolved_encrypted_top_vhdl_files[simulator] = []
                     self._resolved_encrypted_top_vhdl_files[simulator].append(full_path)
+        for shared_object in self.hdl_src.so_libs:
+            if simulator == "":
+                full_path = path / f"{shared_object}.so"
+            else:
+                full_path = path / f"{shared_object}.{simulator}.so"
+            if not self.rmh.file_exists(full_path):
+                raise Exception(f"IP '{self}' src shared object file path '{full_path}' does not exist")
+            else:
+                if simulator == "":
+                    self._resolved_shared_objects.append(full_path)
+                else:
+                    if simulator not in self._resolved_encrypted_shared_objects:
+                        self._resolved_encrypted_shared_objects[simulator] = []
+                    self._resolved_encrypted_shared_objects[simulator].append(full_path)
 
     def add_resolved_dependency(self, ip_definition:IpDefinition, ip:Ip):
         self._resolved_dependencies[ip_definition] = ip
@@ -519,7 +542,7 @@ class Ip(Model):
     def get_dependencies_to_find_on_remote(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
 
-    def create_encrypted_compressed_tarball(self, certificate:IpPublishingCertificate=None) -> Path:
+    def create_encrypted_compressed_tarball(self, encryption_config:'LogicSimulatorEncryptionConfiguration', certificate:IpPublishingCertificate=None) -> Path:
         try:
             if self.resolved_src_path == self.root_path:
                 raise Exception(f"Cannot encrypt IPs where the source root is also the IP root: {self}")
@@ -528,14 +551,13 @@ class Ip(Model):
                 for sim_spec in self.ip.encrypted:
                     try:
                         simulator = self.ip_database.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, sim_spec)
-                        encryption_config = LogicSimulatorEncryptionConfiguration()
                         if certificate:
                             if self.ip.mlicensed and (certificate.license_key==""):
                                 raise Exception(f"Cannot package Moore.io Licensed IP without a valid key")
                             else:
                                 encryption_config.add_license_key_checks = True
                                 encryption_config.mlicense_key = certificate.license_key
-                                encryption_config.mlicense_customer = certificate.customer_id
+                                encryption_config.mlicense_id  = certificate.license_id
                         scheduler = self.ip_database.rmh.scheduler_database.get_default_scheduler()
                         encryption_report = simulator.encrypt(self, encryption_config, scheduler)
                         if not encryption_report.success:
@@ -821,7 +843,7 @@ class IpDataBase():
             else:
                 raise Exception(f"Failed to get IP version '{ip_definition.find_results.version_id}' from server")
     
-    def publish_new_version_to_server(self, ip:Ip, customer:str) -> IpPublishingCertificate:
+    def publish_new_version_to_server(self, ip:Ip, encryption_config:'LogicSimulatorEncryptionConfiguration', customer:str) -> IpPublishingCertificate:
         certificate = self.get_publishing_certificate(ip, customer)
         if not certificate.granted:
             raise Exception(f"IP {ip} is not available for publishing")
@@ -832,7 +854,7 @@ class IpDataBase():
                 else:
                     if (certificate.license_id == -1) or (certificate.license_key == UNDEFINED_CONST) or (certificate.customer_id == -1):
                         raise Exception(f"Invalid certificate received for Commercial IP")
-                    tgz_path = ip.create_encrypted_compressed_tarball(certificate)
+                    tgz_path = ip.create_encrypted_compressed_tarball(encryption_config, certificate)
             else:
                 tgz_path = ip.create_unencrypted_compressed_tarball()
             certificate.tgz_file_path = tgz_path
