@@ -242,6 +242,7 @@ class Simulate(Command):
 
     def phase_post_scheduler_discovery(self, phase:Phase):
         try:
+            # TODO Add support for other schedulers
             self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
         except Exception as e:
             phase.error = e

@@ -26,7 +26,6 @@ from enum import Enum
 from .version import SemanticVersion, SemanticVersionSpec
 from .configuration import Ip
 from .service import ServiceType
-from ..services.simulation import LogicSimulatorEncryptionConfiguration
 
 
 MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
@@ -61,6 +60,7 @@ class IpLocationType(Enum):
 class IpLicenseType(Enum):
     PUBLIC_OPEN_SOURCE = "public_open_source"
     COMMERCIAL = "commercial"
+    PRIVATE = "private"
 
 
         
@@ -96,10 +96,12 @@ class IpPublishingCertificate(Model):
 
 class IpFindResults(Model):
     found: bool
-    ip_id: Optional[int] = 0
+    ip_id: Optional[int] = -1
+    timestamp: Optional[datetime] = None
     license_type: Optional[IpLicenseType] = IpLicenseType.PUBLIC_OPEN_SOURCE
+    license_id: Optional[int] = -1
     version: Optional[SemanticVersion] = SemanticVersion()
-    version_id: Optional[int] = 0
+    version_id: Optional[int] = -1
 
 
 class IpGetResults(Model):
@@ -208,8 +210,13 @@ class Ip(Model):
         self._has_scripts: bool = False
         self._has_examples: bool = False
         self._resolved_hdl_directories: List[Path] = []
+        self._resolved_shared_objects: List[Path] = []
         self._resolved_top_sv_files: List[Path] = []
         self._resolved_top_vhdl_files: List[Path] = []
+        self._resolved_encrypted_hdl_directories: dict[str, List[Path]] = {}
+        self._resolved_encrypted_shared_objects: dict[str, List[Path]] = {}
+        self._resolved_encrypted_top_sv_files: dict[str, List[Path]] = {}
+        self._resolved_encrypted_top_vhdl_files: dict[str, List[Path]] = {}
         self._resolved_top: List[str] = []
         self._resolved_dependencies: dict[IpDefinition, Ip] = {}
         self._dependencies_to_find_online: List[IpDefinition] = []
@@ -374,12 +381,32 @@ class Ip(Model):
         return self._resolved_hdl_directories
 
     @property
+    def resolved_shared_objects(self) -> List[Path]:
+        return self._resolved_shared_objects
+
+    @property
     def resolved_top_sv_files(self) -> List[Path]:
         return self._resolved_top_sv_files
 
     @property
     def resolved_top_vhdl_files(self) -> List[Path]:
         return self._resolved_top_vhdl_files
+
+    @property
+    def resolved_encrypted_hdl_directories(self) -> dict[str, List[Path]]:
+        return self._resolved_encrypted_hdl_directories
+
+    @property
+    def resolved_encrypted_shared_objects(self) -> dict[str, List[Path]]:
+        return self._resolved_encrypted_shared_objects
+
+    @property
+    def resolved_encrypted_top_sv_files(self) -> dict[str, List[Path]]:
+        return self._resolved_encrypted_top_sv_files
+
+    @property
+    def resolved_encrypted_top_vhdl_files(self) -> dict[str, List[Path]]:
+        return self._resolved_encrypted_top_vhdl_files
     
     @property
     def has_docs(self) -> bool:
@@ -409,9 +436,17 @@ class Ip(Model):
         return self._uninstalled
 
     def check(self):
+        # Check hdl-src directories & files
         self._resolved_src_path = self.root_path / self.structure.hdl_src_path
-        if not self.rmh.directory_exists(self.resolved_src_path):
-            raise Exception(f"IP '{self}' src path '{self.resolved_src_path}' does not exist")
+        if self.ip.mlicensed and (self.location_type == IpLocationType.PROJECT_INSTALLED):
+            if len(self.ip.encrypted) == 0:
+                raise Exception(f"IP '{self}' is licensed but has no simulators specified in 'encrypted'")
+            else:
+                for simulator in self.ip.encrypted:
+                    self.check_hdl_src(Path(f"{self._resolved_src_path}.{simulator}"), simulator)
+        else:
+            self.check_hdl_src(self._resolved_src_path)
+        # Check non-src directories
         if self.structure.scripts_path != UNDEFINED_CONST:
             self._has_scripts = True
             self._resolved_scripts_path = self.root_path / self.structure.scripts_path
@@ -427,34 +462,72 @@ class Ip(Model):
             self._resolved_examples_path = self.root_path / self.structure.examples_path
             if not self.rmh.directory_exists(self.resolved_examples_path):
                 raise Exception(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
+
+    def check_hdl_src(self, path:Path,simulator:str=""):
+        if not self.rmh.directory_exists(path):
+            raise Exception(f"IP '{self}' src path '{path}' does not exist")
+        if self.hdl_src.tests_path != UNDEFINED_CONST:
+            directory_path = path / self.hdl_src.tests_path
+            if not self.rmh.directory_exists(directory_path):
+                raise Exception(f"IP '{self}' HDL Tests src path '{directory_path}' does not exist")
         for directory in self.hdl_src.directories:
-            directory_path = self.resolved_src_path / directory
+            directory_path = path / directory
             if not self.rmh.directory_exists(directory_path):
                 raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
             else:
-                self._resolved_hdl_directories.append(directory_path)
-            if self.hdl_src.tests_path != UNDEFINED_CONST:
-                tests_directory_path = directory_path / self.hdl_src.tests_path
-                if not self.rmh.directory_exists(tests_directory_path):
-                    raise Exception(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
+                if simulator == "":
+                    self.resolved_hdl_directories.append(directory_path)
                 else:
-                    self._resolved_hdl_directories.append(tests_directory_path)
+                    if simulator not in self.resolved_encrypted_hdl_directories:
+                        self._resolved_encrypted_hdl_directories[simulator] = []
+                    self.resolved_encrypted_hdl_directories[simulator].append(directory_path)
+        if self.hdl_src.tests_path != UNDEFINED_CONST:
+            tests_directory_path = path / self.hdl_src.tests_path
+            if not self.rmh.directory_exists(tests_directory_path):
+                raise Exception(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
+            else:
+                if simulator == "":
+                    self.resolved_hdl_directories.append(tests_directory_path)
+                else:
+                    if simulator not in self.resolved_encrypted_hdl_directories:
+                        self._resolved_encrypted_hdl_directories[simulator] = []
+                    self.resolved_encrypted_hdl_directories[simulator].append(tests_directory_path)
         for file in self.hdl_src.top_sv_files:
-            full_path = self.resolved_src_path / file
+            full_path = path / file
             if not self.rmh.file_exists(full_path):
                 raise Exception(f"IP '{self}' src SystemVerilog file path '{full_path}' does not exist")
             else:
-                self._resolved_top_sv_files.append(full_path)
+                if simulator == "":
+                    self._resolved_top_sv_files.append(full_path)
+                else:
+                    if simulator not in self.resolved_encrypted_top_sv_files:
+                        self._resolved_encrypted_top_sv_files[simulator] = []
+                    self.resolved_encrypted_top_sv_files[simulator].append(full_path)
         for file in self.hdl_src.top_vhdl_files:
-            full_path = self.resolved_src_path / file
+            full_path = path / file
             if not self.rmh.file_exists(full_path):
                 raise Exception(f"IP '{self}' src VHDL file path '{full_path}' does not exist")
             else:
-                self._resolved_top_vhdl_files.append(full_path)
-        if self.hdl_src.tests_path != UNDEFINED_CONST:
-            directory_path = self.resolved_src_path / self.hdl_src.tests_path
-            if not self.rmh.directory_exists(directory_path):
-                raise Exception(f"IP '{self}' HDL Tests src path '{directory_path}' does not exist")
+                if simulator == "":
+                    self.resolved_top_vhdl_files.append(full_path)
+                else:
+                    if simulator not in self.resolved_encrypted_top_vhdl_files:
+                        self._resolved_encrypted_top_vhdl_files[simulator] = []
+                    self.resolved_encrypted_top_vhdl_files[simulator].append(full_path)
+        for shared_object in self.hdl_src.so_libs:
+            if simulator == "":
+                full_path = path / f"{shared_object}.so"
+            else:
+                full_path = path / f"{shared_object}.{simulator}.so"
+            if not self.rmh.file_exists(full_path):
+                raise Exception(f"IP '{self}' src shared object file path '{full_path}' does not exist")
+            else:
+                if simulator == "":
+                    self.resolved_shared_objects.append(full_path)
+                else:
+                    if simulator not in self.resolved_encrypted_shared_objects:
+                        self._resolved_encrypted_shared_objects[simulator] = []
+                    self.resolved_encrypted_shared_objects[simulator].append(full_path)
 
     def add_resolved_dependency(self, ip_definition:IpDefinition, ip:Ip):
         self._resolved_dependencies[ip_definition] = ip
@@ -469,7 +542,7 @@ class Ip(Model):
     def get_dependencies_to_find_on_remote(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
 
-    def create_encrypted_compressed_tarball(self, certificate:IpPublishingCertificate=None) -> Path:
+    def create_encrypted_compressed_tarball(self, encryption_config:'LogicSimulatorEncryptionConfiguration', certificate:IpPublishingCertificate=None) -> Path:
         try:
             if self.resolved_src_path == self.root_path:
                 raise Exception(f"Cannot encrypt IPs where the source root is also the IP root: {self}")
@@ -478,14 +551,13 @@ class Ip(Model):
                 for sim_spec in self.ip.encrypted:
                     try:
                         simulator = self.ip_database.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, sim_spec)
-                        encryption_config = LogicSimulatorEncryptionConfiguration()
                         if certificate:
                             if self.ip.mlicensed and (certificate.license_key==""):
                                 raise Exception(f"Cannot package Moore.io Licensed IP without a valid key")
                             else:
                                 encryption_config.add_license_key_checks = True
                                 encryption_config.mlicense_key = certificate.license_key
-                                encryption_config.mlicense_customer = certificate.customer_id
+                                encryption_config.mlicense_id  = certificate.license_id
                         scheduler = self.ip_database.rmh.scheduler_database.get_default_scheduler()
                         encryption_report = simulator.encrypt(self, encryption_config, scheduler)
                         if not encryption_report.success:
@@ -578,7 +650,7 @@ class Ip(Model):
             # Remove self from the topological order if it exists
             if self in topo_order:
                 topo_order.remove(self)
-            return topo_order
+            return topo_order[::-1]
         else:
             # There is a cycle and topological sorting is not possible
             raise Exception(f"A cycle was detected in {self} dependencies")
@@ -709,7 +781,7 @@ class IpDataBase():
         self._dependencies_to_find_online = list(unique_dependencies.values())
         ip_definitions_not_found = []
         for ip_definition in self._dependencies_to_find_online:
-            ip_definition.find_results = self.ip_definition_is_available_on_remote(ip_definition)
+            ip_definition.find_results = self.ip_definition_is_available_on_server(ip_definition)
             if ip_definition.find_results.found:
                 self._ip_definitions_to_be_installed.append(ip_definition)
             else:
@@ -718,7 +790,7 @@ class IpDataBase():
         if len(ip_definitions_not_found) > 0:
             raise Exception(f"Could not resolve all dependencies for the following IP: {ip_definitions_not_found}")
 
-    def ip_definition_is_available_on_remote(self, ip_definition: IpDefinition) -> IpFindResults:
+    def ip_definition_is_available_on_server(self, ip_definition: IpDefinition) -> IpFindResults:
         if ip_definition.vendor_name_is_specified:
             vendor = ip_definition.vendor_name
         else:
@@ -747,7 +819,8 @@ class IpDataBase():
     
     def install_ip_from_server(self, ip_definition: IpDefinition) -> bool:
         request = {
-            "version_id" : ip_definition.find_results.version_id
+            "version_id" : ip_definition.find_results.version_id,
+            "license_id" : ip_definition.find_results.license_id
         }
         try:
             response = self.rmh.web_api_call(HTTPMethod.POST, "get-ip", request)
@@ -770,18 +843,18 @@ class IpDataBase():
             else:
                 raise Exception(f"Failed to get IP version '{ip_definition.find_results.version_id}' from server")
     
-    def publish_new_version_to_server(self, ip:Ip) -> IpPublishingCertificate:
-        certificate = self.get_publishing_certificate(ip)
+    def publish_new_version_to_server(self, ip:Ip, encryption_config:'LogicSimulatorEncryptionConfiguration', customer:str) -> IpPublishingCertificate:
+        certificate = self.get_publishing_certificate(ip, customer)
         if not certificate.granted:
             raise Exception(f"IP {ip} is not available for publishing")
         else:
-            if ip.ip.mlicensed or (len(ip.ip.encrypted) > 0):
-                if certificate.license_type != IpLicenseType.COMMERCIAL:
-                    raise Exception(f"Attempting to publish commercial/private IP to an Open-Source license.")
+            if certificate.license_type == IpLicenseType.COMMERCIAL:
+                if not ip.ip.mlicensed:
+                    raise Exception(f"Attempting to publish Open-Source/Private IP to a Commercial license.")
                 else:
                     if (certificate.license_id == -1) or (certificate.license_key == UNDEFINED_CONST) or (certificate.customer_id == -1):
                         raise Exception(f"Invalid certificate received for Commercial IP")
-                    tgz_path = ip.create_encrypted_compressed_tarball(certificate)
+                    tgz_path = ip.create_encrypted_compressed_tarball(encryption_config, certificate)
             else:
                 tgz_path = ip.create_unencrypted_compressed_tarball()
             certificate.tgz_file_path = tgz_path
@@ -792,7 +865,7 @@ class IpDataBase():
                 raise Exception(f"Failed to encode IP {ip} compressed tarball: {e}")
             else:
                 try:
-                    if ip.ip.mlicensed:
+                    if certificate.license_type == IpLicenseType.COMMERCIAL:
                         data = {
                             'version_id' : certificate.version_id,
                             'license_id' : certificate.license_id,
@@ -805,30 +878,30 @@ class IpDataBase():
                             raise Exception(f"Failed to push IP commercial payload to server for '{ip}'")
                     else:
                         data = {
-                            'version_id' : certificate.version_id,
+                            'id' : certificate.version_id,
                             'payload' : str(tgz_b64_encoded),
                         }
-                        response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/public-payload', data)
+                        response = self.rmh.web_api_call(HTTPMethod.POST, 'publish-ip/payload', data)
                         confirmation = IpPublishingConfirmation.model_validate(response.json())
                         if not confirmation.success:
                             raise Exception(f"Failed to push IP public payload to server for '{ip}'")
                 except Exception as e:
-                    raise Exception(f"Failed to push IP payload to remote for '{ip}': {e}")
+                    raise Exception(f"Failed to push IP payload to server for '{ip}': {e}")
         return certificate
     
-    def get_publishing_certificate(self, ip: Ip, client:str= "public") -> IpPublishingCertificate:
+    def get_publishing_certificate(self, ip: Ip, customer:str) -> IpPublishingCertificate:
         request = {
             'vendor': ip.ip.vendor,
             "ip_name": ip.ip.name,
             "ip_id": ip.ip.sync_id,
             "ip_version": str(ip.ip.version),
-            "customer": client
+            "customer": customer
         }
         try:
             response = self.rmh.web_api_call(HTTPMethod.POST, "publish-ip/certificate", request)
             certificate = IpPublishingCertificate.model_validate(response.json())
         except Exception as e:
-            raise Exception(f"Failed to obtain certificate from remote for publishing IP {ip}: {e}")
+            raise Exception(f"Failed to obtain certificate from server for publishing IP {ip}: {e}")
         else:
             return certificate
     

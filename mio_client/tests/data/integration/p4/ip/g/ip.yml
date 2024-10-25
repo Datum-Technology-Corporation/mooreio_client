@@ -16,10 +16,12 @@ dependencies:
   "gigadyne/b_agent": ">=4.7.2"
 
 structure:
-  hdl_src_path: "."
+  hdl_src_path: "src"
 
 hdl_src:
   directories: ["."]
-  top_sv_files: ["fpga_tb.sv"]
+  top_sv_files: ["g_tb_pkg.sv"]
   top: ["fpga_tb"]
+  tests_path: "tests"
+  tests_name_template: "g_{{ name }}_test_c"
 
