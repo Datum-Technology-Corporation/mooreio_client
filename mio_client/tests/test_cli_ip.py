@@ -197,7 +197,7 @@ class TestCliIp:
 
     #@pytest.mark.integration
     @pytest.mark.single_process
-    def test_cli_publish_ip(self, capsys):
+    def test_cli_publish_sim_ip(self, capsys):
         self.reset_workspace()
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
         p2_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p2"))

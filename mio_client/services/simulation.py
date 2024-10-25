@@ -596,23 +596,18 @@ class LogicSimulator(Service, ABC):
         shared_objects = []
         if ip.ip.mlicensed and ip.location_type == IpLocationType.PROJECT_INSTALLED:
             needs_license_so = True
-            if self.name not in ip.resolved_encrypted_shared_objects:
-                raise Exception(f"Encrypted IP '{ip}' does not have a version of its shared objects for simulator '{self.name}'")
-            else:
+            if self.name in ip.resolved_encrypted_shared_objects:
                 shared_objects = ip.resolved_encrypted_shared_objects[self.name]
         else:
             shared_objects = ip.resolved_shared_objects
         if not ordered_dependencies:
-            dependencies = ip.get_ordered_dependencies()
+            dependencies = ip.get_dependencies_in_order()
         else:
             dependencies = ordered_dependencies
         for dep in dependencies:
             if dep.ip.mlicensed and dep.location_type == IpLocationType.PROJECT_INSTALLED:
                 needs_license_so = True
-                if self.name not in dep.resolved_encrypted_shared_objects:
-                    raise Exception(
-                        f"Encrypted IP '{dep}' does not have a version of its shared objects for simulator '{self.name}'")
-                else:
+                if self.name in dep.resolved_encrypted_shared_objects:
                     shared_objects += dep.resolved_encrypted_shared_objects[self.name]
             else:
                 shared_objects += dep.resolved_shared_objects
@@ -622,6 +617,7 @@ class LogicSimulator(Service, ABC):
                 raise Exception(f"Cannot find License DPI for {self.name}")
             else:
                 shared_objects.append(lic_so_path)
+                shared_objects.append(f"libcurl.so")
         return shared_objects
 
     @property

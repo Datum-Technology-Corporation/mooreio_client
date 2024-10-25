@@ -398,7 +398,7 @@ class Ip(Model):
 
     @property
     def resolved_encrypted_shared_objects(self) -> dict[str, List[Path]]:
-        return self._resolved_encryped_shared_objects
+        return self._resolved_encrypted_shared_objects
 
     @property
     def resolved_encrypted_top_sv_files(self) -> dict[str, List[Path]]:
@@ -443,7 +443,7 @@ class Ip(Model):
                 raise Exception(f"IP '{self}' is licensed but has no simulators specified in 'encrypted'")
             else:
                 for simulator in self.ip.encrypted:
-                    self.check_hdl_src(Path(f"{self._resolved_src_path}.{simulator}"))
+                    self.check_hdl_src(Path(f"{self._resolved_src_path}.{simulator}"), simulator)
         else:
             self.check_hdl_src(self._resolved_src_path)
         # Check non-src directories
@@ -476,22 +476,22 @@ class Ip(Model):
                 raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
             else:
                 if simulator == "":
-                    self._resolved_hdl_directories.append(directory_path)
+                    self.resolved_hdl_directories.append(directory_path)
                 else:
-                    if simulator not in self._resolved_encrypted_hdl_directories:
+                    if simulator not in self.resolved_encrypted_hdl_directories:
                         self._resolved_encrypted_hdl_directories[simulator] = []
-                    self._resolved_encrypted_hdl_directories[simulator].append(directory_path)
+                    self.resolved_encrypted_hdl_directories[simulator].append(directory_path)
         if self.hdl_src.tests_path != UNDEFINED_CONST:
             tests_directory_path = path / self.hdl_src.tests_path
             if not self.rmh.directory_exists(tests_directory_path):
                 raise Exception(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
             else:
                 if simulator == "":
-                    self._resolved_hdl_directories.append(tests_directory_path)
+                    self.resolved_hdl_directories.append(tests_directory_path)
                 else:
-                    if simulator not in self._resolved_encrypted_hdl_directories:
+                    if simulator not in self.resolved_encrypted_hdl_directories:
                         self._resolved_encrypted_hdl_directories[simulator] = []
-                    self._resolved_encrypted_hdl_directories[simulator].append(tests_directory_path)
+                    self.resolved_encrypted_hdl_directories[simulator].append(tests_directory_path)
         for file in self.hdl_src.top_sv_files:
             full_path = path / file
             if not self.rmh.file_exists(full_path):
@@ -500,20 +500,20 @@ class Ip(Model):
                 if simulator == "":
                     self._resolved_top_sv_files.append(full_path)
                 else:
-                    if simulator not in self._resolved_encrypted_top_sv_files:
+                    if simulator not in self.resolved_encrypted_top_sv_files:
                         self._resolved_encrypted_top_sv_files[simulator] = []
-                    self._resolved_encrypted_top_sv_files[simulator].append(full_path)
+                    self.resolved_encrypted_top_sv_files[simulator].append(full_path)
         for file in self.hdl_src.top_vhdl_files:
             full_path = path / file
             if not self.rmh.file_exists(full_path):
                 raise Exception(f"IP '{self}' src VHDL file path '{full_path}' does not exist")
             else:
                 if simulator == "":
-                    self._resolved_top_vhdl_files.append(full_path)
+                    self.resolved_top_vhdl_files.append(full_path)
                 else:
-                    if simulator not in self._resolved_encrypted_top_vhdl_files:
+                    if simulator not in self.resolved_encrypted_top_vhdl_files:
                         self._resolved_encrypted_top_vhdl_files[simulator] = []
-                    self._resolved_encrypted_top_vhdl_files[simulator].append(full_path)
+                    self.resolved_encrypted_top_vhdl_files[simulator].append(full_path)
         for shared_object in self.hdl_src.so_libs:
             if simulator == "":
                 full_path = path / f"{shared_object}.so"
@@ -523,11 +523,11 @@ class Ip(Model):
                 raise Exception(f"IP '{self}' src shared object file path '{full_path}' does not exist")
             else:
                 if simulator == "":
-                    self._resolved_shared_objects.append(full_path)
+                    self.resolved_shared_objects.append(full_path)
                 else:
-                    if simulator not in self._resolved_encrypted_shared_objects:
+                    if simulator not in self.resolved_encrypted_shared_objects:
                         self._resolved_encrypted_shared_objects[simulator] = []
-                    self._resolved_encrypted_shared_objects[simulator].append(full_path)
+                    self.resolved_encrypted_shared_objects[simulator].append(full_path)
 
     def add_resolved_dependency(self, ip_definition:IpDefinition, ip:Ip):
         self._resolved_dependencies[ip_definition] = ip
@@ -650,7 +650,7 @@ class Ip(Model):
             # Remove self from the topological order if it exists
             if self in topo_order:
                 topo_order.remove(self)
-            return topo_order
+            return topo_order[::-1]
         else:
             # There is a cycle and topological sorting is not possible
             raise Exception(f"A cycle was detected in {self} dependencies")

@@ -170,6 +170,10 @@ class RootManager:
         return self._user
 
     @property
+    def install_path(self) -> Path:
+        return self._install_path
+
+    @property
     def project_root_path(self) -> Path:
         """
         :return: The Project root path.
