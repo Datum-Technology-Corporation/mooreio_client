@@ -3,7 +3,7 @@ ip:
   sync_id: 3
   pkg_type: dv_agent
   mlicensed: true
-  encrypted: true
+  encrypted: ['dsim']
   vendor: "gigadyne"
   name: "b_agent"
   full_name: "B Agent"
@@ -13,7 +13,7 @@ dependencies:
   "bravo/a_vlib": "1.0.0"
 
 structure:
-  hdl_src_path: "."
+  hdl_src_path: "src"
 
 hdl_src:
   directories: ["."]
