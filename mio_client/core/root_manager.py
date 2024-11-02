@@ -1080,9 +1080,9 @@ class RootManager:
         else:
             for path in global_paths:
                 self.ip_database.discover_ip(Path(path), IpLocationType.GLOBAL)
-        if not self.configuration.authentication.offline:
-            self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED)
-            self.ip_database.resolve_local_dependencies()
+            if not self.configuration.authentication.offline:
+                self.ip_database.discover_ip(self.locally_installed_ip_dir, IpLocationType.PROJECT_INSTALLED)
+                self.ip_database.resolve_local_dependencies()
 
     def phase_check(self, phase):
         pass

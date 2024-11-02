@@ -21,3 +21,12 @@ hdl_src:
   tests_path: "tests"
   tests_name_template: "def_ss_{{ name }}_test_c"
 
+targets:
+  default:
+    dut: default
+    sim:
+      MY_NUMBER: 123
+  abc:
+    dut: abc
+    sim:
+      MY_NUMBER: 456

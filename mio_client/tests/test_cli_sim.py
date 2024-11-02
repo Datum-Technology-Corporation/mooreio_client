@@ -152,6 +152,12 @@ class TestCliSim:
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
             raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
 
+    def get_sim_log_text(self):
+        log_path = mio_client.cli.root_manager.command.simulation_report.log_path
+        with open(log_path, 'r') as log_file:
+            log_text = log_file.read()
+        return log_text
+
     @pytest.mark.single_process
     def test_cli_cmp_ip(self, capsys):
         self.reset_workspace()
@@ -205,9 +211,33 @@ class TestCliSim:
         result = self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1,
                                       waves=False, cov=True, defines_boolean=defines_boolean,
                                       defines_value=defines_value, args_boolean=args_boolean, args_value=args_value)
-        #assert "Hello, World!" in result.text
-        #assert "DATA_WIDTH=32" in result.text
-        #assert "ABC_BLOCK is enabled" in result.text
-        #assert "Your lucky number is 42" in result.text
+        log_text = self.get_sim_log_text()
+        assert "Hello, World!" in log_text
+        assert "DATA_WIDTH=32" in log_text
+        assert "ABC_BLOCK is enabled" in log_text
+        assert "Your lucky number is 42" in log_text
+
+    @pytest.mark.single_process
+    def test_cli_sim_targets_ip(self, capsys):
+        self.reset_workspace()
+        test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
+        defines_boolean = []
+        defines_value = {}
+        args_boolean = []
+        args_value = {}
+        result = self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb#abc", "smoke", 1,
+                                      waves=False, cov=True, defines_boolean=defines_boolean,
+                                      defines_value=defines_value, args_boolean=args_boolean, args_value=args_value)
+        log_text = self.get_sim_log_text()
+        assert "My number is 456" in log_text
+        assert "DATA_WIDTH is 64" in log_text
+        assert "ABC_BLOCK_ENABLED is true" in log_text
+        result = self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1,
+                                      waves=False, cov=True, defines_boolean=defines_boolean,
+                                      defines_value=defines_value, args_boolean=args_boolean, args_value=args_value)
+        log_text = self.get_sim_log_text()
+        assert "My number is 123" in log_text
+        assert "DATA_WIDTH is 32" in log_text
+        assert "ABC_BLOCK_ENABLED is true" in log_text
 
 

@@ -135,8 +135,9 @@ class LogicSimulatorCompilationConfiguration(LogicSimulatorConfiguration):
     enable_coverage: bool = False
     enable_waveform_capture: bool = False
     max_errors: int = 10
-    defines_boolean:list[str] = []
-    defines_value:dict[str, str] = {}
+    defines_boolean:List[str] = []
+    defines_value:Dict[str, str] = {}
+    target:str = ""
 
 class LogicSimulatorElaborationConfiguration(LogicSimulatorConfiguration):
     pass
@@ -145,12 +146,13 @@ class LogicSimulatorCompilationAndElaborationConfiguration(LogicSimulatorCompila
     pass
 
 class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
+    target:str = ""
     enable_coverage: bool = False
     enable_waveform_capture: bool = False
     gui_mode: bool = False
     max_errors: int = 10
-    args_boolean:list[str] = []
-    args_value:dict[str, str] = {}
+    args_boolean:List[str] = []
+    args_value:Dict[str, str] = {}
     test_name: str = "__UNDEFINED__"
     seed: int = randint(1, ((1 << 31)-1))
     verbosity: UvmVerbosity = UvmVerbosity.DEBUG
@@ -163,8 +165,6 @@ class LogicSimulatorEncryptionConfiguration(LogicSimulatorConfiguration):
 
 class LogicSimulatorFileList(Model):
     name:str
-    defines_boolean: Optional[list[str]] = []
-    defines_values: Optional[dict[str, str]] = {}
     directories: Optional[list[Path]] = []
     files: Optional[list[Path]] = []
 
@@ -173,6 +173,8 @@ class LogicSimulatorMasterFileList(LogicSimulatorFileList):
     needs_licensing: Optional[bool] = False
     licensing_sv_path: Optional[Path] = Path()
     licensing_vhdl_path: Optional[Path] = Path()
+    defines_boolean: Optional[Dict[str, bool]] = {}
+    defines_values: Optional[Dict[str, str]] = {}
 
 
 
@@ -266,7 +268,6 @@ class LogicSimulator(Service, ABC):
         self.build_vhdl_flist(ip, config, report)
         if (not report.has_sv_files_to_compile) and (not report.has_vhdl_files_to_compile):
             raise Exception(f"No files to compile for IP '{ip}'")
-        # TODO Add defines values from IP target
         report.defines_boolean = config.defines_boolean
         report.defines_value = config.defines_value
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
@@ -301,7 +302,6 @@ class LogicSimulator(Service, ABC):
         self.build_sv_flist(ip, config, report)
         if not report.has_files_to_compile:
             raise Exception(f"No files to compile for IP '{ip}'")
-        # TODO Add defines values from IP target
         report.defines_boolean = config.defines_boolean
         report.defines_value = config.defines_value
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
@@ -315,42 +315,72 @@ class LogicSimulator(Service, ABC):
         return report
 
     def simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, scheduler: JobScheduler) -> LogicSimulatorSimulationReport:
+        # Init report
         report = LogicSimulatorSimulationReport(name=f"Simulation for '{ip}' using '{self.full_name}'")
+        # Init scheduler
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.output_to_terminal = True
+        # Create work dir
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
+        # Generate test result dir name from jinja template
         test_template = Template(ip.hdl_src.tests_name_template)
         test_result_dir_template = Template(self.rmh.configuration.logic_simulation.test_result_path_template)
-        # TODO Add arg values from IP target
-        final_args_boolean = config.args_boolean
-        final_args_value = config.args_value
-        final_args = []
-        for arg in final_args_boolean:
-            final_args.append(arg)
-        for arg in final_args_value:
-            final_args.append(f"{arg}={final_args_value[arg]}")
+        user_args_boolean = config.args_boolean
+        user_args_value = config.args_value
+        user_args = []
+        for arg in user_args_boolean:
+            if arg:
+                user_args.append(arg)
+        for arg in user_args_value:
+            user_args.append(f"{arg}={user_args_value[arg]}")
         report.test_name = test_template.render(name=config.test_name)
+        if config.target != "default":
+            target_text = f"#{config.target}"
+        else:
+            target_text = ""
         test_result_directory_name = test_result_dir_template.render(vendor=ip.ip.vendor, ip=ip.ip.name, test=config.test_name,
-                                                                     seed=config.seed, args=final_args)
-        final_args_boolean.append("UVM_NO_RELNOTES")
+                                                                     seed=config.seed, target=target_text, args=user_args)
+        report.test_results_path = self.simulation_results_path / test_result_directory_name
+        # Add UVM Args
+        final_args_boolean_set = set(config.args_boolean)
+        final_args_value = config.args_value
+        final_args_boolean_set.add("UVM_NO_RELNOTES")
         final_args_value["UVM_TESTNAME"] = report.test_name
         final_args_value["UVM_VERBOSITY"] = f"UVM_{config.verbosity.value.upper()}"
         final_args_value["UVM_MAX_QUIT_COUNT"] = str(config.max_errors)
-        report.test_results_path = self.simulation_results_path / test_result_directory_name
+        # Add MIO Args
         final_args_value["__MIO_TEST_RESULTS_PATH__"] = str(report.test_results_path)
         final_args_value["__MIO_SIM_RESULTS_PATH__"] = str(self.simulation_results_path)
         if self.rmh.user.authenticated:
             final_args_value["__MIO_USER_TOKEN__"] = self.rmh.user.access_token
+        # Add TB/DUT Args
+        if ip.has_dut:
+            dut_target_name = ip.get_target_dut_target(config.target)
+            dut_args_bool = ip.resolved_dut.get_target_cmp_bool_defines(dut_target_name)
+            for arg in dut_args_bool:
+                if dut_args_bool[arg]:
+                    final_args_boolean_set.add(arg)
+            final_args_value.update(ip.resolved_dut.get_target_sim_val_args(dut_target_name))
+        args_bool = ip.get_target_cmp_bool_defines(config.target)
+        for arg in args_bool:
+            if args_bool[arg]:
+                final_args_boolean_set.add(arg)
+        final_args_boolean = list(final_args_boolean_set)
+        final_args_value.update(ip.get_target_sim_val_args(config.target))
+        # Add to report
         report.log_path = report.test_results_path / f"sim.{self.name}.log"
         report.waveform_file_path = report.test_results_path / f"waves.{self.name}"
         report.coverage_directory = report.test_results_path / f"cov.{self.name}"
         report.args_boolean = final_args_boolean
         report.args_value = final_args_value
+        # Create results directories
         self.rmh.create_directory(report.test_results_path)
         if config.enable_coverage:
             self.rmh.create_directory(report.coverage_directory)
         report.shared_objects = self.get_all_shared_objects(ip)
+        # Perform simulation
         self.do_simulate(ip, config, report, scheduler, scheduler_config)
+        # Complete report
         report.success = report.simulation_success
         report.waveform_capture = config.enable_waveform_capture
         report.coverage = config.enable_coverage
@@ -493,13 +523,20 @@ class LogicSimulator(Service, ABC):
             for file in files:
                 sub_file_list.files.append(file)
                 has_files_to_compile = True
-            # TODO Add defines from targets
             file_list.sub_file_lists.append(sub_file_list)
+        if ip.has_dut:
+            dut_target_name = ip.get_target_dut_target(config.target)
+            file_list.defines_boolean.update(ip.resolved_dut.get_target_cmp_bool_defines(dut_target_name))
+            file_list.defines_values.update(ip.resolved_dut.get_target_cmp_val_defines(dut_target_name))
+        file_list.defines_boolean.update(ip.get_target_cmp_bool_defines(config.target))
+        file_list.defines_values.update(ip.get_target_cmp_val_defines(config.target))
         if isinstance(config, LogicSimulatorCompilationConfiguration):
-            file_list.defines_boolean += config.defines_boolean
+            for define in config.defines_boolean:
+                file_list.defines_boolean[define] = True
             file_list.defines_values.update(config.defines_value)
         else:
-            file_list.defines_boolean += config.defines_boolean
+            for define in config.defines_boolean:
+                file_list.defines_boolean[define] = True
             file_list.defines_values.update(config.defines_value)
         if ip.ip.mlicensed:
             if self.name not in ip.resolved_encrypted_hdl_directories:
@@ -540,6 +577,10 @@ class LogicSimulator(Service, ABC):
 
     def build_vhdl_flist(self, ip:Ip, config:LogicSimulatorCompilationConfiguration, report:LogicSimulatorCompilationReport):
         file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
+        if isinstance(config, LogicSimulatorCompilationConfiguration):
+            target_name = config.target
+        else:
+            target_name = config.target
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
             if dep.ip.mlicensed:
@@ -557,9 +598,15 @@ class LogicSimulator(Service, ABC):
             for file in files:
                 sub_file_list.files.append(file)
                 report.has_vhdl_files_to_compile = True
-            # TODO Add defines from targets
             file_list.sub_file_lists.append(sub_file_list)
-        file_list.defines_boolean += config.defines_boolean
+        if ip.has_dut:
+            dut_target_name = ip.get_target_dut_target(config.target)
+            file_list.defines_boolean.update(ip.resolved_dut.get_target_cmp_bool_defines(dut_target_name))
+            file_list.defines_values.update(ip.resolved_dut.get_target_cmp_val_defines(dut_target_name))
+        file_list.defines_boolean.update(ip.get_target_cmp_bool_defines(config.target))
+        file_list.defines_values.update(ip.get_target_cmp_val_defines(config.target))
+        for define in config.defines_boolean:
+            file_list.defines_boolean[define] = True
         file_list.defines_values.update(config.defines_value)
         if ip.ip.mlicensed:
             if self.name not in ip.resolved_encrypted_hdl_directories:
