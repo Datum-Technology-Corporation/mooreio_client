@@ -15,3 +15,12 @@ structure:
 hdl_src:
   directories: ["."]
   top_sv_files: ["def_ss_top.sv"]
+
+targets:
+  default:
+    cmp:
+      DATA_WIDTH: 32
+      ABC_BLOCK_ENABLED: true
+  abc:
+    cmp:
+      DATA_WIDTH: 64

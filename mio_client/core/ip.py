@@ -9,7 +9,7 @@ from datetime import datetime
 from http import HTTPMethod
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, List, Union, Any
+from typing import Optional, List, Union, Any, Dict
 
 import jinja2
 import yaml
@@ -115,13 +115,19 @@ class IpDefinition:
     ip_name: str = ""
     version_spec: SimpleSpec = SimpleSpec("*")
     online_id: int
+    target: str = ""
+    is_dut: bool = False
     find_results: IpFindResults
 
     def __str__(self):
-        if self.vendor_name_is_specified:
-            return f"{self.vendor_name}/{self.ip_name}"
+        if self.target != "":
+            target = f"#{self.target}"
         else:
-            return self.ip_name
+            target = ""
+        if self.vendor_name_is_specified:
+            return f"{self.vendor_name}/{self.ip_name}{target}"
+        else:
+            return f"{self.ip_name}{target}"
 
     @property
     def installation_directory_name(self) -> str:
@@ -167,6 +173,7 @@ class Parameter(Model):
 
 
 class Target(Model):
+    dut: Optional[str] = UNDEFINED_CONST
     cmp: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
     elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
     sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
@@ -218,6 +225,7 @@ class Ip(Model):
         self._resolved_encrypted_top_sv_files: dict[str, List[Path]] = {}
         self._resolved_encrypted_top_vhdl_files: dict[str, List[Path]] = {}
         self._resolved_top: List[str] = []
+        self._resolved_dut: Ip
         self._resolved_dependencies: dict[IpDefinition, Ip] = {}
         self._dependencies_to_find_online: List[IpDefinition] = []
         self._dependencies_resolved: bool = False
@@ -237,7 +245,7 @@ class Ip(Model):
         self._ip_database = value
     
     @property
-    def archive_name(self):
+    def archive_name(self) -> str:
         version_no_dots = str(self.ip.version).replace(".", "p")
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
@@ -245,7 +253,7 @@ class Ip(Model):
             return f"{self.ip.name}__v{self.ip.version}"
 
     @property
-    def installation_directory_name(self):
+    def installation_directory_name(self) -> str:
         version_no_dots = str(self.ip.version).replace(".", "p")
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
@@ -253,7 +261,7 @@ class Ip(Model):
             return f"{self.ip.name}__v{self.ip.version}"
 
     @property
-    def lib_name(self):
+    def lib_name(self) -> str:
         version_no_dots = str(self.ip.version).replace(".", "p")
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
@@ -261,7 +269,7 @@ class Ip(Model):
             return f"{self.ip.name}__v{self.ip.version}"
 
     @property
-    def image_name(self):
+    def image_name(self) -> str:
         version_no_dots = str(self.ip.version).replace(".", "p")
         if self.ip.vendor != UNDEFINED_CONST:
             return f"img__{self.ip.vendor}__{self.ip.name}__v{version_no_dots}"
@@ -269,21 +277,21 @@ class Ip(Model):
             return f"img__{self.ip.name}__v{self.ip.version}"
 
     @property
-    def work_directory_name(self):
+    def work_directory_name(self) -> str:
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}__{self.ip.name}"
         else:
             return f"{self.ip.name}"
 
     @property
-    def result_file_name(self):
+    def result_file_name(self) -> str:
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}_{self.ip.name}"
         else:
             return f"{self.ip.name}"
 
     @property
-    def as_ip_definition(self):
+    def as_ip_definition(self) -> str:
         version_str = str(self.ip.version)
         if self.ip.vendor != UNDEFINED_CONST:
             return f"{self.ip.vendor}/{self.ip.name}@{version_str}"
@@ -432,6 +440,17 @@ class Ip(Model):
         self._dependencies_resolved = value
 
     @property
+    def has_dut(self) -> bool:
+        if self.dut:
+            return self.dut.name != UNDEFINED_CONST
+        else:
+            return False
+
+    @property
+    def resolved_dut(self) -> Ip:
+        return self._resolved_dut
+
+    @property
     def uninstalled(self) -> bool:
         return self._uninstalled
 
@@ -462,14 +481,15 @@ class Ip(Model):
             self._resolved_examples_path = self.root_path / self.structure.examples_path
             if not self.rmh.directory_exists(self.resolved_examples_path):
                 raise Exception(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
+        # Check targets
+        if 'default' not in self.targets:
+            default_target = Target()
+            default_target.dut = "default"
+            self.targets['default'] = default_target
 
     def check_hdl_src(self, path:Path,simulator:str=""):
         if not self.rmh.directory_exists(path):
             raise Exception(f"IP '{self}' src path '{path}' does not exist")
-        if self.hdl_src.tests_path != UNDEFINED_CONST:
-            directory_path = path / self.hdl_src.tests_path
-            if not self.rmh.directory_exists(directory_path):
-                raise Exception(f"IP '{self}' HDL Tests src path '{directory_path}' does not exist")
         for directory in self.hdl_src.directories:
             directory_path = path / directory
             if not self.rmh.directory_exists(directory_path):
@@ -530,7 +550,15 @@ class Ip(Model):
                     self.resolved_encrypted_shared_objects[simulator].append(full_path)
 
     def add_resolved_dependency(self, ip_definition:IpDefinition, ip:Ip):
-        self._resolved_dependencies[ip_definition] = ip
+        num_dependencies = len(self.dependencies)
+        if self.has_dut:
+            num_dependencies += 1
+            if ip_definition.is_dut:
+                self._resolved_dut = ip
+            else:
+                self._resolved_dependencies[ip_definition] = ip
+        else:
+            self._resolved_dependencies[ip_definition] = ip
         if len(self._resolved_dependencies) == len(self.dependencies):
             self.dependencies_resolved = True
         else:
@@ -650,15 +678,70 @@ class Ip(Model):
             # Remove self from the topological order if it exists
             if self in topo_order:
                 topo_order.remove(self)
-            return topo_order[::-1]
+            return topo_order[::-1] # Flip the order
         else:
             # There is a cycle and topological sorting is not possible
             raise Exception(f"A cycle was detected in {self} dependencies")
 
+    def check_target(self, name:str="default"):
+        if name not in self.targets:
+            raise Exception(f"Target '{name}' does not exist for IP '{self}'")
+
+    def get_target_dut_target(self, target_name:str="default") -> str:
+        dut_target_name = ""
+        if not self.has_dut:
+            raise Exception(f"IP '{self}' does not have DUT")
+        if target_name not in self.targets:
+            raise Exception(f"Target '{target_name}' does not exist for IP '{self}'")
+        if target_name != "default":
+            dut_target_name = self.targets["default"].dut
+        if self.targets[target_name].dut != UNDEFINED_CONST:
+            dut_target_name = self.targets[target_name].dut
+        return dut_target_name
+
+    def get_target_cmp_bool_defines(self, target_name: str = "default") -> Dict[str,bool]:
+        if target_name != "default":
+            defines = self.get_target_cmp_bool_defines()
+        else:
+            defines = {}
+        for define, value in self.targets[target_name].cmp.items():
+            if isinstance(value, bool):
+                defines[define] = value
+        return defines
+    
+    def get_target_cmp_val_defines(self, target_name:str="default") -> Dict[str,str]:
+        if target_name != "default":
+            defines = self.get_target_cmp_val_defines()
+        else:
+            defines = {}
+        for define, value in self.targets[target_name].cmp.items():
+            if not isinstance(value, bool):
+                defines[define] = value
+        return defines
+    
+    def get_target_sim_bool_args(self, target_name:str="default") -> Dict[str,bool]:
+        if target_name != "default":
+            defines = self.get_target_sim_bool_args()
+        else:
+            defines = {}
+        for define, value in self.targets[target_name].sim.items():
+            if isinstance(value, bool):
+                defines[define] = value
+        return defines
+    
+    def get_target_sim_val_args(self, target_name:str="default") -> Dict[str,str]:
+        if target_name != "default":
+            defines = self.get_target_sim_val_args()
+        else:
+            defines = {}
+        for define, value in self.targets[target_name].sim.items():
+            if not isinstance(value, bool):
+                defines[define] = value
+        return defines
+
 
 class IpDataBase():
     def __init__(self, rmh: 'RootManager'):
-        self._rmh = rmh
         self._ip_list: list[Ip] = []
         self._rmh: 'RootManager' = rmh
         self._need_to_find_dependencies_on_remote: bool = False
@@ -693,10 +776,14 @@ class IpDataBase():
         return self._ip_list
 
     def find_ip_definition(self, definition:IpDefinition, raise_exception_if_not_found:bool=True) -> Ip:
+        ip:Ip
         if definition.vendor_name_is_specified:
-            return self.find_ip(definition.ip_name, definition.vendor_name, definition.version_spec, raise_exception_if_not_found)
+            ip = self.find_ip(definition.ip_name, definition.vendor_name, definition.version_spec, raise_exception_if_not_found)
         else:
-            return self.find_ip(definition.ip_name, "*", definition.version_spec, raise_exception_if_not_found)
+            ip = self.find_ip(definition.ip_name, "*", definition.version_spec, raise_exception_if_not_found)
+        if ip and (definition.target != ""):
+            ip.check_target(definition.target)
+        return ip
 
     def find_ip(self, name:str, owner:str="*", version_spec:SimpleSpec=SimpleSpec("*"), raise_exception_if_not_found:bool=True) -> Ip:
         for ip in self._ip_list:
@@ -755,6 +842,20 @@ class IpDataBase():
         if reset_list_of_dependencies_to_find_online:
             self._dependencies_to_find_online = []
             self._need_to_find_dependencies_on_remote = False
+        if ip.has_dut and not ip.dependencies_resolved:
+            dut_definition = Ip.parse_ip_definition(ip.dut.name)
+            dut_definition.version_spec = ip.dut.version
+            dut_definition.is_dut = True
+            dut_dependency = self.find_ip_definition(dut_definition, raise_exception_if_not_found=False)
+            if dut_dependency is None:
+                ip.add_dependency_to_find_on_remote(dut_definition)
+                self._need_to_find_dependencies_on_remote = True
+                self._ip_with_missing_dependencies[ip.uid] = ip
+                self._dependencies_to_find_online.append(dut_definition)
+            else:
+                ip.add_resolved_dependency(dut_definition, dut_dependency)
+                if recursive:
+                    self.resolve_dependencies(dut_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
         for ip_definition_str, ip_version_spec in ip.dependencies.items():
             if not ip.dependencies_resolved:
                 ip_definition = Ip.parse_ip_definition(ip_definition_str)

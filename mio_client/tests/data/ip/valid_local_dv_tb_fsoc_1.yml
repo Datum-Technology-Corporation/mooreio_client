@@ -30,6 +30,7 @@ hdl_src:
 
 targets:
   default:
+    dut: default
     cmp:
       ABC_NUMBER: 150
       XYZ: true

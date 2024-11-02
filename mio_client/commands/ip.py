@@ -4,7 +4,7 @@ from pathlib import Path
 
 from semantic_version import SimpleSpec
 
-from simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration
+from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration
 from ..core.command import Command
 from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
@@ -118,9 +118,11 @@ class List(Command):
 
 
 class Package(Command):
-    _ip_definition: 'IpDefinition'
-    _ip: 'Ip'
-    _destination: Path
+    def __init__(self):
+        super().__init__()
+        self._ip_definition: 'IpDefinition'
+        self._ip: 'Ip'
+        self._destination: Path
 
     @property
     def ip_definition(self) -> 'IpDefinition':
@@ -183,10 +185,12 @@ class Package(Command):
 
 
 class Publish(Command):
-    _ip_definition: 'IpDefinition'
-    _ip: 'Ip'
-    _publishing_certificate: IpPublishingCertificate
-    _customer:str
+    def __init__(self):
+        super().__init__()
+        self._ip_definition: 'IpDefinition'
+        self._ip: 'Ip'
+        self._publishing_certificate: IpPublishingCertificate
+        self._customer:str
 
     @property
     def ip_definition(self) -> 'IpDefinition':
@@ -266,9 +270,11 @@ class Publish(Command):
 
 
 class Install(Command):
-    _ip_definition: 'IpDefinition' = None
-    _ip: 'Ip' = None
-    _mode: InstallMode = InstallMode.UNKNOWN
+    def __init__(self):
+        super().__init__()
+        self._ip_definition: 'IpDefinition' = None
+        self._ip: 'Ip' = None
+        self._mode: InstallMode = InstallMode.UNKNOWN
 
     @staticmethod
     def name() -> str:
@@ -371,9 +377,11 @@ class Install(Command):
 
 
 class Uninstall(Command):
-    _ip_definition: 'IpDefinition'
-    _ip: 'Ip'
-    _uninstall_all: bool
+    def __init__(self):
+        super().__init__()
+        self._ip_definition: 'IpDefinition'
+        self._ip: 'Ip'
+        self._uninstall_all: bool
 
     @staticmethod
     def name() -> str:
