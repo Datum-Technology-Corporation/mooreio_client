@@ -53,7 +53,7 @@ Examples:
                                                  # for IP 'my_ip' with seed '1' and a simulation argument.
    mio sim my_ip -S -t smoke -s 42 -v high -g    # Only simulates test 'my_ip_smoke_test_c' for IP 'my_ip'
                                                  # with seed '42' and UVM_HIGH verbosity using the simulator in GUI mode.
-   mio sim my_ip -C                              # Only compile 'my_ip'.
+   mio sim my_ip#dw64b -C                        # Only compile 'my_ip' target 'dw64b'.
    mio sim my_ip -E                              # Only elaborate 'my_ip'.
    mio sim my_ip -CE                             # Compile and elaborate 'my_ip'."""
 
@@ -89,28 +89,30 @@ class Simulate(Command):
         parser_sim.add_argument('-D'               , help='Force mio to prepare Device-Under-Test (DUT).  Can be combined with -C, -E and/or -S.'              , action="store_true", required=False)
         parser_sim.add_argument('-+', "--args"     , help='Add arguments for compilation (+define+NAME[=VALUE]) or simulation (+NAME[=VALUE])).', nargs='+'    , dest='add_args'    , required=False)
 
-    _ip_definition: IpDefinition = None
-    _ip: Ip = None
-    _simulator: LogicSimulator = None
-    _scheduler: JobScheduler = None
-    _do_prepare_dut: bool = False
-    _do_compile: bool = False
-    _do_elaborate: bool = False
-    _do_compile_and_elaborate: bool = False
-    _do_simulate: bool = False
-    _compilation_configuration: LogicSimulatorCompilationConfiguration
-    _elaboration_configuration: LogicSimulatorElaborationConfiguration
-    _compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
-    _simulation_configuration: LogicSimulatorSimulationConfiguration
-    _compilation_report: LogicSimulatorCompilationReport
-    _elaboration_report: LogicSimulatorElaborationReport
-    _compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
-    _simulation_report: LogicSimulatorSimulationReport
-    _success:bool = False
-    _defines_boolean:list[str] = []
-    _defines_value:dict[str, str] = {}
-    _args_boolean:list[str] = []
-    _args_value:dict[str, str] = {}
+    def __init__(self):
+        super().__init__()
+        self._ip_definition: IpDefinition = None
+        self._ip: Ip = None
+        self._simulator: LogicSimulator = None
+        self._scheduler: JobScheduler = None
+        self._do_prepare_dut: bool = False
+        self._do_compile: bool = False
+        self._do_elaborate: bool = False
+        self._do_compile_and_elaborate: bool = False
+        self._do_simulate: bool = False
+        self._compilation_configuration: LogicSimulatorCompilationConfiguration
+        self._elaboration_configuration: LogicSimulatorElaborationConfiguration
+        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
+        self._simulation_configuration: LogicSimulatorSimulationConfiguration
+        self._compilation_report: LogicSimulatorCompilationReport
+        self._elaboration_report: LogicSimulatorElaborationReport
+        self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
+        self._simulation_report: LogicSimulatorSimulationReport
+        self._success:bool = False
+        self._defines_boolean:list[str] = []
+        self._defines_value:dict[str, str] = {}
+        self._args_boolean:list[str] = []
+        self._args_value:dict[str, str] = {}
 
     @property
     def simulator(self) -> LogicSimulator:
@@ -195,11 +197,25 @@ class Simulate(Command):
     @property
     def ip(self) -> Ip:
         return self._ip
+
     def needs_authentication(self) -> bool:
         return False
 
     def phase_init(self, phase: Phase):
-        self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+        ip_def_str = ""
+        ip_target = "default"
+        if "#" in self.parsed_cli_arguments.ip:
+            spit_ip_def = self.parsed_cli_arguments.ip.split("#")
+            if len(spit_ip_def) != 2:
+                phase.error = Exception(f"Invalid IP/target specification: '{self.parsed_cli_arguments.ip}'")
+                return
+            else:
+                ip_def_str = spit_ip_def[0].strip().lower()
+                ip_target = spit_ip_def[1].strip().lower()
+        else:
+            ip_def_str = self.parsed_cli_arguments.ip.strip().lower()
+        self._ip_definition = Ip.parse_ip_definition(ip_def_str)
+        self.ip_definition.target = ip_target
         if not self.parsed_cli_arguments.D and not self.parsed_cli_arguments.C and not self.parsed_cli_arguments.E and not self.parsed_cli_arguments.S:
             self._do_prepare_dut = True
             self._do_compile = True
@@ -212,13 +228,13 @@ class Simulate(Command):
             self._do_simulate = self.parsed_cli_arguments.S
 
         if self.parsed_cli_arguments.add_args:
+            patterns = {
+                re.compile(r'^\+define\+(\w+)$'): self.defines_boolean,
+                re.compile(r'^\+define\+(\w+)=(\w+)$'): self.defines_value,
+                re.compile(r'^\+(\w+)$'): self.args_boolean,
+                re.compile(r'^\+(\w+)=(\w+)$'): self.args_value
+            }
             for arg in self.parsed_cli_arguments.add_args:
-                patterns = {
-                    re.compile(r'^\+define\+(\w+)$'): self.defines_boolean,
-                    re.compile(r'^\+define\+(\w+)=(\w+)$'): self.defines_value,
-                    re.compile(r'^\+(\w+)$'): self.args_boolean,
-                    re.compile(r'^\+(\w+)=(\w+)$'): self.args_value
-                }
                 match_found = False
                 for pattern, target_list in patterns.items():
                     match = pattern.match(arg)
@@ -305,6 +321,7 @@ class Simulate(Command):
             self.compilation_configuration.enable_coverage = True
         self.compilation_configuration.defines_boolean = self.defines_boolean
         self.compilation_configuration.defines_value = self.defines_value
+        self.compilation_configuration.target = self.ip_definition.target
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
     def elaborate(self, phase:Phase):
@@ -315,6 +332,7 @@ class Simulate(Command):
         self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationConfiguration()
         self.compilation_and_elaboration_configuration.defines_boolean = self.defines_boolean
         self.compilation_and_elaboration_configuration.defines_value = self.defines_value
+        self.compilation_and_elaboration_configuration.target = self.ip_definition.target
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
 
     def simulate(self, phase:Phase):
@@ -328,6 +346,7 @@ class Simulate(Command):
         self.simulation_configuration.test_name = self.parsed_cli_arguments.test.strip().lower()
         self.simulation_configuration.args_boolean = self.args_boolean
         self.simulation_configuration.args_value = self.args_value
+        self.simulation_configuration.target = self.ip_definition.target
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
 
     def phase_report(self, phase:Phase):

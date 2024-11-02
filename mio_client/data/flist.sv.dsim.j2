@@ -6,29 +6,25 @@
 {% if data.needs_licensing %}##################################################### LICENSING #######################################################
 {{ data.licensing_sv_path }}
 ##################################################### LICENSING #######################################################
-{% endif %}
+{% endif %}###################################################### DEFINES ########################################################
+{% for define in data.defines_boolean %}{% if data.defines_boolean[define] %}+define+{{ define }}
+{% endif %}{% endfor %}{% for define in data.defines_values %}+define+{{ define }}={{ data.defines_values[define] }}
+{% endfor %}###################################################### DEFINES ########################################################
+
 
 {% for sub in data.sub_file_lists %}##################################################### DEPENDENCY ######################################################
-# {{ sub.name }}
-##################################################### DEPENDENCY ######################################################
-# Boolean Defines{% for define in sub.bool_defines %}
-+define+{{ define }}{% endfor %}
-# Value Defines{% for define in sub.val_defines %}
-+define+{{ define }}+{{ val_defines[define] }}{% endfor %}
-# Directories{% for dir in sub.directories %}
-+incdir+{{ dir }}{% endfor %}
-# Files{% for file in sub.files %}
-{{ file }}{% endfor %}
+# Name: {{ sub.name }}
+# Directories
+{% for dir in sub.directories %}+incdir+{{ dir }}
+{% endfor %}# Files
+{% for file in sub.files %}{{ file }}
+{% endfor %}##################################################### DEPENDENCY ######################################################
 
-{% endfor %}
-######################################################## TOP ##########################################################
-# {{ data.name }}
-######################################################## TOP ##########################################################
-# Boolean Defines{% for define in data.bool_defines %}
-+define+{{ define }}{% endfor %}
-# Value Defines{% for define in data.val_defines %}
-+define+{{ define }}+{{ val_defines[define] }}{% endfor %}
-# Directories{% for dir in data.directories %}
-+incdir+{{ dir }}{% endfor %}
-# Files{% for file in data.files %}
-{{ file }}{% endfor %}
+
+{% endfor %}######################################################## TOP ##########################################################
+# Name: {{ data.name }}
+# Directories
+{% for dir in data.directories %}+incdir+{{ dir }}
+{% endfor %}# Files
+{% for file in data.files %}{{ file }}
+{% endfor %}######################################################## TOP ##########################################################
