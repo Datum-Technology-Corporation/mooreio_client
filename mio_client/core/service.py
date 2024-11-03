@@ -16,6 +16,7 @@ class ServiceType(Enum):
     CUSTOM = "Custom"
     PACKAGE_MANAGEMENT = "Package Management"
     LOGIC_SIMULATION = "logic Simulation"
+    REGRESSION = "Regression"
     LOGIC_EMULATION = "logic Emulation"
     LOGIC_SYNTHESIS = "logic Synthesis"
     SPICE_SIMULATION = "SPICE Simulation"

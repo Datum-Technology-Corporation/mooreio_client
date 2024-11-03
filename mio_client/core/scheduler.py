@@ -23,6 +23,7 @@ class Job:
         self._post_path:str = ""
         self._print_to_screen:bool = False
         self._hostname = None
+        self._dry_run:bool = False
         self._is_part_of_set = False
         self._parent_set = None
     
@@ -76,6 +77,13 @@ class Job:
     @hostname.setter
     def hostname(self, value):
         self._hostname = value
+
+    @property
+    def dry_run(self) -> bool:
+        return self._dry_run
+    @dry_run.setter
+    def dry_run(self, value: bool):
+        self._dry_run = value
 
     @property
     def is_part_of_set(self) -> bool:

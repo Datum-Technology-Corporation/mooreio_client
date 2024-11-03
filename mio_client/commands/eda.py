@@ -2,7 +2,12 @@
 # All rights reserved.
 #######################################################################################################################
 import re
+from typing import Lis
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
+import regression
+from regression import RegressionDatabase
 from ..core.ip import Ip, IpDefinition, IpPkgType
 from ..core.command import Command
 from ..core.phase import Phase
@@ -56,6 +61,24 @@ Examples:
    mio sim my_ip#dw64b -C                        # Only compile 'my_ip' target 'dw64b'.
    mio sim my_ip -E                              # Only elaborate 'my_ip'.
    mio sim my_ip -CE                             # Compile and elaborate 'my_ip'."""
+
+
+REGR_HELP_TEXT = """Moore.io Regression Command
+   Runs a set of tests against a specific IP.  Regressions are described in Test Suite files (`[<target>.]ts.yml`).
+   
+   An optional target may be specified for the IP. Ex: my_ip#target.
+   
+Usage:
+   mio regr IP [TEST SUITE.]REGRESSION [OPTIONS]
+   
+Options:
+   -d, --dry-run  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
+                  For DSim, only the Job YAML file is printed.
+   
+Examples:
+   mio regr my_ip sanity            # Run sanity regression for IP 'uvm_my_ip', from test suite 'ts.yml'
+   mio regr my_ip apb_xc.sanity     # Run sanity regression for IP 'uvm_my_ip', from test suite 'apb_xc.ts.yml'
+   mio regr my_ip axi_xc.sanity -d  # Dry-run sanity regression for IP 'uvm_my_ip', from test suite 'axi_xc.ts.yml"""
 
 
 VERBOSITY_LEVELS = ["none","low","medium","high","debug"]
@@ -438,3 +461,338 @@ class Simulate(Command):
                 print(f"\033[31m{error}\033[0m")
             for fatal in self.simulation_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
+
+
+class Regression(Command):
+    @staticmethod
+    def name() -> str:
+        return "regr"
+
+    @staticmethod
+    def add_to_subparsers(subparsers):
+        parser_regr = subparsers.add_parser('regr', help=REGR_HELP_TEXT, add_help=False)
+        parser_regr.add_argument('ip'         , help='Target IP')
+        parser_regr.add_argument('regr'       , help='Regression to be run.  For Test Bench IPs with multiple Test Suites, the suite must be specified. Ex: `mio regr my_ip apbxc.sanity`')
+        parser_regr.add_argument('-a', "--app", help='Specifies which simulator to use: dsim', choices=LOGIC_SIMULATORS , required=False)
+        parser_regr.add_argument('-d', "--dry", help='Compiles and elaborates target IP but only prints out the tests that would be run.', action="store_true", default=False , required=False)
+
+    def __init__(self):
+        super().__init__()
+        self._ip_definition: IpDefinition = None
+        self._ip: Ip = None
+        self._test_suite_name:str = ""
+        self._test_suite_name_is_specified:bool=False
+        self._regression: regression.Regression = None
+        self._regression_name:str = ""
+        self._regression_database: RegressionDatabase = None
+        self._simulator: LogicSimulator = None
+        self._scheduler: JobScheduler = None
+        self._do_compile: bool = False
+        self._do_elaborate: bool = False
+        self._do_compile_and_elaborate: bool = False
+        self._compilation_configuration: LogicSimulatorCompilationConfiguration
+        self._elaboration_configuration: LogicSimulatorElaborationConfiguration
+        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
+        self._simulation_configurations: List[LogicSimulatorSimulationConfiguration] = []
+        self._compilation_report: LogicSimulatorCompilationReport
+        self._elaboration_report: LogicSimulatorElaborationReport
+        self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
+        self._simulation_reports: List[LogicSimulatorSimulationReport] = []
+        self._success:bool = False
+
+    @property
+    def ip_definition(self) -> IpDefinition:
+        return self._ip_definition
+
+    @property
+    def ip(self) -> Ip:
+        return self._ip
+
+    @property
+    def test_suite_name(self) -> str:
+        return self._test_suite_name
+
+    @property
+    def test_suite_name_is_specified(self) -> bool:
+        return self._test_suite_name_is_specified
+
+    @property
+    def regression(self) -> regression.Regression:
+        return self._regression
+
+    @property
+    def regression_name(self) -> str:
+        return self._regression_name
+
+    @property
+    def regression_database(self) -> RegressionDatabase:
+        return self._regression_database
+
+    @property
+    def simulator(self) -> LogicSimulator:
+        return self._simulator
+
+    @property
+    def scheduler(self) -> JobScheduler:
+        return self._scheduler
+
+    @property
+    def do_compile(self) -> bool:
+        return self._do_compile
+    @property
+    def do_elaborate(self) -> bool:
+        return self._do_elaborate
+    @property
+    def do_compile_and_elaborate(self) -> bool:
+        return self._do_compile_and_elaborate
+
+    @property
+    def compilation_configuration(self) -> LogicSimulatorCompilationConfiguration:
+        return self._compilation_configuration
+
+    @property
+    def elaboration_configuration(self) -> LogicSimulatorElaborationConfiguration:
+        return self._elaboration_configuration
+
+    @property
+    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationConfiguration:
+        return self._compilation_and_elaboration_configuration
+
+    @property
+    def simulation_configurations(self) -> List[LogicSimulatorSimulationConfiguration]:
+        return self._simulation_configurations
+
+    @property
+    def compilation_report(self) -> LogicSimulatorCompilationReport:
+        return self._compilation_report
+
+    @property
+    def elaboration_report(self) -> LogicSimulatorElaborationReport:
+        return self._elaboration_report
+
+    @property
+    def compilation_and_elaboration_report(self) -> LogicSimulatorCompilationAndElaborationReport:
+        return self._compilation_and_elaboration_report
+
+    @property
+    def simulation_reports(self) -> List[LogicSimulatorSimulationReport]:
+        return self._simulation_reports
+
+    @property
+    def success(self) -> bool:
+        return self._success
+
+    def needs_authentication(self) -> bool:
+        return False
+
+    def phase_init(self, phase: Phase):
+        # Decompose IP Definition
+        ip_def_str = ""
+        ip_target = "default"
+        if "#" in self.parsed_cli_arguments.ip:
+            spit_ip_def = self.parsed_cli_arguments.ip.split("#")
+            if len(spit_ip_def) != 2:
+                phase.error = Exception(f"Invalid IP/target specification: '{self.parsed_cli_arguments.ip}'")
+                return
+            else:
+                ip_def_str = spit_ip_def[0].strip().lower()
+                ip_target = spit_ip_def[1].strip().lower()
+        else:
+            ip_def_str = self.parsed_cli_arguments.ip.strip().lower()
+        self._ip_definition = Ip.parse_ip_definition(ip_def_str)
+        self.ip_definition.target = ip_target
+        # Decompose Regression Definition
+        if "." in self.parsed_cli_arguments.regr:
+            split_regr_def = self.parsed_cli_arguments.regr.split('.')
+            if len(split_regr_def) != 2:
+                phase.error = Exception(f"Invalid regression specification: '{self.parsed_cli_arguments.regr}'")
+                return
+            else:
+                self._test_suite_name_is_specified = True
+                self._test_suite_name = split_regr_def[0].strip().lower()
+                self._regression_name = split_regr_def[1].strip().lower()
+        else:
+            self._regression_name = self.parsed_cli_arguments.regr.strip().lower()
+
+    def phase_post_validate_configuration_space(self, phase):
+        if not self.parsed_cli_arguments.app:
+            if not self.rmh.configuration.logic_simulation.default_simulator:
+                phase.error = Exception(f"No simulator specified (-a/--app) and no default simulator in the Configuration")
+                return
+            else:
+                self.parsed_cli_arguments.app = self.rmh.configuration.logic_simulation.default_simulator.value
+
+    def phase_post_scheduler_discovery(self, phase:Phase):
+        try:
+            # TODO Add support for other schedulers
+            self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
+        except Exception as e:
+            phase.error = e
+
+    def phase_post_service_discovery(self, phase:Phase):
+        try:
+            self._simulator = self.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, self.parsed_cli_arguments.app)
+            self._regression_database = self.rmh.service_database.find_default_service(ServiceType.REGRESSION)
+        except Exception as e:
+            phase.error = e
+
+    def phase_post_ip_discovery(self, phase:Phase):
+        self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
+        if not self.ip:
+            phase.error = Exception(f"IP '{self.ip_definition}' could not be found")
+        else:
+            if self.ip.ip.pkg_type != IpPkgType.DV_TB:
+                phase.error = Exception(f"IP '{self.ip}' is not a Test Bench")
+            else:
+                self.regression_database.discover_test_suites(self.ip.root_path)
+                if self.test_suite_name_is_specified:
+                    self._regression = self.regression_database.find_regression(self.test_suite_name, self.regression_name, raise_exception_if_not_found=False)
+                else:
+                    self._regression = self.regression_database.find_regression_default_test_suite(self.regression_name, raise_exception_if_not_found=False)
+                if not self._regression:
+                    phase.error = Exception(f"Regression '{self.parsed_cli_arguments.regr}' could not be found")
+                else:
+                    if self.ip.has_vhdl_content:
+                        # VHDL must be compiled and elaborated separately
+                        self._do_compile = True
+                        self._do_elaborate = True
+                        self._do_compile_and_elaborate = False
+                    else:
+                        self._do_compile = False
+                        self._do_elaborate = False
+                        self._do_compile_and_elaborate = True
+    
+    def phase_main(self, phase:Phase):
+        self.prepare_dut(phase)
+        if self.parsed_cli_arguments.app == "dsim":
+            pass
+        else:
+            if self.do_compile:
+                self.compile(phase)
+                if not self.compilation_report.success:
+                    self._do_elaborate = False
+                    self._do_simulate = False
+            if self.do_elaborate:
+                self.elaborate(phase)
+                if not self.elaboration_report.success:
+                    self._do_simulate = False
+            if self.do_compile_and_elaborate:
+                self.compile_and_elaborate(phase)
+                if not self.compilation_and_elaboration_report.success:
+                    self._do_simulate = False
+            self.simulate(phase)
+
+    def prepare_dut(self, phase:Phase):
+        pass
+
+    def compile(self, phase:Phase):
+        self._compilation_configuration = self.regression.render_cmp_config()
+        self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
+
+    def elaborate(self, phase:Phase):
+        self._elaboration_configuration = self.regression.render_elab_config()
+        self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
+
+    def compile_and_elaborate(self, phase:Phase):
+        self._compilation_and_elaboration_configuration = self.regression.render_cmp_elab_config()
+        self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
+
+    def simulate(self, phase:Phase):
+        if self.parsed_cli_arguments.app == "dsim":
+            pass
+        else:
+            self._simulation_configurations = self.regression.render_sim_configs()
+            with ThreadPoolExecutor(max_workers=self.regression.max_jobs) as executor:
+                future_simulations = [executor.submit(self.launch_simulation, phase, config) for config in
+                                      self.simulation_configurations]
+                with tqdm(total=len(self.simulation_configurations), desc="Simulations") as pbar:
+                    for future in as_completed(future_simulations):
+                        try:
+                            result = future.result()
+                        except Exception as e:
+                            phase.error = e
+                        finally:
+                            pbar.update(1)
+
+    def launch_simulation(self, phase:Phase, config:LogicSimulatorSimulationConfiguration):
+        report:LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, config, self.scheduler)
+        self.simulation_reports.append(report)
+
+    def phase_report(self, phase:Phase):
+        self._success = True
+        if self.do_compile:
+            self._success &= self.compilation_report.success
+        if self.do_elaborate:
+            self._success &= self.elaboration_report.success
+        if self.do_compile_and_elaborate:
+            self._success &= self.compilation_and_elaboration_report.success
+        for report in self.simulation_reports:
+            self._success &= report.success
+        if self.success:
+            banner = f"{'*' * 53}\033[32m SUCCESS \033[0m{'*' * 54}"
+        else:
+            banner = f"{'*' * 53}\033[31m\033[4m FAILURE \033[0m{'*' * 54}"
+        print(banner)
+        self.print_prepare_dut_report(phase)
+        if self.do_compile:
+            self.print_compilation_report(phase)
+        if self.do_elaborate:
+            self.print_elaboration_report(phase)
+        if self.do_compile_and_elaborate:
+            self.print_compilation_and_elaboration_report(phase)
+        self.print_simulation_report(phase)
+        print(banner)
+
+    def phase_final(self, phase):
+        if not self.success:
+            phase.error = Exception(f"Logic Simulation Regression failed.")
+
+    def print_prepare_dut_report(self, phase:Phase):
+        pass
+
+    def print_compilation_report(self, phase:Phase):
+        errors_str = f"\033[31m\033[1m{self.compilation_report.num_errors}E\033[0m" if self.compilation_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.compilation_report.num_errors}W\033[0m" if self.compilation_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
+        if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
+            print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+            print(f"*     * {self.compilation_report.sv_log_path}")
+            print(f"*     * {self.compilation_report.vhdl_log_path}")
+        else:
+            if self.compilation_report.has_sv_files_to_compile:
+                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_report.sv_log_path}")
+            if self.compilation_report.has_vhdl_files_to_compile:
+                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_report.vhdl_log_path}")
+        if not self.compilation_report.success:
+            print('*' * 119)
+            for error in self.compilation_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.compilation_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")
+    
+    def print_elaboration_report(self, phase:Phase):
+        errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_errors}W\033[0m" if self.elaboration_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
+        print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.elaboration_report.log_path}")
+        if not self.elaboration_report.success:
+            print('*' * 119)
+            for error in self.elaboration_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.elaboration_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")
+    
+    def print_compilation_and_elaboration_report(self, phase:Phase):
+        errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
+        warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_errors}W\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0W"
+        fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
+        print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_and_elaboration_report.log_path}")
+        if not self.compilation_and_elaboration_report.success:
+            print('*' * 119)
+            for error in self.compilation_and_elaboration_report.errors:
+                print(f"\033[31m{error}\033[0m")
+            for fatal in self.compilation_and_elaboration_report.fatals:
+                print(f"\033[31m{fatal}\033[0m")
+
+    def print_simulation_report(self, phase:Phase):
+        pass

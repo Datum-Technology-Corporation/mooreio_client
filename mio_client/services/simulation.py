@@ -183,7 +183,7 @@ class LogicSimulatorMasterFileList(LogicSimulatorFileList):
 # Logic Simulator Abstract Base Class
 #######################################################################################################################
 class LogicSimulator(Service, ABC):
-    def __init__(self, rmh: 'RootManager', vendor_name: str, name: str, full_name: str,):
+    def __init__(self, rmh: 'RootManager', vendor_name: str, name: str, full_name: str):
         super().__init__(rmh, vendor_name, name, full_name)
         self._type = ServiceType.LOGIC_SIMULATION
         self._work_root_path = self.rmh.md / "logic_simulation"
