@@ -4,8 +4,8 @@
 import re
 import warnings
 from pathlib import Path
+from random import randint
 from typing import Optional, List, Dict, Union, Any
-from unittest import TestSuite
 
 import yaml
 from pydantic import PositiveInt, PositiveFloat
@@ -83,17 +83,13 @@ class Settings(Model):
     max_errors: Optional[Dict[constr(pattern=VALID_NAME_REGEX), PositiveInt]] = {}
     max_jobs: Optional[Dict[constr(pattern=VALID_NAME_REGEX), PositiveInt]] = {}
     verbosity: Optional[Dict[constr(pattern=VALID_NAME_REGEX), UVMVerbosityLevels]] = {}
-    target: List[constr(pattern=VALID_TARGET_NAME_REGEX)]
 
 
 class About(Model):
     name: constr(pattern=VALID_NAME_REGEX)
     ip: constr(pattern=VALID_NAME_REGEX)
-
-
-class TestSpec(Model):
-    seeds: Union[PositiveInt, List[PositiveInt]]
-    args: Optional[Dict[constr(pattern=VALID_NAME_REGEX), Union[bool, str]]] = {}
+    target: List[constr(pattern=VALID_TARGET_NAME_REGEX)]
+    settings: Settings
 
 
 class ResolvedTestSpec:
@@ -158,9 +154,9 @@ class Regression:
     max_errors:int = 10
     max_duration:float = 1.0
     max_jobs:int = 1
-    test_suite: TestSuite
+    test_suite: 'TestSuite'
 
-    def __init__(self, name:str, test_suite: TestSuite):
+    def __init__(self, name:str, test_suite: 'TestSuite'):
         self.name = name
         self.test_suite = test_suite
     
@@ -172,20 +168,53 @@ class Regression:
             self.test_sets[name] = test_set
             return test_set
     
-    def render_cmp_config(self) -> LogicSimulatorCompilationConfiguration:
+    def render_cmp_config(self, target_name:str="default") -> LogicSimulatorCompilationConfiguration:
         config = LogicSimulatorCompilationConfiguration()
+        config.max_errors = self.max_errors
+        config.enable_waveform_capture = self.waves_enabled
+        config.enable_coverage = self.waves_enabled
+        config.target = target_name
         return config
     
-    def render_elab_config(self) -> LogicSimulatorElaborationConfiguration:
+    def render_elab_config(self, target_name:str="default") -> LogicSimulatorElaborationConfiguration:
         config = LogicSimulatorElaborationConfiguration()
         return config
     
-    def render_cmp_elab_config(self) -> LogicSimulatorCompilationAndElaborationConfiguration:
+    def render_cmp_elab_config(self, target_name:str="default") -> LogicSimulatorCompilationAndElaborationConfiguration:
         config = LogicSimulatorCompilationAndElaborationConfiguration()
+        config.max_errors = self.max_errors
+        config.enable_waveform_capture = self.waves_enabled
+        config.enable_coverage = self.waves_enabled
+        config.target = target_name
         return config
     
-    def render_sim_configs(self) -> List[LogicSimulatorSimulationConfiguration]:
+    def render_sim_configs(self, target_name:str="default") -> List[LogicSimulatorSimulationConfiguration]:
         sim_configs = []
+        for set_name in self.test_sets:
+            for group_name in self.test_sets[set_name].test_groups:
+                for test_spec in self.test_sets[set_name].test_groups[group_name].test_specs:
+                    seeds = []
+                    if test_spec.spec_type == TestSpecTypes.SEED_LIST:
+                        seeds = test_spec.specific_seeds
+                    elif test_spec.spec_type == TestSpecTypes.NUM_RAND_SEEDS:
+                        seeds = [randint(1, ((1 << 31)-1)) for _ in range(test_spec.num_rand_seeds)]
+                    for seed in seeds:
+                        config = LogicSimulatorSimulationConfiguration()
+                        config.seed = seed
+                        config.verbosity = self.verbosity
+                        config.max_errors = self.max_errors
+                        config.gui_mode = False
+                        config.enable_waveform_capture = self.waves_enabled
+                        config.enable_coverage = self.cov_enabled
+                        config.test_name = test_spec.test_name
+                        for key, value in test_spec.args.items():
+                            if isinstance(value, bool):
+                                if value:
+                                    config.args_boolean.append(key)
+                            else:
+                                config.args_value[key] = value
+                        config.target = target_name
+                        sim_configs.append(config)
         return sim_configs
         
     def render_dsim_cloud_job(self) -> DSimCloudJob:
@@ -197,9 +226,21 @@ class Regression:
         return DSimCloudJob(**job_data)
 
 
+
+SpecTestArg = Union[str, int, float, bool]
+
+class TestSpec(Model):
+    seeds: Union[PositiveInt, List[PositiveInt]]
+    args: Optional[Dict[constr(pattern=VALID_NAME_REGEX), SpecTestArg]] = {}
+
+SpecRegression = Union[TestSpec, PositiveInt, List[PositiveInt]]
+SpecTest = Dict[constr(pattern=VALID_NAME_REGEX), SpecRegression]
+SpecTestGroup = Dict[constr(pattern=VALID_NAME_REGEX), SpecTest]
+
+
 class TestSuite(Model):
-    test_suite: About
-    test_sets: Dict[constr(pattern=VALID_NAME_REGEX), Dict[constr(pattern=VALID_NAME_REGEX), Dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, List[Union[TestSpec, PositiveInt]]]]]]
+    ts: About
+    sets: Dict[constr(pattern=VALID_NAME_REGEX), SpecTestGroup]
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -211,7 +252,7 @@ class TestSuite(Model):
         self._resolved_regressions:Dict[str, Regression] = {}
 
     def __str__(self):
-        return f"{self.test_suite.ip}/{self.test_suite.name}"
+        return f"{self.ts.ip}/{self.ts.name}"
 
     @classmethod
     def load(cls, file_path):
@@ -225,7 +266,7 @@ class TestSuite(Model):
 
     @property
     def name(self) -> str:
-        return self.test_suite.name
+        return self.ts.name
 
     @property
     def file_path(self) -> Path:
@@ -264,21 +305,21 @@ class TestSuite(Model):
     
     def check(self):
         # Check targets
-        if len(self.test_suite.target) == 0:
+        if len(self.ts.target) == 0:
             raise Exception(f"Must specify target(s)")
-        for target in self.test_suite.target:
+        for target in self.ts.target:
             clean_target = target.strip().lower()
             if clean_target == "*":
                 self._supports_all_targets = True
-                if len(self.test_suite.target) > 1:
+                if len(self.ts.target) > 1:
                     warnings.warn(
                         f"Warning for test suite '{self}': target entries are being ignored due to the presence of wildcard '*' in the target list.")
                 break
             else:
                 self._resolved_valid_targets.append(clean_target)
         # Resolve test sets/groups/specs/regressions
-        for test_set_name in self.test_sets:
-            test_set_spec = self.test_sets[test_set_name]
+        for test_set_name in self.sets:
+            test_set_spec = self.sets[test_set_name]
             for test_group_name in test_set_spec:
                 test_group_spec = test_set_spec[test_group_name]
                 for test_spec_name in test_group_spec:

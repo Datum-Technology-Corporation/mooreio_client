@@ -1,0 +1,65 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+ts:
+  name: default
+  ip: some_ip
+  target: ["*"]
+  settings:
+    waves: [sanity, bugs]
+    cov  : [nightly, weekly]
+    verbosity:
+      sanity : high
+      nightly: medium
+      weekly : low
+      bugs   : debug
+    max_duration:
+      sanity :  0.25
+      nightly:  5
+      weekly : 12
+      bugs   :  1
+    max_jobs:
+      sanity :  5
+      nightly: 10
+      weekly : 20
+      bugs   :  1
+
+sets:
+  functional:
+    fixed_stim:
+      sanity: [1]
+      nightly: 10
+      weekly:
+        seeds: 10
+    rand_stim:
+      sanity:
+        seeds: [1]
+        args:
+          ABC: 123
+          DEF: true
+      nightly:
+        seeds: 10
+        args:
+          DEF: false
+      weekly: 100
+      bugs: [234879,345987]
+
+  error:
+    fixed_err_stim:
+      sanity: [2]
+      nightly: 20
+      weekly:
+        seeds: 50
+      bugs: [6967783,2344348790,908114523]
+    rand_err_stim:
+      sanity:
+        seeds: [2]
+        args:
+          ABC: 789
+          DEF: true
+      nightly:
+        seeds: 80
+        args:
+          DEF: false
+      weekly: 200

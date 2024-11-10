@@ -353,6 +353,12 @@ class Simulate(Command):
 
     def compile_and_elaborate(self, phase:Phase):
         self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationConfiguration()
+        if self.parsed_cli_arguments.errors:
+            self._compilation_and_elaboration_configuration.max_errors = self.parsed_cli_arguments.errors
+        if self.parsed_cli_arguments.waves:
+            self._compilation_and_elaboration_configuration.enable_waveform_capture = True
+        if self.parsed_cli_arguments.cov:
+            self._compilation_and_elaboration_configuration.enable_coverage = True
         self.compilation_and_elaboration_configuration.defines_boolean = self.defines_boolean
         self.compilation_and_elaboration_configuration.defines_value = self.defines_value
         self.compilation_and_elaboration_configuration.target = self.ip_definition.target
