@@ -6,7 +6,7 @@ import pathlib
 import sys
 import os
 
-from mio_client.commands import eda, ip, misc, project, team, user, web
+from mio_client.commands import sim, ip, misc, project, team, user, web
 from mio_client.core.root_manager import RootManager
 
 #######################################################################################################################

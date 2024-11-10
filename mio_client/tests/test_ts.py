@@ -38,8 +38,7 @@ class TestIp:
         assert hasattr(ts_instance.ts, 'name')
         assert hasattr(ts_instance.ts, 'ip')
         assert hasattr(ts_instance.ts, 'target')
-        assert hasattr(ts_instance.ts, 'settings')
-        assert hasattr(ts_instance, 'sets')
+        assert hasattr(ts_instance, 'tests')
 
     def test_ts_instance_has_all_fields(self):
         ts_instance = TestSuite(**self.basic_valid_1_data)
@@ -47,67 +46,72 @@ class TestIp:
         assert hasattr(ts_instance.ts, 'name')
         assert hasattr(ts_instance.ts, 'ip')
         assert hasattr(ts_instance.ts, 'target')
-        assert hasattr(ts_instance.ts, 'settings')
-        assert hasattr(ts_instance.ts.settings, 'waves')
-        assert hasattr(ts_instance.ts.settings, 'cov')
-        assert hasattr(ts_instance.ts.settings, 'verbosity')
-        assert hasattr(ts_instance.ts.settings, 'max_duration')
-        assert hasattr(ts_instance.ts.settings, 'max_jobs')
-        assert 'sanity' in ts_instance.ts.settings.waves
-        assert 'bugs' in ts_instance.ts.settings.waves
-        assert 'nightly' in ts_instance.ts.settings.cov
-        assert 'weekly' in ts_instance.ts.settings.cov
-        assert 'sanity' in ts_instance.ts.settings.verbosity
-        assert 'nightly' in ts_instance.ts.settings.verbosity
-        assert 'weekly' in ts_instance.ts.settings.verbosity
-        assert 'bugs' in ts_instance.ts.settings.verbosity
-        assert 'sanity' in ts_instance.ts.settings.max_duration
-        assert 'nightly' in ts_instance.ts.settings.max_duration
-        assert 'weekly' in ts_instance.ts.settings.max_duration
-        assert 'bugs' in ts_instance.ts.settings.max_duration
-        assert 'sanity' in ts_instance.ts.settings.max_jobs
-        assert 'nightly' in ts_instance.ts.settings.max_jobs
-        assert 'weekly' in ts_instance.ts.settings.max_jobs
-        assert 'bugs' in ts_instance.ts.settings.max_jobs
+        assert hasattr(ts_instance.ts, 'waves')
+        assert hasattr(ts_instance.ts, 'cov')
+        assert hasattr(ts_instance.ts, 'verbosity')
+        assert hasattr(ts_instance.ts, 'max_duration')
+        assert hasattr(ts_instance.ts, 'max_jobs')
+        assert 'sanity' in ts_instance.ts.waves
+        assert 'bugs' in ts_instance.ts.waves
+        assert 'nightly' in ts_instance.ts.cov
+        assert 'weekly' in ts_instance.ts.cov
+        assert 'sanity' in ts_instance.ts.verbosity
+        assert 'nightly' in ts_instance.ts.verbosity
+        assert 'weekly' in ts_instance.ts.verbosity
+        assert 'bugs' in ts_instance.ts.verbosity
+        assert 'sanity' in ts_instance.ts.max_duration
+        assert 'nightly' in ts_instance.ts.max_duration
+        assert 'weekly' in ts_instance.ts.max_duration
+        assert 'bugs' in ts_instance.ts.max_duration
+        assert 'sanity' in ts_instance.ts.max_jobs
+        assert 'nightly' in ts_instance.ts.max_jobs
+        assert 'weekly' in ts_instance.ts.max_jobs
+        assert 'bugs' in ts_instance.ts.max_jobs
 
-        assert hasattr(ts_instance, 'sets')
+        assert hasattr(ts_instance, 'tests')
 
-        assert 'functional' in ts_instance.sets
-        functional_set = ts_instance.sets['functional']
+        assert 'functional' in ts_instance.tests
+        functional_set = ts_instance.tests['functional']
         assert 'fixed_stim' in functional_set
-        fixed_stim_group = functional_set['fixed_stim']
-        assert 'sanity' in fixed_stim_group
-        assert 'nightly' in fixed_stim_group
-        assert 'weekly' in fixed_stim_group
+        fixed_stim_test = functional_set['fixed_stim']
+        assert 'sanity' in fixed_stim_test
+        assert 'nightly' in fixed_stim_test
+        assert 'weekly' in fixed_stim_test
         assert 'rand_stim' in functional_set
-        rand_stim_group = functional_set['rand_stim']
-        sanity_test_spec = rand_stim_group['sanity']
-        args = sanity_test_spec.args
+        rand_stim_test = functional_set['rand_stim']
+        sanity_regression = rand_stim_test['sanity']
+        assert 'group_a' in sanity_regression
+        group_a = sanity_regression['group_a']
+        args = group_a.args
         assert 'ABC' in args
         assert 'DEF' in args
-        nightly_test_spec = rand_stim_group['nightly']
-        args = nightly_test_spec.args
+        group_b= sanity_regression['group_b']
+        args = group_b.args
+        assert 'XYZ' in args
         assert 'DEF' in args
-        assert 'weekly' in rand_stim_group
-        assert 'bugs' in rand_stim_group
+        nightly_regression = rand_stim_test['nightly']
+        args = nightly_regression.args
+        assert 'DEF' in args
+        assert 'weekly' in rand_stim_test
+        assert 'bugs' in rand_stim_test
 
-        assert 'error' in ts_instance.sets
-        error_set = ts_instance.sets['error']
+        assert 'error' in ts_instance.tests
+        error_set = ts_instance.tests['error']
         assert 'fixed_err_stim' in error_set
-        fixed_err_stim_group = error_set['fixed_err_stim']
-        assert 'sanity' in fixed_err_stim_group
-        assert 'nightly' in fixed_err_stim_group
-        assert 'weekly' in fixed_err_stim_group
-        weekly_test_spec = fixed_err_stim_group['weekly']
-        assert 'bugs' in fixed_err_stim_group
-        rand_err_stim_group = error_set['rand_err_stim']
-        sanity_test_spec = rand_err_stim_group['sanity']
-        args = sanity_test_spec.args
+        fixed_err_stim_test = error_set['fixed_err_stim']
+        assert 'sanity' in fixed_err_stim_test
+        assert 'nightly' in fixed_err_stim_test
+        assert 'weekly' in fixed_err_stim_test
+        assert 'bugs' in fixed_err_stim_test
+        rand_err_stim_test = error_set['rand_err_stim']
+        sanity_regression = rand_err_stim_test['sanity']
+        args = sanity_regression.args
         assert 'ABC' in args
         assert 'DEF' in args
-        nightly_test_spec = rand_err_stim_group['nightly']
+        nightly_regression = rand_err_stim_test['nightly']
+        args = nightly_regression.args
         assert 'DEF' in args
-        assert 'weekly' in rand_err_stim_group
+        assert 'weekly' in rand_err_stim_test
 
     def test_ts_invalid_name(self):
         invalid_data = self.basic_valid_1_data.copy()
@@ -124,11 +128,5 @@ class TestIp:
     def test_ts_invalid_target(self):
         invalid_data = self.basic_valid_1_data.copy()
         invalid_data['ts']['target'] = []
-        with pytest.raises(ValueError):
-            Ip(**invalid_data)
-
-    def test_ts_invalid_settings(self):
-        invalid_data = self.basic_valid_1_data.copy()
-        invalid_data['ts']['settings'] = []
         with pytest.raises(ValueError):
             Ip(**invalid_data)

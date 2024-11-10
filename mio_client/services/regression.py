@@ -75,21 +75,16 @@ class DSimCloudJob(Model):
     tasks: List[DSimCloudTask]
 
 
-
-class Settings(Model):
+class About(Model):
+    name: constr(pattern=VALID_NAME_REGEX)
+    ip: constr(pattern=VALID_NAME_REGEX)
+    target: List[constr(pattern=VALID_TARGET_NAME_REGEX)]
     cov: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     waves: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
     max_duration: Optional[Dict[constr(pattern=VALID_NAME_REGEX), PositiveFloat]] = {}
     max_errors: Optional[Dict[constr(pattern=VALID_NAME_REGEX), PositiveInt]] = {}
     max_jobs: Optional[Dict[constr(pattern=VALID_NAME_REGEX), PositiveInt]] = {}
     verbosity: Optional[Dict[constr(pattern=VALID_NAME_REGEX), UVMVerbosityLevels]] = {}
-
-
-class About(Model):
-    name: constr(pattern=VALID_NAME_REGEX)
-    ip: constr(pattern=VALID_NAME_REGEX)
-    target: List[constr(pattern=VALID_TARGET_NAME_REGEX)]
-    settings: Settings
 
 
 class ResolvedTestSpec:
@@ -233,14 +228,15 @@ class TestSpec(Model):
     seeds: Union[PositiveInt, List[PositiveInt]]
     args: Optional[Dict[constr(pattern=VALID_NAME_REGEX), SpecTestArg]] = {}
 
-SpecRegression = Union[TestSpec, PositiveInt, List[PositiveInt]]
+SpecTestGroups = Dict[constr(pattern=VALID_NAME_REGEX), TestSpec]
+SpecRegression = Union[TestSpec, SpecTestGroups, PositiveInt, List[PositiveInt]]
 SpecTest = Dict[constr(pattern=VALID_NAME_REGEX), SpecRegression]
-SpecTestGroup = Dict[constr(pattern=VALID_NAME_REGEX), SpecTest]
+SpecTestSet = Dict[constr(pattern=VALID_NAME_REGEX), SpecTest]
 
 
 class TestSuite(Model):
     ts: About
-    sets: Dict[constr(pattern=VALID_NAME_REGEX), SpecTestGroup]
+    tests: Dict[constr(pattern=VALID_NAME_REGEX), SpecTestSet]
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -318,8 +314,8 @@ class TestSuite(Model):
             else:
                 self._resolved_valid_targets.append(clean_target)
         # Resolve test sets/groups/specs/regressions
-        for test_set_name in self.sets:
-            test_set_spec = self.sets[test_set_name]
+        for test_set_name in self.tests:
+            test_set_spec = self.tests[test_set_name]
             for test_group_name in test_set_spec:
                 test_group_spec = test_set_spec[test_group_name]
                 for test_spec_name in test_group_spec:
@@ -355,41 +351,36 @@ class TestSuite(Model):
                                     test_spec.specific_seeds = regression_entry
                                     test_group.add_test_spec(test_spec)
         # Ensure regression names in settings exist and apply settings to regressions
-        for regression_name in self.settings.cov:
+        for regression_name in self.ts.cov:
             if regression_name not in self._resolved_regressions:
                 warnings.warn(f"Regression '{regression_name}' does not exist and its coverage setting is ignored")
             else:
                 self._resolved_regressions[regression_name].cov_enabled = True
-        for regression_name in self.settings.waves:
+        for regression_name in self.ts.waves:
             if regression_name not in self._resolved_regressions:
                 warnings.warn(f"Regression '{regression_name}' does not exist and its wave capture setting is ignored")
             else:
                 self._resolved_regressions[regression_name].waves_enabled = True
-        for regression_name in self.settings.max_duration:
+        for regression_name in self.ts.max_duration:
             if regression_name not in self._resolved_regressions:
                 warnings.warn(f"Regression '{regression_name}' does not exist and its max duration setting is ignored")
             else:
                 self._resolved_regressions[regression_name].max_duration = self.settings.max_duration[regression_name]
-        for regression_name in self.settings.max_errors:
+        for regression_name in self.ts.max_errors:
             if regression_name not in self._resolved_regressions:
                 warnings.warn(f"Regression '{regression_name}' does not exist and its max errors setting is ignored")
             else:
                 self._resolved_regressions[regression_name].max_errors = self.settings.max_errors[regression_name]
-        for regression_name in self.settings.max_jobs:
+        for regression_name in self.ts.max_jobs:
             if regression_name not in self._resolved_regressions:
                 warnings.warn(f"Regression '{regression_name}' does not exist and its max jobs setting is ignored")
             else:
                 self._resolved_regressions[regression_name].max_jobs = self.settings.max_jobs[regression_name]
-        for regression_name in self.settings.verbosity:
+        for regression_name in self.ts.verbosity:
             if regression_name not in self._resolved_regressions:
                 warnings.warn(f"Regression '{regression_name}' does not exist and its verbosity setting is ignored")
             else:
                 self._resolved_regressions[regression_name].verbosity = self.settings.verbosity[regression_name]
-        
-
-class RegressionReport(Model):
-    pass
-
 
 
 class RegressionDatabase(Service):
@@ -437,3 +428,17 @@ class RegressionDatabase(Service):
                 return None
         else:
             raise Exception(f"More than one Test Suite present, must specify (cannot use default)")
+
+
+class RegressionReport(Model):
+    pass
+
+
+class RegressionConfiguration(Model):
+    pass
+
+
+class RegressionRunner(Service):
+    def __init__(self, rmh: 'RootManager'):
+        super().__init__(rmh, 'datum', 'regression_runner', 'Regression Runner')
+        self._type = ServiceType.REGRESSION
