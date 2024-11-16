@@ -2,15 +2,19 @@
 # All rights reserved.
 #######################################################################################################################
 import os
+import re
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
 from random import random, randint
 from typing import List, Optional, Dict, Union
 
+import yaml
 from jinja2 import Template
 from semantic_version import Version
 
-from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
+from configuration import DSimCloudComputeSizes
+from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration, JobResults
 from mio_client.core.service import Service, ServiceType
 from mio_client.core.ip import Ip, IpLocationType
 from abc import ABC, abstractmethod
@@ -58,6 +62,7 @@ class LogicSimulatorReport(Model, ABC):
     warnings: Optional[List[int]] = []
     fatals: Optional[List[int]] = []
     work_directory: Optional[Path] = Path()
+    jobs: Optional[List[Job]] = []
     scheduler_config: Optional[JobSchedulerConfiguration] = None
 
 class LogicSimulatorLibraryCreationReport(LogicSimulatorReport):
@@ -123,7 +128,10 @@ class LogicSimulatorEncryptionReport(LogicSimulatorReport):
 
 
 class LogicSimulatorConfiguration(ABC):
-    pass
+    use_relative_paths: bool = False
+    start_path: Path = Path()
+    use_custom_results_path: bool = False
+    custom_results_path: Path = Path()
 
 class LogicSimulatorLibraryCreationConfiguration(LogicSimulatorConfiguration):
     pass
@@ -135,9 +143,9 @@ class LogicSimulatorCompilationConfiguration(LogicSimulatorConfiguration):
     enable_coverage: bool = False
     enable_waveform_capture: bool = False
     max_errors: int = 10
-    defines_boolean:List[str] = []
-    defines_value:Dict[str, str] = {}
-    target:str = ""
+    defines_boolean: List[str] = []
+    defines_value: Dict[str, str] = {}
+    target: str = ""
 
 class LogicSimulatorElaborationConfiguration(LogicSimulatorConfiguration):
     pass
@@ -165,17 +173,16 @@ class LogicSimulatorEncryptionConfiguration(LogicSimulatorConfiguration):
 
 class LogicSimulatorFileList(Model):
     name:str
-    directories: Optional[list[Path]] = []
-    files: Optional[list[Path]] = []
+    directories: Optional[list[str]] = []
+    files: Optional[list[str]] = []
 
 class LogicSimulatorMasterFileList(LogicSimulatorFileList):
     sub_file_lists: Optional[List[LogicSimulatorFileList]] = []
     needs_licensing: Optional[bool] = False
-    licensing_sv_path: Optional[Path] = Path()
-    licensing_vhdl_path: Optional[Path] = Path()
+    licensing_sv_path: Optional[str] = ""
+    licensing_vhdl_path: Optional[str] = ""
     defines_boolean: Optional[Dict[str, bool]] = {}
     defines_values: Optional[Dict[str, str]] = {}
-
 
 
 
@@ -271,10 +278,14 @@ class LogicSimulator(Service, ABC):
         report.defines_boolean = config.defines_boolean
         report.defines_value = config.defines_value
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
-        report.sv_log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmp.sv.{self.name}.log"
-        report.vhdl_log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmp.vhdl.{self.name}.log"
+        if config.use_custom_results_path:
+            logs_path = config.custom_results_path
+        else:
+            logs_path =  self.simulation_logs_path
+        report.sv_log_path = logs_path / f"{ip.result_file_name}.cmp.sv.{self.name}.log"
+        report.vhdl_log_path = logs_path / f"{ip.result_file_name}.cmp.vhdl.{self.name}.log"
         self.rmh.create_directory(report.work_directory)
-        report.shared_objects = self.get_all_shared_objects(ip, report.ordered_dependencies)
+        report.shared_objects = self.get_all_shared_objects(ip, config, report.ordered_dependencies)
         self.do_compile(ip, config, report, scheduler, scheduler_config)
         report.success = (report.sv_compilation_success and report.vhdl_compilation_success)
         self.parse_compilation_logs(ip, config, report)
@@ -286,8 +297,12 @@ class LogicSimulator(Service, ABC):
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.output_to_terminal = False
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
-        report.log_path = self.simulation_logs_path / f"{ip.result_file_name}.elab.{self.name}.log"
-        report.shared_objects = self.get_all_shared_objects(ip)
+        if config.use_custom_results_path:
+            logs_path = config.custom_results_path
+        else:
+            logs_path =  self.simulation_logs_path
+        report.log_path = logs_path / f"{ip.result_file_name}.elab.{self.name}.log"
+        report.shared_objects = self.get_all_shared_objects(ip, config)
         self.do_elaborate(ip, config, report, scheduler, scheduler_config)
         report.success = report.elaboration_success
         self.parse_elaboration_logs(ip, config, report)
@@ -305,9 +320,13 @@ class LogicSimulator(Service, ABC):
         report.defines_boolean = config.defines_boolean
         report.defines_value = config.defines_value
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
-        report.log_path = self.simulation_logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.log"
+        if config.use_custom_results_path:
+            logs_path = config.custom_results_path
+        else:
+            logs_path =  self.simulation_logs_path
+        report.log_path = logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.log"
         self.rmh.create_directory(report.work_directory)
-        report.shared_objects = self.get_all_shared_objects(ip, report.ordered_dependencies)
+        report.shared_objects = self.get_all_shared_objects(ip, config, report.ordered_dependencies)
         self.do_compile_and_elaborate(ip, config, report, scheduler, scheduler_config)
         report.success = report.compilation_and_elaboration_success
         self.parse_compilation_and_elaboration_logs(ip, config, report)
@@ -340,7 +359,10 @@ class LogicSimulator(Service, ABC):
             target_text = ""
         test_result_directory_name = test_result_dir_template.render(vendor=ip.ip.vendor, ip=ip.ip.name, test=config.test_name,
                                                                      seed=config.seed, target=target_text, args=user_args)
-        report.test_results_path = self.simulation_results_path / test_result_directory_name
+        if config.use_custom_results_path:
+            report.test_results_path = config.custom_results_path / test_result_directory_name
+        else:
+            report.test_results_path = self.simulation_results_path / test_result_directory_name
         # Add UVM Args
         final_args_boolean_set = set(config.args_boolean)
         final_args_value = config.args_value
@@ -377,7 +399,7 @@ class LogicSimulator(Service, ABC):
         self.rmh.create_directory(report.test_results_path)
         if config.enable_coverage:
             self.rmh.create_directory(report.coverage_directory)
-        report.shared_objects = self.get_all_shared_objects(ip)
+        report.shared_objects = self.get_all_shared_objects(ip, config)
         # Perform simulation
         self.do_simulate(ip, config, report, scheduler, scheduler_config)
         # Complete report
@@ -510,7 +532,7 @@ class LogicSimulator(Service, ABC):
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
             if dep.ip.mlicensed:
                 if self.name not in dep.resolved_encrypted_hdl_directories:
-                    raise Exception(f"IP '{dep}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+                    raise Exception(f"IP '{dep}' is licensed but has no encrypted SystemVerilog content defined for '{self.name}'")
                 else:
                     file_list.needs_licensing = True
                     directories = dep.resolved_encrypted_hdl_directories[self.name]
@@ -519,9 +541,15 @@ class LogicSimulator(Service, ABC):
                 directories = dep.resolved_hdl_directories
                 files = dep.resolved_top_sv_files
             for directory in directories:
-                sub_file_list.directories.append(directory)
+                if config.use_relative_paths:
+                    sub_file_list.directories.append(os.path.relpath(directory, config.start_path))
+                else:
+                    sub_file_list.directories.append(str(directory))
             for file in files:
-                sub_file_list.files.append(file)
+                if config.use_relative_paths:
+                    sub_file_list.files.append(os.path.relpath(file, config.start_path))
+                else:
+                    sub_file_list.files.append(str(file))
                 has_files_to_compile = True
             file_list.sub_file_lists.append(sub_file_list)
         if ip.has_dut:
@@ -540,7 +568,7 @@ class LogicSimulator(Service, ABC):
             file_list.defines_values.update(config.defines_value)
         if ip.ip.mlicensed:
             if self.name not in ip.resolved_encrypted_hdl_directories:
-                raise Exception(f"IP '{ip}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+                raise Exception(f"IP '{ip}' is licensed but has no encrypted SystemVerilog content defined for '{self.name}'")
             else:
                 file_list.needs_licensing = True
                 directories = ip.resolved_encrypted_hdl_directories[self.name]
@@ -549,9 +577,15 @@ class LogicSimulator(Service, ABC):
             directories = ip.resolved_hdl_directories
             files = ip.resolved_top_sv_files
         for directory in directories:
-            file_list.directories.append(directory)
+            if config.use_relative_paths:
+                file_list.directories.append(os.path.relpath(directory, config.start_path))
+            else:
+                file_list.directories.append(str(directory))
         for file in files:
-            file_list.files.append(file)
+            if config.use_relative_paths:
+                file_list.files.append(os.path.relpath(file, config.start_path))
+            else:
+                file_list.files.append(str(file))
             has_files_to_compile = True
         if isinstance(report, LogicSimulatorCompilationReport):
             report.has_sv_files_to_compile = has_files_to_compile
@@ -562,9 +596,13 @@ class LogicSimulator(Service, ABC):
             template = self.rmh.j2_env.get_template(f"flist.sv.{self.name}.j2")
             # Render the templates with the master file lists
             if file_list.needs_licensing:
-                file_list.licensing_sv_path = Path(os.path.join(self.rmh.install_path, 'data', f'mio_hdl_lic.{self.name}.sv'))
-                if not self.rmh.file_exists(file_list.licensing_sv_path):
-                    raise Exception(f"Cannot find License SV for {self.name}")
+                licensing_sv_path = Path(os.path.join(self.rmh.data_files_path, f'mio_hdl_lic.{self.name}.sv'))
+                if not self.rmh.file_exists(licensing_sv_path):
+                    raise Exception(f"Cannot find License SystemVerilog file for {self.name}")
+                if config.use_relative_paths:
+                    file_list.licensing_sv_path = os.path.relpath(licensing_sv_path, config.start_path)
+                else:
+                    file_list.licensing_sv_path = str(licensing_sv_path)
             filelist_rendered = template.render(data=file_list)
             # Save the rendered templates to disk
             flist_path = self.work_temp_path / f"{ip.result_file_name}.sv.{self.name}.flist"
@@ -577,15 +615,12 @@ class LogicSimulator(Service, ABC):
 
     def build_vhdl_flist(self, ip:Ip, config:LogicSimulatorCompilationConfiguration, report:LogicSimulatorCompilationReport):
         file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
-        if isinstance(config, LogicSimulatorCompilationConfiguration):
-            target_name = config.target
-        else:
-            target_name = config.target
+        target_name = config.target
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
             if dep.ip.mlicensed:
                 if self.name not in dep.resolved_encrypted_hdl_directories:
-                    raise Exception(f"IP '{dep}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+                    raise Exception(f"IP '{dep}' is licensed but has no encrypted VHDL content defined for '{self.name}'")
                 else:
                     file_list.needs_licensing = True
                     directories = dep.resolved_encrypted_hdl_directories[self.name]
@@ -594,9 +629,15 @@ class LogicSimulator(Service, ABC):
                 directories = dep.resolved_hdl_directories
                 files = dep.resolved_top_vhdl_files
             for directory in directories:
-                sub_file_list.directories.append(directory)
+                if config.use_relative_paths:
+                    file_list.directories.append(os.path.relpath(directory, config.start_path))
+                else:
+                    file_list.directories.append(str(directory))
             for file in files:
-                sub_file_list.files.append(file)
+                if config.use_relative_paths:
+                    sub_file_list.files.append(os.path.relpath(file, config.start_path))
+                else:
+                    sub_file_list.files.append(str(file))
                 report.has_vhdl_files_to_compile = True
             file_list.sub_file_lists.append(sub_file_list)
         if ip.has_dut:
@@ -610,7 +651,7 @@ class LogicSimulator(Service, ABC):
         file_list.defines_values.update(config.defines_value)
         if ip.ip.mlicensed:
             if self.name not in ip.resolved_encrypted_hdl_directories:
-                raise Exception(f"IP '{ip}' is licensed but has no encrypted HDL content defined for '{self.name}'")
+                raise Exception(f"IP '{ip}' is licensed but has no encrypted VHDL content defined for '{self.name}'")
             else:
                 file_list.needs_licensing = True
                 directories = ip.resolved_encrypted_hdl_directories[self.name]
@@ -619,18 +660,28 @@ class LogicSimulator(Service, ABC):
             directories = ip.resolved_hdl_directories
             files = ip.resolved_top_vhdl_files
         for directory in directories:
-            file_list.directories.append(directory)
+            if config.use_relative_paths:
+                file_list.directories.append(os.path.relpath(directory, config.start_path))
+            else:
+                file_list.directories.append(str(directory))
         for file in files:
-            file_list.files.append(file)
+            if config.use_relative_paths:
+                file_list.files.append(os.path.relpath(file, config.start_path))
+            else:
+                file_list.files.append(str(file))
             report.has_vhdl_files_to_compile = True
         if report.has_vhdl_files_to_compile:
             # Load the Jinja2 templates from disk
             template = self.rmh.j2_env.get_template(f"flist.vhdl.{self.name}.j2")
             # Render the templates with the master file lists
             if file_list.needs_licensing:
-                file_list.licensing_vhdl_path = Path(os.path.join(self.rmh.install_path, 'data', f'mio_hdl_lic.{self.name}.vhdl'))
-                if not self.rmh.file_exists(file_list.licensing_vhdl_path):
-                    raise Exception(f"Cannot find License VHDL for {self.name}")
+                licensing_vhdl_path = Path(os.path.join(self.rmh.data_files_path, f'mio_hdl_lic.{self.name}.vhdl'))
+                if not self.rmh.file_exists(licensing_vhdl_path):
+                    raise Exception(f"Cannot find License VHDL file for {self.name}")
+                if config.use_relative_paths:
+                    file_list.licensing_vhdl_path = os.path.relpath(licensing_vhdl_path, config.start_path)
+                else:
+                    file_list.licensing_vhdl_path = str(licensing_vhdl_path)
             filelist_rendered = template.render(data=file_list)
             # Save the rendered templates to disk
             flist_path = self.work_temp_path / f"{ip.result_file_name}.{self.name}.vhdl.flist"
@@ -638,9 +689,9 @@ class LogicSimulator(Service, ABC):
                 flist.write(filelist_rendered)
             report.vhdl_file_list_path = flist_path
 
-    def get_all_shared_objects(self, ip:Ip, ordered_dependencies:List[Ip]=None) -> List[Path]:
+    def get_all_shared_objects(self, ip:Ip, config: LogicSimulatorConfiguration, ordered_dependencies:List[Ip]=None) -> List[Path]:
         needs_license_so = False
-        shared_objects = []
+        shared_objects: List[Path] = []
         if ip.ip.mlicensed and ip.location_type == IpLocationType.PROJECT_INSTALLED:
             needs_license_so = True
             if self.name in ip.resolved_encrypted_shared_objects:
@@ -658,12 +709,22 @@ class LogicSimulator(Service, ABC):
                     shared_objects += dep.resolved_encrypted_shared_objects[self.name]
             else:
                 shared_objects += dep.resolved_shared_objects
+        if config.use_relative_paths:
+            relative_shared_objects: List[Path] = []
+            for so in shared_objects:
+                relative_so_path: Path = Path(os.path.relpath(so, config.start_path))
+                relative_shared_objects.append(relative_so_path)
+            shared_objects = relative_shared_objects
         if needs_license_so:
-            lic_so_path = Path(os.path.join(self.rmh.install_path, 'data', f'mio_hdl_lic_dpi.{self.name}.so'))
+            lic_so_path = Path(os.path.join(self.rmh.data_files_path, f'mio_hdl_lic_dpi.{self.name}.so'))
             if not self.rmh.file_exists(lic_so_path):
                 raise Exception(f"Cannot find License DPI for {self.name}")
             else:
-                shared_objects.append(lic_so_path)
+                if config.use_relative_paths:
+                    relative_lic_so_path: Path = Path(os.path.relpath(lic_so_path, config.start_path))
+                    shared_objects.append(relative_lic_so_path)
+                else:
+                    shared_objects.append(lic_so_path)
                 shared_objects.append(f"libcurl.so")
         return shared_objects
 
@@ -791,10 +852,111 @@ class LogicSimulator(Service, ABC):
 #######################################################################################################################
 # Logic Simulator Implementation: Metrics Design Automation© DSim (TM)
 #######################################################################################################################
+class DSimCloudSimulationState(Enum):
+    BUILDING_JOB = "1/5 Building Job File"
+    INIT_WORKSPACE = "2/5 Initializing workspace"
+    SIMULATING = "3/5 Simulating Job File"
+    DOWNLOADING_ARTIFACTS = "4/5 Downloading artifacts"
+    PARSING_RESULTS = "5/5 Parsing simulation results"
+    FINISHED = "Finished"
+
+class DSimConfigurationPackage(Model):
+    name: str
+    version: str
+
+class DSimConfigurationToolchain(Model):
+    environment_variables: Optional[Dict[str, str]] = {}
+    packages: Optional[List[DSimConfigurationPackage]] = []
+    dsim: Optional[Dict[str,str]] = {}
+
+class DSimConfiguration(Model):
+    toolchain: Optional[DSimConfigurationToolchain] = None
+    @classmethod
+    def load_from_yaml(cls, file_path: Path) -> 'DSimConfiguration':
+        with open(file_path, 'r') as file:
+            return cls.model_validate(yaml.safe_load(file))
+    def save_to_yaml(self, file_path: Path):
+        with open(file_path, 'w') as file:
+            yaml.safe_dump(self.model_dump(), file)
+
+class DSimCloudTaskResource(Model):
+    name: str
+    path: Path
+
+class DSimCloudTaskInputs(Model):
+    working: List[DSimCloudTaskResource]
+
+class DSimCloudTaskOutputs(Model):
+    working: Optional[List[DSimCloudTaskResource]] = []
+    artifacts: Optional[List[DSimCloudTaskResource]] = []
+
+class DSimCloudTask(Model):
+    name: str
+    compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
+    depends: List[str]
+    commands: List[str]
+    inputs: Optional[DSimCloudTaskInputs] = None
+    outputs: DSimCloudTaskOutputs
+    mdc_work: Optional[str] = "./"
+
+class DSimCloudJob(Model):
+    name: str
+    keep_for_support: Optional[bool] = False
+    tasks: List[DSimCloudTask]
+    @classmethod
+    def load_from_yaml(cls, file_path: Path) -> 'DSimCloudJob':
+        with open(file_path, 'r') as file:
+            return cls.model_validate(yaml.safe_load(file))
+    def save_to_yaml(self, file_path: Path):
+        with open(file_path, 'w') as file:
+            yaml.safe_dump(self.model_dump(), file)
+
+class DSimCloudSimulationConfiguration:
+    name: str
+    dry_mode: bool = False
+    timeout: float
+    max_parallel_tasks: int
+    results_path: Path = Path()
+    compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
+    compilation_config: LogicSimulatorCompilationConfiguration = None
+    elaboration_config: LogicSimulatorElaborationConfiguration = None
+    compilation_and_elaboration_config: LogicSimulatorCompilationAndElaborationConfiguration = None
+    simulation_configs: List[LogicSimulatorSimulationConfiguration] = []
+
+class DSimCloudSimulationReport(Model):
+    success: Optional[bool] = False
+    compilation_report: Optional[LogicSimulatorCompilationReport] = None
+    elaboration_report: Optional[LogicSimulatorElaborationReport] = None
+    compilation_and_elaboration_report: Optional[LogicSimulatorCompilationAndElaborationReport] = None
+    simulation_reports: Optional[List[LogicSimulatorSimulationReport]] = []
+    jobs: Optional[List[Job]] = []
+    cloud_job: Optional[DSimCloudJob] = None
+    cloud_job_file_path: Optional[Path] = Path()
+
 class SimulatorMetricsDSim(LogicSimulator):
     def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim")
-
+        self._cloud_mode:bool = False
+        self._cloud_job: DSimCloudJob = None
+        self._cloud_sim_task_cmp_elab: DSimCloudTask = None
+        self._cloud_sim_tasks_simulate: List[DSimCloudTask] = []
+        self._cloud_sim_state: DSimCloudSimulationState = DSimCloudSimulationState.BUILDING_JOB
+    
+    @property
+    def cloud_mode(self) -> bool:
+        return self._cloud_mode
+    @cloud_mode.setter
+    def cloud_mode(self, value: bool):
+        self._cloud_mode = value
+        
+    @property
+    def cloud_sim_state(self) -> DSimCloudSimulationState:
+        return self._cloud_sim_state
+    @cloud_sim_state.setter
+    def cloud_sim_state(self, value: DSimCloudSimulationState):
+        self.rmh.debug(f"DSim Cloud Simulation State Change: '{self._cloud_sim_state}' -> '{value}'")
+        self._cloud_sim_state = value
+    
     @property
     def installation_path(self) -> Path:
         return self.rmh.configuration.logic_simulation.metrics_dsim_installation_path
@@ -885,33 +1047,53 @@ class SimulatorMetricsDSim(LogicSimulator):
             for so in report.shared_objects:
                 so_str += f" -sv_lib {so}"
         if report.has_sv_files_to_compile:
+            if config.use_relative_paths:
+                sv_file_list_path = os.path.relpath(report.sv_file_list_path, config.start_path)
+                sv_log_path = os.path.relpath(report.sv_log_path, config.start_path)
+            else:
+                sv_file_list_path = report.sv_file_list_path
+                sv_log_path = report.sv_log_path
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_sv_arguments + [
                 defines_str,
-                f"-F {report.sv_file_list_path}",
+                f"-F {sv_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
                 so_str,
                 f"-lib {ip.lib_name}",
-                f"-l {report.sv_log_path}"
+                f"-l {sv_log_path}"
             ]
             job_cmp_sv = Job(self.rmh, report.work_directory, f"dsim_sv_compilation_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dvlcom"), args)
             self.set_job_env(job_cmp_sv)
-            results_cmp_sv = scheduler.dispatch_job(job_cmp_sv, scheduler_config)
-            report.sv_compilation_success = (results_cmp_sv.return_code == 0)
+            if self.cloud_mode:
+                self._cloud_sim_task_cmp_elab.commands.append(str(job_cmp_sv))
+            else:
+                report.jobs.append(job_cmp_sv)
+                results_cmp_sv = scheduler.dispatch_job(job_cmp_sv, scheduler_config)
+                report.sv_compilation_success = (results_cmp_sv.return_code == 0)
         else:
             report.sv_compilation_success = True
         if report.has_vhdl_files_to_compile:
+            if config.use_relative_paths:
+                vhdl_file_list_path = os.path.relpath(report.vhdl_file_list_path, config.start_path)
+                vhdl_log_path = os.path.relpath(report.vhdl_log_path, config.start_path)
+            else:
+                vhdl_file_list_path = report.vhdl_file_list_path
+                vhdl_log_path = report.vhdl_log_path
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_vhdl_arguments + [
                 defines_str,
-                f"-F {report.vhdl_file_list_path}",
+                f"-F {vhdl_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
                 so_str,
                 f"-lib {ip.lib_name}",
-                f"-l {report.vhdl_log_path}"
+                f"-l {vhdl_log_path}"
             ]
             job_cmp_vhdl = Job(self.rmh, report.work_directory, f"dsim_vhdl_compilation_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dvhcom"), args)
             self.set_job_env(job_cmp_vhdl)
-            results_cmp_vhdl = scheduler.dispatch_job(job_cmp_vhdl, scheduler_config)
-            report.vhdl_compilation_success = (results_cmp_vhdl.return_code == 0)
+            if self.cloud_mode:
+                self._cloud_sim_task_cmp_elab.commands.append(str(job_cmp_vhdl))
+            else:
+                report.jobs.append(job_cmp_vhdl)
+                results_cmp_vhdl = scheduler.dispatch_job(job_cmp_vhdl, scheduler_config)
+                report.vhdl_compilation_success = (results_cmp_vhdl.return_code == 0)
         else:
             report.vhdl_compilation_success = True
 
@@ -919,17 +1101,25 @@ class SimulatorMetricsDSim(LogicSimulator):
         top_str = ""
         for top in ip.hdl_src.top:
             top_str = f"{top_str} -top {ip.lib_name}.{top}"
+        if config.use_relative_paths:
+            log_path = os.path.relpath(report.log_path, config.start_path)
+        else:
+            log_path = report.log_path
         args = self.rmh.configuration.logic_simulation.metrics_dsim_default_elaboration_arguments + [
             f"-genimage {ip.lib_name}",
             f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
             top_str,
             f"-lib {ip.lib_name}",
-            f"-l {report.log_path}",
+            f"-l {log_path}",
         ]
         job_elaborate = Job(self.rmh, report.work_directory, f"dsim_elaboration_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dsim"), args)
         self.set_job_env(job_elaborate)
-        results_elaborate = scheduler.dispatch_job(job_elaborate, scheduler_config)
-        report.elaboration_success = (results_elaborate.return_code == 0)
+        if self.cloud_mode:
+            self._cloud_sim_task_cmp_elab.commands.append(str(job_elaborate))
+        else:
+            report.jobs.append(job_elaborate)
+            results_elaborate = scheduler.dispatch_job(job_elaborate, scheduler_config)
+            report.elaboration_success = (results_elaborate.return_code == 0)
 
     def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         if not ip.has_vhdl_content:
@@ -938,7 +1128,6 @@ class SimulatorMetricsDSim(LogicSimulator):
                 defines_str += f" +define+{define}"
             for define in report.defines_value:
                 defines_str += f" +define+{define}={report.defines_value[define]}"
-            so_str = ""
             top_str = ""
             for top in ip.hdl_src.top:
                 top_str = f"{top_str} -top {ip.lib_name}.{top}"
@@ -946,6 +1135,10 @@ class SimulatorMetricsDSim(LogicSimulator):
             if os.name == 'nt':  # DSim for Windows requires SOs at compile time
                 for so in report.shared_objects:
                     so_str += f" -sv_lib {so}"
+            if config.use_relative_paths:
+                log_path = os.path.relpath(report.log_path, config.start_path)
+            else:
+                log_path = report.log_path
             args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_and_elaboration_arguments + [
                 f"-genimage {ip.lib_name}",
                 defines_str,
@@ -954,12 +1147,16 @@ class SimulatorMetricsDSim(LogicSimulator):
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
                 top_str,
                 f"-lib {ip.lib_name}",
-                f"-l {report.log_path}"
+                f"-l {log_path}"
             ]
             job_compile_and_elaborate = Job(self.rmh, report.work_directory, f"dsim_compilation_and_elaboration_{ip.lib_name}", os.path.join(self.installation_path, "bin", "dsim"), args)
             self.set_job_env(job_compile_and_elaborate)
-            results_elaborate = scheduler.dispatch_job(job_compile_and_elaborate, scheduler_config)
-            report.compilation_and_elaboration_success = (results_elaborate.return_code == 0)
+            if self.cloud_mode:
+                self._cloud_sim_task_cmp_elab.commands.append(str(job_compile_and_elaborate))
+            else:
+                report.jobs.append(job_compile_and_elaborate)
+                results_elaborate = scheduler.dispatch_job(job_compile_and_elaborate, scheduler_config)
+                report.compilation_and_elaboration_success = (results_elaborate.return_code == 0)
         else:
             raise Exception(f"Cannot perform Compilation+Elaboration with DSim for IPs containing VHDL content: IP '{ip}'")
 
@@ -970,9 +1167,13 @@ class SimulatorMetricsDSim(LogicSimulator):
         for arg in report.args_value:
             args_str += f" +{arg}={report.args_value[arg]}"
         so_str = ""
-        if os.name != 'nt':  # DSim for Linux requires SOs at runtime
+        if (not self.cloud_mode) and (os.name != 'nt'):  # DSim for Linux requires SOs at runtime
             for so in report.shared_objects:
                 so_str += f" -sv_lib {so}"
+        if config.use_relative_paths:
+            log_path = os.path.relpath(report.log_path, config.start_path)
+        else:
+            log_path = report.log_path
         args = self.rmh.configuration.logic_simulation.metrics_dsim_default_simulation_arguments + [
             f"-image {ip.lib_name}",
             args_str,
@@ -981,18 +1182,31 @@ class SimulatorMetricsDSim(LogicSimulator):
             f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
             #f"-sv_lib libcurl.so",
             f"-timescale {self.rmh.configuration.logic_simulation.timescale}",
-            f"-l {report.log_path}"
+            f"-l {log_path}"
         ]
         if config.enable_waveform_capture:
-            args.append(f"-waves {report.waveform_file_path}.vcd.gz")
+            if config.use_relative_paths:
+                waveform_file_path = os.path.relpath(report.waveform_file_path, config.start_path)
+            else:
+                waveform_file_path = report.waveform_file_path
+            args.append(f"-waves {waveform_file_path}.vcd.gz")
         if config.enable_coverage:
+            if config.use_relative_paths:
+                coverage_directory = os.path.relpath(report.coverage_directory, config.start_path)
+            else:
+                coverage_directory = report.coverage_directory
             args.append(f"-code-cov a")
-            args.append(f"-cov-db {report.coverage_directory}")
-        job_simulate = Job(self.rmh, report.work_directory, f"dsim_simulation_{ip.lib_name}",
-                            os.path.join(self.installation_path, "bin", "dsim"), args)
+            args.append(f"-cov-db {coverage_directory}")
+        job_simulate:Job = Job(self.rmh, report.work_directory, f"dsim_simulation_{ip.lib_name}",
+                               os.path.join(self.installation_path, "bin", "dsim"), args)
         self.set_job_env(job_simulate)
-        results_simulate = scheduler.dispatch_job(job_simulate, scheduler_config)
-        report.simulation_success = (results_simulate.return_code == 0)
+        if self.cloud_mode:
+            sim_task = min(self._cloud_sim_tasks_simulate, key=lambda task: len(task.commands), default=None)
+            sim_task.outputs.artifacts.append(DSimCloudTaskResource(name=f"test-results-{config.seed}", path=report.test_results_path))
+        else:
+            report.jobs.append(job_simulate)
+            results_simulate = scheduler.dispatch_job(job_simulate, scheduler_config)
+            report.simulation_success = (results_simulate.return_code == 0)
 
     def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: LogicSimulatorEncryptionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         if report.has_sv_files_to_encrypt:
@@ -1045,3 +1259,232 @@ class SimulatorMetricsDSim(LogicSimulator):
                     raise Exception(f"Failed to encrypt file {file}")
         else:
             report.vhdl_encryption_success = True
+    
+    def dsim_cloud_simulate(self, ip: Ip, cloud_simulation_config: DSimCloudSimulationConfiguration, scheduler: JobScheduler) -> DSimCloudSimulationReport:
+        # 1. Initialize report
+        report: DSimCloudSimulationReport = DSimCloudSimulationReport()
+        config_report_map: Dict[LogicSimulatorSimulationReport, LogicSimulatorSimulationConfiguration] = {}
+        # 2. Create top-level Job object
+        job_data: Dict = {
+            'name': cloud_simulation_config.name,
+            'tasks': []
+        }
+        self._cloud_job = DSimCloudJob(**job_data)
+        self._cloud_job.compute_size = cloud_simulation_config.compute_size
+        # 3. Dry-run simulation configs
+        for simulation_config in cloud_simulation_config.simulation_configs:
+            simulation_config.use_relative_paths = True
+            simulation_config.start_path = self.rmh.project_root_path
+            simulation_config.use_custom_results_path = True
+            simulation_config.custom_results_path = cloud_simulation_config.results_path
+            simulation_report = self.simulate(ip, simulation_config, scheduler)
+            report.simulation_reports.append(simulation_report)
+            config_report_map[simulation_report] = simulation_config
+        # 4. Build compilation/elaboration/simulation tasks
+        sim_task_names: List[str] = []
+        for ii in range(cloud_simulation_config.max_parallel_tasks):
+            sim_task_name: str = f"sim-{ii}"
+            sim_task_names.append(sim_task_name)
+            task_sim_data: Dict = {
+                'name': sim_task_name,
+                'commands': [],
+                'outputs': {}
+            }
+            sim_task: DSimCloudTask = DSimCloudTask(**task_sim_data)
+            sim_task.mdc_work = './'
+            sim_task.inputs = DSimCloudTaskInputs(working=[])
+            sim_task.inputs.working.append(
+                DSimCloudTaskResource(name=f"mio-data", path=self.rmh.data_files_path))
+            sim_task.inputs.working.append(
+                DSimCloudTaskResource(name=f"sim-results-{ii}", path=cloud_simulation_config.results_path))
+            self._cloud_job.tasks.append(sim_task)
+            sim_task.outputs = DSimCloudTaskOutputs()
+        task_cmp_elab_data: Dict = {
+            'name': 'cmp-elab',
+            'commands': [],
+            'outputs': {}
+        }
+        self._cloud_sim_task_cmp_elab: DSimCloudTask = DSimCloudTask(**task_cmp_elab_data)
+        self._cloud_job.tasks.append(self._cloud_sim_task_cmp_elab)
+        self._cloud_sim_task_cmp_elab.depends = sim_task_names
+        self._cloud_sim_task_cmp_elab.mdc_work = "./"
+        self._cloud_sim_task_cmp_elab.use_relative_paths = True
+        self._cloud_sim_task_cmp_elab.start_path = self.rmh.project_root_path
+        self._cloud_sim_task_cmp_elab.inputs = DSimCloudTaskInputs(working=[])
+        self._cloud_sim_task_cmp_elab.inputs.working.append(
+            DSimCloudTaskResource(name=f"cmp-elab-results", path=cloud_simulation_config.results_path))
+        self._cloud_sim_task_cmp_elab.outputs = DSimCloudTaskOutputs()
+        # 5. Add all HDL source code locations as input resources
+        self._cloud_sim_task_cmp_elab.inputs.working.append(
+            DSimCloudTaskResource(name=f"mio-data", path=self.rmh.data_files_path))
+        self._cloud_sim_task_cmp_elab.inputs.working.append(
+            DSimCloudTaskResource(name=f"installed-ip", path=self.rmh.locally_installed_ip_dir))
+        count: int = 1
+        for local_path in self.rmh.configuration.ip.local_paths:
+            full_local_path: Path = self.rmh.project_root_path / local_path
+            full_local_path_str: str = os.path.relpath(full_local_path, self.rmh.project_root_path)
+            self._cloud_sim_task_cmp_elab.inputs.working.append(DSimCloudTaskResource(name=f"local-src-{count}", path=full_local_path_str))
+            count += 1
+        global_path_str: str = os.path.relpath(self.rmh.global_ip_local_copy_dir, self.rmh.project_root_path)
+        self._cloud_sim_task_cmp_elab.inputs.working.append(
+            DSimCloudTaskResource(name=f"global-src", path=global_path_str))
+        # 6. Dry-run compilation/elaboration
+        if ip.has_vhdl_content:
+            cloud_simulation_config.compilation_config.use_custom_results_path = True
+            cloud_simulation_config.compilation_config.custom_results_path = cloud_simulation_config.results_path
+            report.compilation_report = self.compile(ip, cloud_simulation_config.compilation_config, scheduler)
+            cloud_simulation_config.elaboration_config.use_custom_results_path = True
+            cloud_simulation_config.elaboration_config.custom_results_path = cloud_simulation_config.results_path
+            report.elaboration_report = self.elaborate(ip, cloud_simulation_config.elaboration_config, scheduler)
+        else:
+            cloud_simulation_config.compilation_and_elaboration_config.use_custom_results_path = True
+            cloud_simulation_config.compilation_and_elaboration_config.custom_results_path = cloud_simulation_config.results_path
+            report.compilation_and_elaboration_report = self.compile_and_elaborate(ip, cloud_simulation_config.compilation_and_elaboration_config, scheduler)
+        # 7. Initialize workspace
+        self.cloud_sim_state = DSimCloudSimulationState.INIT_WORKSPACE
+        self.dsim_cloud_init_workspace(report, scheduler)
+        # 8. Submit job to cloud
+        self.cloud_sim_state = DSimCloudSimulationState.SIMULATING
+        job_id: str = self.dsim_cloud_submit_job(report, scheduler)
+        # 9. Timeout
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(self.dsim_cloud_job_status_wait, job_id, report, scheduler)
+            try:
+                future.result(timeout=cloud_simulation_config.timeout*3600)
+            except TimeoutError:
+                self.dsim_cloud_job_kill(job_id, report, scheduler)
+                raise TimeoutError(
+                    f"DSim Cloud Simulation '{cloud_simulation_config.name}' exceeded {cloud_simulation_config.timeout} hour(s).")
+        # 10. Download artifacts
+        self.cloud_sim_state = DSimCloudSimulationState.DOWNLOADING_ARTIFACTS
+        self.dsim_cloud_job_download(job_id, report, scheduler)
+        # 11. Parse logs
+        self.cloud_sim_state = DSimCloudSimulationState.PARSING_RESULTS
+        if ip.has_vhdl_content:
+            self.parse_compilation_logs(ip, cloud_simulation_config.compilation_config, report.compilation_report)
+            self.parse_elaboration_logs(ip, cloud_simulation_config.elaboration_config, report.elaboration_report)
+        else:
+            self.parse_compilation_and_elaboration_logs(ip, cloud_simulation_config.compilation_and_elaboration_config, report.compilation_and_elaboration_report)
+        for simulation_report in report.simulation_reports:
+            simulation_config = config_report_map[simulation_report] 
+            self.parse_simulation_logs(ip, simulation_config, simulation_report)
+        self.cloud_sim_state = DSimCloudSimulationState.FINISHED
+        return report
+    
+    def dsim_cloud_init_workspace(self, report: DSimCloudSimulationReport, scheduler: JobScheduler):
+        scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
+        scheduler_config.output_to_terminal = False
+        args: List[str] = [
+            "init",
+            "--local-only"
+        ]
+        job: Job = Job(self.rmh, self.rmh.project_root_path, f"dsim_workspace_init",
+                       os.path.join(self.installation_path, "bin", "mdc"), args)
+        report.jobs.append(job)
+        results: JobResults = scheduler.dispatch_job(job, scheduler_config)
+        if results.return_code != 0:
+            raise Exception(f"Failed to initialize DSim Workspace:\n{results.stderr}\n{results.stdout}")
+
+    def dsim_cloud_submit_job(self, report: DSimCloudSimulationReport, scheduler: JobScheduler) -> str:
+        report.cloud_job_file_path = self.work_temp_path / f"{self}.yaml"
+        self._cloud_job.save_to_yaml(report.cloud_job_file_path)
+        scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
+        scheduler_config.output_to_terminal = False
+        args: List[str] = [
+            "job",
+            "submit",
+            report.cloud_job_file_path
+        ]
+        job: Job = Job(self.rmh, self.work_temp_path, f"dsim_cloud_job_submit",
+                       os.path.join(self.installation_path, "bin", "mdc"), args)
+        report.jobs.append(job)
+        results: JobResults = scheduler.dispatch_job(job, scheduler_config)
+        if results.return_code != 0:
+            raise Exception(f"Failed to submit DSim cloud job:\n{results.stderr}\n{results.stdout}")
+        else:
+            job_id_match: re.Match[str] = re.search(r'Job Id:\s*(\S+)', results.stdout)
+            if job_id_match:
+                job_id: str = job_id_match.group(1)
+                return job_id
+            else:
+                raise Exception("Job ID not found in the DSim Cloud submission response")
+
+    def dsim_cloud_job_status_wait(self, job_id: str, report: DSimCloudSimulationReport, scheduler: JobScheduler):
+        scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
+        scheduler_config.output_to_terminal = False
+        args: List[str] = [
+            "job",
+            "status",
+            job_id,
+            "--watch"
+        ]
+        job: Job = Job(self.rmh, self.work_temp_path, f"dsim_job_status_wait_{job_id}",
+                       os.path.join(self.installation_path, "bin", "mdc"), args)
+        report.jobs.append(job)
+        results: JobResults = scheduler.dispatch_job(job, scheduler_config)
+        if results.return_code != 0:
+            raise Exception(
+                f"Failed to retrieve job status for DSim cloud job id '{job_id}':\n{results.stderr}\n{results.stdout}")
+
+    def dsim_cloud_job_download(self, job_id: str, report: DSimCloudSimulationReport, scheduler: JobScheduler):
+        scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
+        scheduler_config.output_to_terminal = False
+        args: List[str] = [
+            "job",
+            "download",
+            job_id,
+            '--accept-prompts',
+            '--extract',
+            f'--destination {self.rmh.project_root_path}'
+        ]
+        job: Job = Job(self.rmh, self.work_temp_path, f"dsim_job_download_{job_id}",
+                       os.path.join(self.installation_path, "bin", "mdc"), args)
+        report.jobs.append(job)
+        results: JobResults = scheduler.dispatch_job(job, scheduler_config)
+        if results.return_code != 0:
+            raise Exception(
+                f"Failed to download artifacts for DSim cloud job id '{job_id}':\n{results.stderr}\n{results.stdout}")
+
+    def dsim_cloud_job_kill(self, job_id: str, report: DSimCloudSimulationReport, scheduler: JobScheduler):
+        scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
+        scheduler_config.output_to_terminal = False
+        args: List[str] = [
+            "job",
+            "kill",
+            job_id
+        ]
+        job: Job = Job(self.rmh, self.work_temp_path, f"dsim_job_kill_{job_id}",
+                       os.path.join(self.installation_path, "bin", "mdc"), args)
+        report.jobs.append(job)
+        results: JobResults = scheduler.dispatch_job(job, scheduler_config)
+        if results.return_code != 0:
+            raise Exception(f"Failed to kill DSim cloud job id '{job_id}':\n{results.stderr}\n{results.stdout}")
+
+    def parse_compilation_logs(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport) -> None:
+        if self.cloud_mode:
+            if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                super().parse_compilation_logs(ip, config, report)
+        else:
+            super().parse_compilation_logs(ip, config, report)
+    
+    def parse_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport) -> None:
+        if self.cloud_mode:
+            if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                super().parse_elaboration_logs(ip, config, report)
+        else:
+            super().parse_elaboration_logs(ip, config, report)
+
+    def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport) -> None:
+        if self.cloud_mode:
+            if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                super().parse_compilation_and_elaboration_logs(ip, config, report)
+        else:
+            super().parse_compilation_and_elaboration_logs(ip, config, report)
+
+    def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport) -> None:
+        if self.cloud_mode:
+            if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                super().parse_simulation_logs(ip, config, report)
+        else:
+            super().parse_simulation_logs(ip, config, report)
+    

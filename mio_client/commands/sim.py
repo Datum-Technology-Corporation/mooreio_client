@@ -2,12 +2,10 @@
 # All rights reserved.
 #######################################################################################################################
 import re
-from typing import Lis
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
+from typing import List
 
 import regression
-from regression import RegressionDatabase
+from regression import RegressionDatabase, RegressionReport, RegressionConfiguration
 from ..core.ip import Ip, IpDefinition, IpPkgType
 from ..core.command import Command
 from ..core.phase import Phase
@@ -499,11 +497,11 @@ class Regression(Command):
         self._compilation_configuration: LogicSimulatorCompilationConfiguration
         self._elaboration_configuration: LogicSimulatorElaborationConfiguration
         self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
-        self._simulation_configurations: List[LogicSimulatorSimulationConfiguration] = []
+        self._regression_configuration: RegressionConfiguration
         self._compilation_report: LogicSimulatorCompilationReport
         self._elaboration_report: LogicSimulatorElaborationReport
         self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
-        self._simulation_reports: List[LogicSimulatorSimulationReport] = []
+        self._regression_report: RegressionReport
         self._success:bool = False
 
     @property
@@ -565,8 +563,8 @@ class Regression(Command):
         return self._compilation_and_elaboration_configuration
 
     @property
-    def simulation_configurations(self) -> List[LogicSimulatorSimulationConfiguration]:
-        return self._simulation_configurations
+    def regression_configuration(self) -> RegressionConfiguration:
+        return self._regression_configuration
 
     @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
@@ -581,8 +579,8 @@ class Regression(Command):
         return self._compilation_and_elaboration_report
 
     @property
-    def simulation_reports(self) -> List[LogicSimulatorSimulationReport]:
-        return self._simulation_reports
+    def regression_report(self) -> RegressionReport:
+        return self._regression_report
 
     @property
     def success(self) -> bool:
@@ -627,6 +625,8 @@ class Regression(Command):
                 return
             else:
                 self.parsed_cli_arguments.app = self.rmh.configuration.logic_simulation.default_simulator.value
+            if self.parsed_cli_arguments.app == "dsim":
+                self.rmh.configuration.project.local_mode = True
 
     def phase_post_scheduler_discovery(self, phase:Phase):
         try:
@@ -704,25 +704,9 @@ class Regression(Command):
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
 
     def simulate(self, phase:Phase):
-        if self.parsed_cli_arguments.app == "dsim":
-            pass
-        else:
-            self._simulation_configurations = self.regression.render_sim_configs()
-            with ThreadPoolExecutor(max_workers=self.regression.max_jobs) as executor:
-                future_simulations = [executor.submit(self.launch_simulation, phase, config) for config in
-                                      self.simulation_configurations]
-                with tqdm(total=len(self.simulation_configurations), desc="Simulations") as pbar:
-                    for future in as_completed(future_simulations):
-                        try:
-                            result = future.result()
-                        except Exception as e:
-                            phase.error = e
-                        finally:
-                            pbar.update(1)
-
-    def launch_simulation(self, phase:Phase, config:LogicSimulatorSimulationConfiguration):
-        report:LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, config, self.scheduler)
-        self.simulation_reports.append(report)
+        self._regression_configuration = RegressionConfiguration()
+        self.regression_configuration.target = self.ip_definition.target
+        self._regression_report = self.regression_database.execute_regression(self.ip, self.regression, self.simulator, self.regression_configuration, self.scheduler)
 
     def phase_report(self, phase:Phase):
         self._success = True
@@ -732,8 +716,7 @@ class Regression(Command):
             self._success &= self.elaboration_report.success
         if self.do_compile_and_elaborate:
             self._success &= self.compilation_and_elaboration_report.success
-        for report in self.simulation_reports:
-            self._success &= report.success
+        self._success &= self.regression_report.success
         if self.success:
             banner = f"{'*' * 53}\033[32m SUCCESS \033[0m{'*' * 54}"
         else:
@@ -746,7 +729,7 @@ class Regression(Command):
             self.print_elaboration_report(phase)
         if self.do_compile_and_elaborate:
             self.print_compilation_and_elaboration_report(phase)
-        self.print_simulation_report(phase)
+        self.print_regression_report(phase)
         print(banner)
 
     def phase_final(self, phase):
@@ -800,5 +783,14 @@ class Regression(Command):
             for fatal in self.compilation_and_elaboration_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
 
-    def print_simulation_report(self, phase:Phase):
-        pass
+    def print_regression_report(self, phase:Phase):
+        failed_tests = []
+        if self.regression_report.success:
+            print(f"All {len(self.regression_report.simulation_reports)} tests passed")
+        else:
+            for simulation_report in self.regression_report.simulation_reports:
+                if not simulation_report.success:
+                    failed_tests.append(simulation_report)
+            print(f"{len(failed_tests)} tests failed:")
+            for failed_test in failed_tests:
+                print(f" * {failed_test.test_name} - {failed_test.seed}")

@@ -27,12 +27,17 @@ class LogicSimulators(Enum):
     QUESTA = "questa"
     RIVIERA = "riviera"
 
+class DSimCloudComputeSizes(Enum):
+    S4 = "s4"
+    S8 = "s8"
+
 
 class Project(Model):
     sync: bool
     sync_id: Optional[PositiveInt] = 0
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
+    local_mode: bool
 
 
 class Authentication(Model):
@@ -48,6 +53,7 @@ class LogicSimulation(Model):
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
     metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    metrics_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
     metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     synopsys_vcs_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST

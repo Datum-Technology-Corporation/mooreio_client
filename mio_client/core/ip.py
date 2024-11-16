@@ -455,6 +455,12 @@ class Ip(Model):
         return self._uninstalled
 
     def check(self):
+        # If configured to local_mode, global IPs must 'relocate' to the project's mio work directory
+        if (self.location_type == IpLocationType.GLOBAL) and self.rmh.configuration.project.local_mode:
+            current_ip_root_path = self.file_path.parent
+            new_ip_root_path = self.rmh.global_ip_local_copy_dir / self.installation_directory_name
+            self.rmh.copy_directory(current_ip_root_path, new_ip_root_path)
+            self.file_path = new_ip_root_path / self.file_path.name
         # Check hdl-src directories & files
         self._resolved_src_path = self.root_path / self.structure.hdl_src_path
         if self.ip.mlicensed and (self.location_type == IpLocationType.PROJECT_INSTALLED):
@@ -487,7 +493,7 @@ class Ip(Model):
             default_target.dut = "default"
             self.targets['default'] = default_target
 
-    def check_hdl_src(self, path:Path,simulator:str=""):
+    def check_hdl_src(self, path: Path, simulator: str=""):
         if not self.rmh.directory_exists(path):
             raise Exception(f"IP '{self}' src path '{path}' does not exist")
         for directory in self.hdl_src.directories:
@@ -549,7 +555,7 @@ class Ip(Model):
                         self._resolved_encrypted_shared_objects[simulator] = []
                     self.resolved_encrypted_shared_objects[simulator].append(full_path)
 
-    def add_resolved_dependency(self, ip_definition:IpDefinition, ip:Ip):
+    def add_resolved_dependency(self, ip_definition: IpDefinition, ip: Ip):
         num_dependencies = len(self.dependencies)
         if self.has_dut:
             num_dependencies += 1
@@ -570,7 +576,7 @@ class Ip(Model):
     def get_dependencies_to_find_on_remote(self) -> List[IpDefinition]:
         return self._dependencies_to_find_online
 
-    def create_encrypted_compressed_tarball(self, encryption_config:'LogicSimulatorEncryptionConfiguration', certificate:IpPublishingCertificate=None) -> Path:
+    def create_encrypted_compressed_tarball(self, encryption_config: 'LogicSimulatorEncryptionConfiguration', certificate: IpPublishingCertificate=None) -> Path:
         try:
             if self.resolved_src_path == self.root_path:
                 raise Exception(f"Cannot encrypt IPs where the source root is also the IP root: {self}")
@@ -608,7 +614,7 @@ class Ip(Model):
     
     def create_unencrypted_compressed_tarball(self) -> Path:
         try:
-            tgz_file_path = self.rmh.md / f"temp/{self.archive_name}.tgz"
+            tgz_file_path: Path = self.rmh.md / f"temp/{self.archive_name}.tgz"
             with tarfile.open(tgz_file_path, "w:gz") as tar:
                 if self.resolved_src_path == self.root_path:
                     tar.add(self.root_path, arcname=".", recursive=True)
@@ -639,7 +645,7 @@ class Ip(Model):
     def __hash__(self):
         return hash(self.archive_name)
     
-    def get_dependencies(self, src_dest_map:dict[Ip,Ip]):
+    def get_dependencies(self, src_dest_map: Dict[Ip, Ip]):
         for dep in self.resolved_dependencies:
             dependency = self.resolved_dependencies[dep]
             src_dest_map[self] = dependency
@@ -683,11 +689,11 @@ class Ip(Model):
             # There is a cycle and topological sorting is not possible
             raise Exception(f"A cycle was detected in {self} dependencies")
 
-    def check_target(self, name:str="default"):
+    def check_target(self, name: str="default"):
         if name not in self.targets:
             raise Exception(f"Target '{name}' does not exist for IP '{self}'")
 
-    def get_target_dut_target(self, target_name:str="default") -> str:
+    def get_target_dut_target(self, target_name: str="default") -> str:
         dut_target_name = ""
         if not self.has_dut:
             raise Exception(f"IP '{self}' does not have DUT")
@@ -699,7 +705,7 @@ class Ip(Model):
             dut_target_name = self.targets[target_name].dut
         return dut_target_name
 
-    def get_target_cmp_bool_defines(self, target_name: str = "default") -> Dict[str,bool]:
+    def get_target_cmp_bool_defines(self, target_name: str="default") -> Dict[str, bool]:
         if target_name != "default":
             defines = self.get_target_cmp_bool_defines()
         else:
@@ -709,7 +715,7 @@ class Ip(Model):
                 defines[define] = value
         return defines
     
-    def get_target_cmp_val_defines(self, target_name:str="default") -> Dict[str,str]:
+    def get_target_cmp_val_defines(self, target_name: str="default") -> Dict[str, str]:
         if target_name != "default":
             defines = self.get_target_cmp_val_defines()
         else:
@@ -719,7 +725,7 @@ class Ip(Model):
                 defines[define] = value
         return defines
     
-    def get_target_sim_bool_args(self, target_name:str="default") -> Dict[str,bool]:
+    def get_target_sim_bool_args(self, target_name: str="default") -> Dict[str, bool]:
         if target_name != "default":
             defines = self.get_target_sim_bool_args()
         else:
@@ -729,7 +735,7 @@ class Ip(Model):
                 defines[define] = value
         return defines
     
-    def get_target_sim_val_args(self, target_name:str="default") -> Dict[str,str]:
+    def get_target_sim_val_args(self, target_name: str="default") -> Dict[str, str]:
         if target_name != "default":
             defines = self.get_target_sim_val_args()
         else:
@@ -745,8 +751,8 @@ class IpDataBase():
         self._ip_list: list[Ip] = []
         self._rmh: 'RootManager' = rmh
         self._need_to_find_dependencies_on_remote: bool = False
-        self._ip_with_missing_dependencies: dict[int, Ip] = {}
-        self._ip_definitions_to_be_installed: list[IpDefinition] = []
+        self._ip_with_missing_dependencies: Dict[int, Ip] = {}
+        self._ip_definitions_to_be_installed: List[IpDefinition] = []
 
     def add_ip(self, ip: Ip):
         self._ip_list.append(ip)
@@ -769,13 +775,13 @@ class IpDataBase():
         return self._need_to_find_dependencies_on_remote
 
     @property
-    def ip_definitions_to_be_installed(self) -> list[IpDefinition]:
+    def ip_definitions_to_be_installed(self) -> List[IpDefinition]:
         return self._ip_definitions_to_be_installed
 
-    def get_all_ip(self) -> list[Ip]:
+    def get_all_ip(self) -> List[Ip]:
         return self._ip_list
 
-    def find_ip_definition(self, definition:IpDefinition, raise_exception_if_not_found:bool=True) -> Ip:
+    def find_ip_definition(self, definition: IpDefinition, raise_exception_if_not_found: bool=True) -> Ip:
         ip:Ip
         if definition.vendor_name_is_specified:
             ip = self.find_ip(definition.ip_name, definition.vendor_name, definition.version_spec, raise_exception_if_not_found)
@@ -785,16 +791,16 @@ class IpDataBase():
             ip.check_target(definition.target)
         return ip
 
-    def find_ip(self, name:str, owner:str="*", version_spec:SimpleSpec=SimpleSpec("*"), raise_exception_if_not_found:bool=True) -> Ip:
+    def find_ip(self, name: str, owner: str="*", version_spec: SimpleSpec=SimpleSpec("*"), raise_exception_if_not_found: bool=True) -> Ip:
         for ip in self._ip_list:
             if ip.ip.name == name and (owner == "*" or ip.ip.vendor == owner) and version_spec.match(ip.ip.version):
                 return ip
         if raise_exception_if_not_found:
             raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version_spec}' not found.")
 
-    def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed:bool=False, error_on_nothing_found:bool=False) -> list[Ip]:
-        ip_list: list[Ip] = []
-        ip_files: list[str] = []
+    def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed: bool=False, error_on_nothing_found: bool=False) -> List[Ip]:
+        ip_list: List[Ip] = []
+        ip_files: List[str] = []
         for root, dirs, files in os.walk(path):
             for file in files:
                 if file == 'ip.yml':
@@ -829,14 +835,14 @@ class IpDataBase():
                     ip_list.append(ip_model)
         return ip_list
 
-    def resolve_local_dependencies(self, reset_list_of_dependencies_to_find_online:bool=True):
+    def resolve_local_dependencies(self, reset_list_of_dependencies_to_find_online: bool=True):
         if reset_list_of_dependencies_to_find_online:
             self._dependencies_to_find_online = []
             self._need_to_find_dependencies_on_remote = False
         for ip in self._ip_list:
             self.resolve_dependencies(ip, reset_list_of_dependencies_to_find_online=False)
 
-    def resolve_dependencies(self, ip:Ip, recursive:bool=False, reset_list_of_dependencies_to_find_online:bool=True, depth:int=0):
+    def resolve_dependencies(self, ip: Ip, recursive: bool=False, reset_list_of_dependencies_to_find_online: bool=True, depth: int=0):
         if depth > MAX_DEPTH_DEPENDENCY_INSTALLATION:
             raise Exception(f"Loop detected in IP dependencies after depth of {depth}")
         if reset_list_of_dependencies_to_find_online:
@@ -944,7 +950,7 @@ class IpDataBase():
             else:
                 raise Exception(f"Failed to get IP version '{ip_definition.find_results.version_id}' from server")
     
-    def publish_new_version_to_server(self, ip:Ip, encryption_config:'LogicSimulatorEncryptionConfiguration', customer:str) -> IpPublishingCertificate:
+    def publish_new_version_to_server(self, ip: Ip, encryption_config: 'LogicSimulatorEncryptionConfiguration', customer: str) -> IpPublishingCertificate:
         certificate = self.get_publishing_certificate(ip, customer)
         if not certificate.granted:
             raise Exception(f"IP {ip} is not available for publishing")
@@ -990,7 +996,7 @@ class IpDataBase():
                     raise Exception(f"Failed to push IP payload to server for '{ip}': {e}")
         return certificate
     
-    def get_publishing_certificate(self, ip: Ip, customer:str) -> IpPublishingCertificate:
+    def get_publishing_certificate(self, ip: Ip, customer: str) -> IpPublishingCertificate:
         request = {
             'vendor': ip.ip.vendor,
             "ip_name": ip.ip.name,
@@ -1006,7 +1012,7 @@ class IpDataBase():
         else:
             return certificate
     
-    def uninstall(self, ip:Ip, recursive:bool=True):
+    def uninstall(self, ip: Ip, recursive: bool=True):
         if not ip.uninstalled:
             if recursive:
                 for dep in ip.resolved_dependencies:

@@ -1,11 +1,15 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import datetime
+import os
 import re
 import warnings
 from pathlib import Path
 from random import randint
 from typing import Optional, List, Dict, Union, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 import yaml
 from pydantic import PositiveInt, PositiveFloat
@@ -17,8 +21,12 @@ from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfigurati
 from mio_client.core.service import Service, ServiceType
 from mio_client.core.ip import Ip
 from mio_client.core.model import Model, VALID_NAME_REGEX
+from phase import Phase
+from scheduler import JobResults
 from simulation import LogicSimulatorSimulationConfiguration, LogicSimulatorCompilationConfiguration, \
-    LogicSimulatorElaborationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration
+    LogicSimulatorElaborationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulators, \
+    LogicSimulatorSimulationReport, LogicSimulator, LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, \
+    LogicSimulatorCompilationAndElaborationReport, SimulatorMetricsDSim, DSimCloudJob, DSimCloudSimulationConfiguration
 
 
 #######################################################################################################################
@@ -43,36 +51,6 @@ class UVMVerbosityLevels(Enum):
 class TestSpecTypes(Enum):
     NUM_RAND_SEEDS = "repeat"
     SEED_LIST = "seed_list"
-    
-class DSimCloudComputeSizes(Enum):
-    S4 = "s4"
-    S8 = "s8"
-        
-        
-
-class DSimCloudTaskResource(Model):
-    name: str
-    path: Path
-
-class DSimCloudTaskInputs(Model):
-    working: List[DSimCloudTaskResource]
-
-class DSimCloudTaskOutputs(Model):
-    working: Optional[List[DSimCloudTaskResource]] = []
-    artifacts: Optional[List[DSimCloudTaskResource]] = []
-
-class DSimCloudTask(Model):
-    name: str
-    compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
-    depends: List[str]
-    commands: List[str]
-    inputs: Optional[DSimCloudTaskInputs] = None
-    outputs: DSimCloudTaskOutputs
-
-class DSimCloudJob(Model):
-    name: str
-    keep_for_support: Optional[bool] = False
-    tasks: List[DSimCloudTask]
 
 
 class About(Model):
@@ -150,10 +128,16 @@ class Regression:
     max_duration:float = 1.0
     max_jobs:int = 1
     test_suite: 'TestSuite'
+    test_specs: Dict[int, ResolvedTestSpec] = {}
 
     def __init__(self, name:str, test_suite: 'TestSuite'):
         self.name = name
         self.test_suite = test_suite
+        self.db:'RegressionDatabase' = self.test_suite.db
+        self.rmh:'RootManager' = self.db.rmh
+        self.timestamp_start: datetime.datetime = datetime.datetime.now()
+        self.timestamp_end: datetime.datetime = None
+        self.duration: datetime.timedelta = datetime.timedelta()
     
     def add_test_set(self, name: str) -> TestSet:
         if name in self.test_sets:
@@ -183,8 +167,13 @@ class Regression:
         config.target = target_name
         return config
     
-    def render_sim_configs(self, target_name:str="default") -> List[LogicSimulatorSimulationConfiguration]:
-        sim_configs = []
+    def render_sim_configs(self, target_name:str="default") -> Dict[int, LogicSimulatorSimulationConfiguration]:
+        sim_configs = {}
+        sim_path = self.test_suite.resolved_ip.rmh.configuration.logic_simulation.root_path
+        regression_dir_name = self.test_suite.resolved_ip.rmh.configuration.logic_simulation.regression_directory_name
+        timestamp_start = self.timestamp_start.strftime("%Y_%m_%d_%H_%M_%S")
+        regression_name = f"{self.test_suite.ip.result_file_name}_{self.name}_{timestamp_start}"
+        regression_path = os.path.join(sim_path, regression_dir_name, regression_name)
         for set_name in self.test_sets:
             for group_name in self.test_sets[set_name].test_groups:
                 for test_spec in self.test_sets[set_name].test_groups[group_name].test_specs:
@@ -192,9 +181,15 @@ class Regression:
                     if test_spec.spec_type == TestSpecTypes.SEED_LIST:
                         seeds = test_spec.specific_seeds
                     elif test_spec.spec_type == TestSpecTypes.NUM_RAND_SEEDS:
-                        seeds = [randint(1, ((1 << 31)-1)) for _ in range(test_spec.num_rand_seeds)]
+                        for _ in range(test_spec.num_rand_seeds):
+                            random_int = randint(1, ((1 << 31) - 1))
+                            while random_int in sim_configs:
+                                random_int = randint(1, ((1 << 31) - 1))
+                            seeds.append(random_int)
                     for seed in seeds:
                         config = LogicSimulatorSimulationConfiguration()
+                        config.use_custom_results_path = True
+                        config.custom_sim_results_path = regression_path
                         config.seed = seed
                         config.verbosity = self.verbosity
                         config.max_errors = self.max_errors
@@ -209,17 +204,9 @@ class Regression:
                             else:
                                 config.args_value[key] = value
                         config.target = target_name
-                        sim_configs.append(config)
+                        sim_configs[seed] = config
+                        self.test_specs[seed] = test_spec
         return sim_configs
-        
-    def render_dsim_cloud_job(self) -> DSimCloudJob:
-        tasks = []
-        job_data = {
-            'name': f"{self.test_suite.resolved_ip.ip.name}-{self.name}",
-            'tasks': tasks
-        }
-        return DSimCloudJob(**job_data)
-
 
 
 SpecTestArg = Union[str, int, float, bool]
@@ -238,8 +225,9 @@ class TestSuite(Model):
     ts: About
     tests: Dict[constr(pattern=VALID_NAME_REGEX), SpecTestSet]
 
-    def __init__(self, **data: Any):
+    def __init__(self, db:'RegressionDatabase', **data: Any):
         super().__init__(**data)
+        self._db:'RegressionDatabase' = db
         self._file_path: Path = None
         self._file_path_set: bool = False
         self._resolved_ip:Ip = None
@@ -249,14 +237,18 @@ class TestSuite(Model):
 
     def __str__(self):
         return f"{self.ts.ip}/{self.ts.name}"
+    
+    @property
+    def db(self) -> 'RegressionDatabase':
+        return self._db
 
     @classmethod
-    def load(cls, file_path):
+    def load(cls, db:'RegressionDatabase', file_path:Path):
         with open(file_path, 'r') as f:
             data = yaml.safe_load(f)
             if data is None:
                 data = {}
-            instance = cls(**data)
+            instance = cls(db, **data)
             instance.file_path = file_path
             return instance
 
@@ -316,40 +308,54 @@ class TestSuite(Model):
         # Resolve test sets/groups/specs/regressions
         for test_set_name in self.tests:
             test_set_spec = self.tests[test_set_name]
-            for test_group_name in test_set_spec:
-                test_group_spec = test_set_spec[test_group_name]
-                for test_spec_name in test_group_spec:
-                    test_spec_data = test_group_spec[test_spec_name]
-                    for regression_name in test_spec_data:
-                        regression = self.add_regression(regression_name)
-                        test_set = regression.add_test_set(test_set_name)
-                        test_group = test_set.add_test_group(test_group_name)
-                        regression_data = test_spec_data[regression_name]
-                        if type(regression_data) is int:
-                            test_spec = ResolvedTestSpec()
-                            test_spec.test_name = test_spec_name
+            for test_name in test_set_spec:
+                test_spec = test_set_spec[test_name]
+                for regression_name in test_spec:
+                    regression = self.add_regression(regression_name)
+                    test_set = regression.add_test_set(test_set_name)
+                    regression_data = test_spec[regression_name]
+                    if type(regression_data) is int:
+                        test_spec = ResolvedTestSpec()
+                        test_spec.test_name = test_name
+                        test_spec.spec_type = TestSpecTypes.NUM_RAND_SEEDS
+                        test_spec.num_rand_seeds = int(regression_data)
+                        test_group = test_set.add_test_group("default")
+                        test_group.add_test_spec(test_spec)
+                    elif type(regression_data) is TestSpec:
+                        test_spec = ResolvedTestSpec()
+                        test_spec.test_name = test_name
+                        if 'args' in regression_data:
+                            test_spec.args = regression_data['args']
+                        if type(regression_data['seeds']) is int:
                             test_spec.spec_type = TestSpecTypes.NUM_RAND_SEEDS
-                            test_spec.num_rand_seeds = int(regression_data)
+                            test_spec.num_rand_seeds = regression_data['seeds']
+                        elif type(regression_data['seeds']) is list:
+                            test_spec.spec_type = TestSpecTypes.SEED_LIST
+                            test_spec.specific_seeds = regression_data['seeds']
+                        test_group = test_set.add_test_group("default")
+                        test_group.add_test_spec(test_spec)
+                    elif type(regression_data) is dict:
+                        for test_group_name in regression_data:
+                            test_group_spec = regression_data[test_group_name]
+                            test_spec = ResolvedTestSpec()
+                            test_spec.test_name = test_name
+                            if 'args' in test_group_spec:
+                                test_spec.args = test_group_spec['args']
+                            if type(test_group_spec['seeds']) is int:
+                                test_spec.spec_type = TestSpecTypes.NUM_RAND_SEEDS
+                                test_spec.num_rand_seeds = test_group_spec['seeds']
+                            elif type(test_group_spec['seeds']) is list:
+                                test_spec.spec_type = TestSpecTypes.SEED_LIST
+                                test_spec.specific_seeds = test_group_spec['seeds']
+                            test_group = test_set.add_test_group(test_group_name)
                             test_group.add_test_spec(test_spec)
-                        elif type(regression_data) is list:
-                            for regression_entry in regression_data:
-                                if type(regression_entry) is TestSpec:
-                                    test_spec = ResolvedTestSpec()
-                                    test_spec.test_name = test_spec_name
-                                    test_spec.args = regression_entry.args
-                                    if type(regression_entry.seeds) is int:
-                                        test_spec.spec_type = TestSpecTypes.NUM_RAND_SEEDS
-                                        test_spec.num_rand_seeds = regression_entry.seeds
-                                    elif type(regression_entry.seeds) is list:
-                                        test_spec.spec_type = TestSpecTypes.SEED_LIST
-                                        test_spec.specific_seeds = regression_entry.seeds
-                                    test_group.add_test_spec(test_spec)
-                                elif type(regression_entry) is list:
-                                    test_spec = ResolvedTestSpec()
-                                    test_spec.test_name = test_spec_name
-                                    test_spec.spec_type = TestSpecTypes.SEED_LIST
-                                    test_spec.specific_seeds = regression_entry
-                                    test_group.add_test_spec(test_spec)
+                    elif type(regression_data) is list:
+                        test_spec = ResolvedTestSpec()
+                        test_spec.test_name = test_name
+                        test_spec.spec_type = TestSpecTypes.SEED_LIST
+                        test_spec.specific_seeds = regression_data
+                        test_group = test_set.add_test_group("default")
+                        test_group.add_test_spec(test_spec)
         # Ensure regression names in settings exist and apply settings to regressions
         for regression_name in self.ts.cov:
             if regression_name not in self._resolved_regressions:
@@ -383,6 +389,142 @@ class TestSuite(Model):
                 self._resolved_regressions[regression_name].verbosity = self.settings.verbosity[regression_name]
 
 
+class RegressionConfiguration:
+    target: str
+    dry_mode: bool
+    app: LogicSimulators
+    compilation_config: LogicSimulatorCompilationConfiguration = None
+    elaboration_config: LogicSimulatorElaborationConfiguration = None
+    compilation_and_elaboration_config: LogicSimulatorCompilationAndElaborationConfiguration = None
+    simulation_configs: Dict[int, LogicSimulatorSimulationConfiguration] = {}
+
+class RegressionSimulationReport(Model):
+    test_spec: ResolvedTestSpec
+    sim_report: LogicSimulatorSimulationReport
+
+class RegressionReport(Model):
+    regression: Optional[Regression] = None
+    success: Optional[bool] = False
+    compilation_report: Optional[LogicSimulatorCompilationReport] = None
+    elaboration_report: Optional[LogicSimulatorElaborationReport] = None
+    compilation_and_elaboration_report: Optional[LogicSimulatorCompilationAndElaborationReport] = None
+    simulation_reports: Optional[List[RegressionSimulationReport]] = []
+    all_passing_tests: Optional[List[RegressionSimulationReport]] = []
+    passing_tests_with_no_warnings: Optional[List[RegressionSimulationReport]] = []
+    passing_tests_with_warnings: Optional[List[RegressionSimulationReport]] = []
+    failing_tests: Optional[List[RegressionSimulationReport]] = []
+
+
+class RegressionRunner:
+    def __init__(self, db: 'RegressionDatabase'):
+        self.db: 'RegressionDatabase' = db
+        self.config: RegressionConfiguration = RegressionConfiguration()
+        self.report: RegressionReport = RegressionReport()
+        self.phase: Phase
+        self.ip: Ip
+        self.regression: Regression
+        self.simulator: LogicSimulator
+        self.scheduler: JobScheduler
+        self.results_path: Path
+    
+    def __str__(self):
+        return f"{self.ip.lib_name}_{self.regression.name}"
+        
+    def execute_regression(self, ip: Ip, regression: Regression, simulator: LogicSimulator, config: RegressionConfiguration, scheduler:JobScheduler) -> RegressionReport:
+        self.ip = ip
+        self.regression = regression
+        self.simulator = simulator
+        self.config = config
+        self.scheduler = scheduler
+        self.config.simulation_configs = self.regression.render_sim_configs()
+        self.results_path = self.db.rmh.configuration.logic_simulation.regression_directory_name / self.regression.name
+        self.db.rmh.create_directory(self.results_path)
+        if self.config.app == LogicSimulators.DSIM:
+            self.dsim_cloud_simulation()
+        else:
+            self.parallel_simulation()
+        self.regression.timestamp_end = datetime.datetime.now()
+        self.regression.duration = self.regression.timestamp_end - self.regression.timestamp_start
+        for simulation_report in self.report.simulation_reports:
+            if simulation_report.sim_report.success:
+                self.report.all_passing_tests.append(simulation_report)
+                if simulation_report.sim_report.num_warnings == 0:
+                    self.report.passing_tests_with_no_warnings.append(simulation_report)
+                else:
+                    self.report.passing_tests_with_warnings.append(simulation_report)
+            else:
+                self.report.failing_tests.append(simulation_report)
+        return self.report
+    
+    def parallel_simulation(self):
+        timeout = self.regression.max_duration * 3600
+        with ThreadPoolExecutor(max_workers=self.regression.max_jobs) as executor:
+            future_simulations = [executor.submit(self.launch_simulation, self.config.simulation_configs[seed]) for seed in
+                                  self.config.simulation_configs]
+            with tqdm(total=len(self.config.simulation_configs), desc="Simulations") as pbar:
+                for future in as_completed(future_simulations):
+                    try:
+                        result = future.result(timeout=timeout)
+                    except Exception as e:
+                        self.db.rmh.current_phase.error = e
+                    finally:
+                        pbar.update(1)
+        self.report.success = True
+        for simulation_report in self.report.simulation_reports:
+            self.report.success &= simulation_report.success
+    
+    def launch_simulation(self, config: LogicSimulatorSimulationConfiguration):
+        sim_report: LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, config, self.scheduler)
+        test_spec: ResolvedTestSpec = self.regression.test_specs[config.seed]
+        regression_sim_report: RegressionSimulationReport = RegressionSimulationReport()
+        regression_sim_report.test_spec = test_spec
+        regression_sim_report.sim_report = sim_report
+        self.report.simulation_reports.append(regression_sim_report)
+    
+    def dsim_cloud_simulation(self):
+        # 1. Prep simulator
+        if not isinstance(self.simulator, SimulatorMetricsDSim):
+            raise TypeError(
+                f"The simulator must be an instance of SimulatorMetricsDSim, got {type(self.simulator).__name__}")
+        if not self.db.rmh.configuration.project.local_mode:
+            raise Exception(f"DSim Cloud requires Project to be configured in 'local_mode'")
+        self.simulator.cloud_mode = True
+        # 2. Amass configuration objects for compilation/elaboration
+        if self.ip.has_vhdl_content:
+            self.config.compilation_config = self.regression.render_cmp_config(self.config.target)
+            self.config.compilation_config.use_relative_paths = True
+            self.config.elaboration_config = self.regression.render_elab_config(self.config.target)
+            self.config.elaboration_config.use_relative_paths = True
+        else:
+            self.config.compilation_and_elaboration_config = self.regression.render_cmp_elab_config(self.config.target)
+            self.config.compilation_and_elaboration_config.use_relative_paths = True
+        # 3. Create DSim Cloud Configuration object and fill it in from our regression configuration
+        cloud_simulation_config: DSimCloudSimulationConfiguration = DSimCloudSimulationConfiguration()
+        cloud_simulation_config.name = f"{self.ip.ip.name}-{self.regression.name}"
+        cloud_simulation_config.results_path = self.results_path
+        cloud_simulation_config.dry_mode = self.config.dry_mode
+        cloud_simulation_config.timeout = self.regression.max_duration
+        cloud_simulation_config.max_parallel_tasks = self.regression.max_jobs
+        cloud_simulation_config.compute_size = self.db.rmh.configuration.logic_simulation.metrics_dsim_cloud_max_compute_size
+        cloud_simulation_config.compilation_config = self.config.compilation_config
+        cloud_simulation_config.elaboration_config = self.config.elaboration_config
+        cloud_simulation_config.compilation_and_elaboration_config = self.config.compilation_and_elaboration_config
+        cloud_simulation_config.simulation_configs = self.config.simulation_configs
+        # 4. Launch job on the cloud via simulator
+        cloud_simulation_report = self.simulator.dsim_cloud_simulate(self.ip, cloud_simulation_config, self.scheduler)
+        # 5. Populate regression report from DSim Cloud Report
+        self.report.success = cloud_simulation_report.success
+        self.report.compilation_report = cloud_simulation_report.compilation_report
+        self.report.elaboration_report = cloud_simulation_report.elaboration_report
+        self.report.compilation_and_elaboration_report = cloud_simulation_report.compilation_and_elaboration_report
+        for simulation_report in cloud_simulation_report.simulation_reports:
+            test_spec: ResolvedTestSpec = self.regression.test_specs[simulation_report.seed]
+            regression_sim_report: RegressionSimulationReport = RegressionSimulationReport()
+            regression_sim_report.test_spec = test_spec
+            regression_sim_report.sim_report = simulation_report
+            self.report.simulation_reports.append(regression_sim_report)
+
+
 class RegressionDatabase(Service):
     def __init__(self, rmh: 'RootManager'):
         super().__init__(rmh, 'datum', 'regression_database', 'Regression Database')
@@ -394,7 +536,7 @@ class RegressionDatabase(Service):
         ts_files = path.rglob('*ts.yml')
         for ts_file in ts_files:
             try:
-                test_suite = TestSuite.load(ts_file)
+                test_suite = TestSuite.load(self, ts_file)
                 test_suite.check()
                 self._test_suites.append(test_suite)
             except Exception as e:
@@ -428,17 +570,8 @@ class RegressionDatabase(Service):
                 return None
         else:
             raise Exception(f"More than one Test Suite present, must specify (cannot use default)")
-
-
-class RegressionReport(Model):
-    pass
-
-
-class RegressionConfiguration(Model):
-    pass
-
-
-class RegressionRunner(Service):
-    def __init__(self, rmh: 'RootManager'):
-        super().__init__(rmh, 'datum', 'regression_runner', 'Regression Runner')
-        self._type = ServiceType.REGRESSION
+    
+    def execute_regression(self, ip:Ip, regression:Regression, simulator:LogicSimulator, config:RegressionConfiguration, scheduler:JobScheduler) -> RegressionReport:
+        regression_runner:RegressionRunner = RegressionRunner(self)
+        return regression_runner.execute_regression(ip, regression, simulator, config, scheduler)
+    

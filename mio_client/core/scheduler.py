@@ -13,20 +13,25 @@ from semantic_version import Version
 
 class Job:
     def __init__(self, rmh: 'RootManager', wd: Path, name: str, binary: Path, arguments: List[str]):
-        self._rmh = rmh
-        self._wd = wd
-        self._name = name
-        self._binary = binary
-        self._arguments = arguments
-        self._env_vars = {}
+        self._rmh: 'RootManager' = rmh
+        self._wd: Path = wd
+        self._name: str = name
+        self._binary: Path = binary
+        self._arguments: List[str] = arguments
+        self._env_vars:dict = {}
         self._pre_path:str = ""
         self._post_path:str = ""
         self._print_to_screen:bool = False
-        self._hostname = None
+        self._hostname:str = ""
         self._dry_run:bool = False
-        self._is_part_of_set = False
-        self._parent_set = None
-    
+        self._is_part_of_set:bool = False
+        self._parent_set:'JobSet' = None
+
+    def __str__(self):
+        string = f"{self._binary.name}"
+        for arg in self.arguments:
+            string += f" {arg}"
+
     @property
     def wd(self) -> Path:
         return self._wd
@@ -72,10 +77,10 @@ class Job:
         return self._arguments
         
     @property
-    def hostname(self):
+    def hostname(self) -> str:
         return self._hostname
     @hostname.setter
-    def hostname(self, value):
+    def hostname(self, value:str):
         self._hostname = value
 
     @property
@@ -90,29 +95,24 @@ class Job:
         return self._is_part_of_set
 
     @property
-    def parent_set(self):
+    def parent_set(self) -> 'JobSet':
         return self._parent_set
     @parent_set.setter
-    def parent_set(self, value):
+    def parent_set(self, value:'JobSet'):
         if value is not None:
             self._is_part_of_set = True
         self._parent_set = value
     
 
 class JobSet:
-    def __init__(self, rmh: 'RootManager', command: 'Command', name: str):
-        self._rmh = rmh
-        self._command = command
-        self._name = name
-        self._tasks = []
+    def __init__(self, rmh: 'RootManager', name: str):
+        self._rmh:'RootManager' = rmh
+        self._name: str = name
+        self._tasks: List[Job] = []
 
     @property
     def rmh(self) -> 'RootManager':
         return self._rmh
-
-    @property
-    def command(self) -> 'Command':
-        return self._command
 
     @property
     def name(self) -> str:
@@ -127,6 +127,9 @@ class JobSchedulerConfiguration:
     def __init__(self, rmh: 'RootManager'):
         self._output_to_terminal:bool = True
         self._max_number_of_parallel_processes:int = 1
+        self._dry_run:bool = False
+        self._has_job_set:bool = False
+        self._job_set:JobSet
 
     @property
     def output_to_terminal(self) -> bool:
@@ -141,6 +144,26 @@ class JobSchedulerConfiguration:
     @max_number_of_parallel_processes.setter
     def max_number_of_parallel_processes(self, value: int):
         self._max_number_of_parallel_processes = value
+
+    @property
+    def dry_run(self) -> bool:
+        return self._dry_run
+    @dry_run.setter
+    def dry_run(self, value: bool):
+        self._dry_run = value
+
+    @property
+    def has_job_set(self) -> bool:
+        return self._has_job_set
+
+    @property
+    def job_set(self) -> 'JobSet':
+        return self._job_set
+    @job_set.setter
+    def job_set(self, value:'JobSet'):
+        if value is not None:
+            self._has_job_set = True
+        self._job_set = value
 
 
 class JobResults:
