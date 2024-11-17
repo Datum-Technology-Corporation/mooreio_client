@@ -50,13 +50,14 @@ class TestCliSim:
         assert mio_client.cli.root_manager.user.authenticated == False
         return result
 
-    def publish_ip(self, capsys, project_path: Path, ip_name: str):
+    def publish_ip(self, capsys, project_path: Path, ip_name: str) -> OutputCapture:
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name])
         assert result.return_code == 0
         assert "Published IP" in result.text
         assert "successfully" in result.text
+        return result
 
-    def install_ip(self, capsys, project_path:Path, ip_name:str=""):
+    def install_ip(self, capsys, project_path:Path, ip_name:str="") -> OutputCapture:
         if ip_name == "":
             result = self.run_cmd(capsys, [f'--wd={project_path}', 'install'])
         else:
@@ -67,8 +68,9 @@ class TestCliSim:
         else:
             assert "Installed IP" in result.text
             assert "successfully" in result.text
+        return result
 
-    def uninstall_ip(self, capsys, project_path:Path, ip_name:str=""):
+    def uninstall_ip(self, capsys, project_path:Path, ip_name:str="") -> OutputCapture:
         if ip_name == "":
             result = self.run_cmd(capsys, [f'--wd={project_path}', 'uninstall'])
         else:
@@ -79,27 +81,31 @@ class TestCliSim:
         else:
             assert "Uninstalled IP" in result.text
             assert "successfully" in result.text
+        return result
 
-    def cmp_ip(self, capsys, project_path:Path, ip_name:str):
+    def cmp_ip(self, capsys, project_path:Path, ip_name:str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-C'])
         assert result.return_code == 0
+        return result
 
-    def elab_ip(self, capsys, project_path:Path, ip_name:str):
+    def elab_ip(self, capsys, project_path:Path, ip_name:str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-E'])
         assert result.return_code == 0
+        return result
 
-    def cmpelab_ip(self, capsys, project_path:Path, ip_name:str):
+    def cmpelab_ip(self, capsys, project_path:Path, ip_name:str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-CE'])
         assert result.return_code == 0
+        return result
 
     def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
-               cov:bool=False, args_boolean:list[str]=[], args_value:dict[str,str]={}):
+               cov:bool=False, args_boolean:list[str]=[], args_value:dict[str,str]={}) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         optional_args = []
@@ -119,6 +125,7 @@ class TestCliSim:
             f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
         ] + optional_args + plus_args)
         assert result.return_code == 0
+        return result
 
     def one_shot_sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
                         cov:bool=False, defines_boolean:list[str]=[], defines_value:dict[str,str]={},

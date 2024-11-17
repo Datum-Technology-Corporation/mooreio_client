@@ -755,6 +755,7 @@ class IpDataBase():
         self._ip_definitions_to_be_installed: List[IpDefinition] = []
 
     def add_ip(self, ip: Ip):
+        self.rmh.debug(f"Discovered IP '{ip}'")
         self._ip_list.append(ip)
         ip.ip_database = self
     
@@ -829,7 +830,7 @@ class IpDataBase():
                     if error_on_malformed:
                         raise Exception(f"IP definition at '{file}' is malformed: {error_messages}")
                     else:
-                        print(f"Skipping IP definition at '{file}': {error_messages}")
+                        self.rmh.warning(f"Skipping IP definition at '{file}': {error_messages}")
                 else:
                     self.add_ip(ip_model)
                     ip_list.append(ip_model)

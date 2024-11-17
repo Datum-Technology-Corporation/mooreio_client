@@ -28,7 +28,7 @@ class SubProcessScheduler(JobScheduler):
     def do_dispatch_job(self, job: Job, configuration: SubProcessSchedulerConfiguration) -> JobResults:
         results = JobResults()
         results.timestamp_start = datetime.now()
-        command_list = [job.binary] + job.arguments
+        command_list: list[str] = [str(job.binary)] + job.arguments
         command_str = "  ".join(command_list)
         path = os.environ['PATH']
         path = f"{job.pre_path}:{path}:{job.post_path}"
@@ -41,8 +41,10 @@ class SubProcessScheduler(JobScheduler):
                 result = subprocess.Popen(args=command_str, cwd=job.wd, shell=True, env=final_env_vars,
                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             result.wait()
+            results.stdout = str(result.stdout.read())
+            results.stderr = str(result.stderr.read())
+            results.return_code = result.returncode
         results.timestamp_end = datetime.now()
-        results.return_code = result.returncode
         return results
 
     def do_dispatch_job_set(self, job_set: JobSet, configuration: SubProcessSchedulerConfiguration):

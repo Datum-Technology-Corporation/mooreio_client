@@ -255,20 +255,20 @@ class RootManager:
         return self._j2_env
 
     def info(self, message: str):
-        print(f"[MIO] {message}")
+        print(f"\033[35m[MIO]\033[0m {message}")
 
     def debug(self, message: str):
         if self.print_trace:
-            print(f"[MIO-DBG] {message}")
+            print(f"\033[32m[MIO-DBG] {message} \033[0m")
 
     def warning(self, message: str):
-        print(f"[MIO-WARNING] {message}")
+        print(f"\033[33m\033[1m[MIO-WARNING] {message} \033[0m")
 
     def error(self, message: str):
-        print(f"[MIO-ERROR] {message}")
+        print(f"\033[31m\033[4m[MIO-ERROR] {message} \033[0m")
 
     def fatal(self, message: str):
-        print(f"[MIO-FATAL] {message}")
+        print(f"\033[31m\033[4m[MIO-FATAL] {message} \033[0m")
 
     @property
     def current_phase(self) -> 'Phase':
@@ -329,10 +329,10 @@ class RootManager:
             self.do_phase_final()
         except PhaseEndProcessException as e:
             if e.message != "":
-                print(e.message)
+                self.fatal(e.message)
             return 0
         except Exception as e:
-            print(f"\033[1;31m{e}\033[0m")#, file=sys.stderr)
+            self.fatal(str(e))
             return 1
         else:
             return 0
@@ -355,6 +355,7 @@ class RootManager:
         :return: A `Phase` object representing the newly created phase.
         """
         self._current_phase = Phase(self, name)
+        self.debug(f"Starting phase '{name}'")
         return self._current_phase
     
     def check_phase_finished(self, phase: Phase):
@@ -368,6 +369,8 @@ class RootManager:
                 raise RuntimeError(f"Phase '{phase}' has encountered an error: {phase.error}")
             else:
                 raise RuntimeError(f"Phase '{phase}' has not finished properly")
+        else:
+            self.debug(f"Finished phase '{phase}'")
         if phase.end_process:
             raise PhaseEndProcessException(phase.end_process_message)
     
@@ -388,6 +391,7 @@ class RootManager:
         :param path: The path where the file should be created.
         :return: None
         """
+        self.debug(f"Creating file at '{path}'")
         try:
             directory = os.path.dirname(path)
             if directory and not os.path.exists(directory):
@@ -403,6 +407,7 @@ class RootManager:
         :param src: Path to the source file.
         :param dst: Path to the destination.
         """
+        self.debug(f"Moving file from '{src}' to '{dst}'")
         try:
             if not os.path.exists(src):
                 raise FileNotFoundError(f"Source file '{src}' does not exist")
@@ -416,6 +421,7 @@ class RootManager:
         :param src: Path to the source file.
         :param dst: Path to the destination.
         """
+        self.debug(f"Copying file from '{src}' to '{dst}'")
         try:
             if not os.path.exists(src):
                 raise FileNotFoundError(f"Source file '{src}' does not exist")
@@ -432,6 +438,7 @@ class RootManager:
         Remove a file at the specified path.
         :param path: Path to the file.
         """
+        self.debug(f"Removing file at '{path}'")
         try:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"File '{path}' does not exist")
@@ -456,6 +463,7 @@ class RootManager:
         Create a directory at the specified path.
         :param path: Path to the directory.
         """
+        self.debug(f"Creating directory at '{path}'")
         try:
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -468,6 +476,7 @@ class RootManager:
         :param src: Path to the source directory.
         :param dst: Path to the destination.
         """
+        self.debug(f"Moving directory from '{src}' to '{dst}'")
         try:
             if not os.path.exists(src):
                 raise FileNotFoundError(f"Source directory '{src}' does not exist")
@@ -481,6 +490,7 @@ class RootManager:
         :param src: Path to the source directory.
         :param dst: Path to the destination.
         """
+        self.debug(f"Copying directory from '{src}' to '{dst}'")
         try:
             if not os.path.exists(src):
                 raise FileNotFoundError(f"Source directory '{src}' does not exist")
@@ -497,6 +507,7 @@ class RootManager:
         Remove a directory at the specified path.
         :param path: Path to the directory.
         """
+        self.debug(f"Removing directory at '{path}'")
         try:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Directory '{path}' does not exist")
@@ -524,12 +535,12 @@ class RootManager:
             print(f"An error occurred while searching file '{file_path}': {e}")
             return []
 
-    def merge_dictionaries(self,d1: dict, d2: dict) -> dict:
+    def merge_dictionaries(self,d1: Dict, d2: Dict) -> Dict:
         """
         Merge two dictionaries, d2 will overwrite d1 where keys overlap
         """
         for key, value in d2.items():
-            if key in d1 and isinstance(d1[key], dict) and isinstance(value, dict):
+            if key in d1 and isinstance(d1[key], Dict) and isinstance(value, Dict):
                 d1[key] = self.merge_dictionaries(d1[key], value)
             else:
                 d1[key] = value
@@ -949,6 +960,8 @@ class RootManager:
         except ValidationError as e:
             phase.error = Exception(
                 f"Failed to load default configuration file at '{self.default_configuration_path}': {e}")
+        else:
+            self.debug(f"Loaded default configuration from '{self.default_configuration_path}':\n{self._default_configuration}")
 
     def phase_load_user_data(self, phase: Phase):
         if self.file_exists(self._user_data_file_path):
@@ -958,6 +971,7 @@ class RootManager:
                 phase.error = Exception(f"Failed to load User Data at '{self._user_data_file_path}': {e}")
         else:
             self._user = User.new()
+            self.debug(f"Loaded user data from '{self._user_data_file_path}':\n{self.user}")
 
     def authenticate(self, phase: Phase):
         if not self.user.authenticated:
@@ -1025,10 +1039,8 @@ class RootManager:
 
     def phase_save_user_data(self, phase: Phase):
         try:
-            self.create_file(self._user_data_file_path)
-            data = self._user.dict()
-            with open(self._user_data_file_path, 'w') as file:
-                yaml.dump(data, file)
+            self._user.save(self._user_data_file_path)
+            self.debug(f"Saved user data to '{self._user_data_file_path}'")
         except Exception as e:
             phase.error = Exception(f"Failed to save User Data at '{self._user_data_file_path}': {e}")
 
@@ -1044,6 +1056,8 @@ class RootManager:
                 current_path = os.path.dirname(current_path)
         except Exception as e:
             phase.error = Exception(f"Could not locate Project 'mio.toml': {e}")
+        else:
+            self.debug(f"Found Project root at '{self.project_configuration_path}'")
 
     def phase_create_common_files_and_directories(self, phase: Phase):
         self.create_directory(self.md)
@@ -1063,6 +1077,7 @@ class RootManager:
                 f"Failed to load Project configuration file at '{self.project_configuration_path}': {e}")
         else:
             self._project_root_path = self.project_configuration_path.parent
+            self.debug(f"Loaded project configuration from '{self.project_configuration_path}':\n{self._project_configuration}")
 
     def phase_load_user_configuration(self, phase: Phase):
         self._user_configuration_path = os.path.expanduser("~/.mio/mio.toml")
@@ -1075,6 +1090,7 @@ class RootManager:
         else:
             self.create_file(self.user_configuration_path)
             self._user_configuration = Configuration()
+            self.debug(f"Loaded user configuration from '{self.user_configuration_path}':\n{self._user_configuration}")
 
     def phase_validate_configuration_space(self, phase):
         merged_configuration = self.merge_dictionaries(self._default_configuration, self._user_configuration)
@@ -1087,10 +1103,12 @@ class RootManager:
             phase.error = Exception(f"Failed to validate Configuration Space: {error_messages}")
         else:
             self.configuration.check()
-        if self.configuration.project.local_mode:
-            new_data_files_path = self.temp_dir / "mio_data_files"
-            self.copy_directory(self._data_files_path, new_data_files_path)
-            self._data_files_path = new_data_files_path
+            self.debug(f"Final configuration tree:\n{merged_configuration}")
+            if self.configuration.project.local_mode:
+                self.debug(f"Relocating MIO data files to project")
+                new_data_files_path = self.temp_dir / "mio_data_files"
+                self.copy_directory(self._data_files_path, new_data_files_path)
+                self._data_files_path = new_data_files_path
 
 
     def phase_scheduler_discovery(self, phase: Phase):

@@ -46,7 +46,8 @@ Full Command List (`mio help CMD` for help on a specific command):
       publish        Publishes IP to Server (must have mio admin account)
 
    EDA Automation
-      sim            Performs necessary steps to simulate an IP with any simulator"""
+      sim            Performs necessary steps to simulate an IP with any simulator
+      regr           Runs regression against an IP"""
 
 
 #######################################################################################################################
@@ -137,7 +138,7 @@ def register_all_commands(subparsers):
     :return: A list of registered commands.
     """
     commands = []
-    register_commands(commands, eda.get_commands())
+    register_commands(commands, sim.get_commands())
     register_commands(commands, ip.get_commands())
     register_commands(commands, misc.get_commands())
     register_commands(commands, project.get_commands())

@@ -2,8 +2,10 @@
 # All rights reserved.
 #######################################################################################################################
 from typing import List, Optional
+
+import yaml
 from pydantic import BaseModel, constr, FilePath, PositiveInt
-from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
+from model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
 from enum import Enum
 
@@ -19,13 +21,20 @@ class UvmVersions(Enum):
 
 
 class LogicSimulators(Enum):
-    UNDEFINED = "__UNDEFINED__"
+    UNDEFINED = UNDEFINED_CONST
     DSIM = "dsim"
     VIVADO = "vivado"
     VCS = "vcs"
     XCELIUM = "xcelium"
     QUESTA = "questa"
     RIVIERA = "riviera"
+    #UNDEFINED = "!Undefined!"
+    #DSIM = "Metrics DSim"
+    #VIVADO = "Xilinx Vivado"
+    #VCS = "Synopsys VCS"
+    #XCELIUM = "Cadence XCelium"
+    #QUESTA = "Siemens QuestaSim"
+    #RIVIERA = "Aldec Riviera-PRO"
 
 class DSimCloudComputeSizes(Enum):
     S4 = "s4"
@@ -55,6 +64,7 @@ class LogicSimulation(Model):
     metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
     metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    metrics_dsim_cloud_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     synopsys_vcs_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     siemens_questa_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST

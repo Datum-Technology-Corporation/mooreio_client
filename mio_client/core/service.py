@@ -7,6 +7,8 @@ from enum import Enum
 import importlib
 import inspect
 import os
+from typing import List
+
 import semantic_version
 from semantic_version import Version
 
@@ -31,13 +33,13 @@ class ServiceType(Enum):
 
 
 class Service(ABC):
-    def __init__(self, rmh: 'RootManager', vendor_name:str="", name:str="", full_name:str=""):
+    def __init__(self, rmh: 'RootManager', vendor_name: str="", name: str="", full_name: str=""):
         self._rmh = rmh
         self._name = name
         self._vendor_name = vendor_name
         self._full_name = full_name
         self._type = ServiceType.UNKNOWN
-        self._version:semantic_version.Version
+        self._version: semantic_version.Version
 
     @property
     def rmh(self) -> 'RootManager':
@@ -86,8 +88,8 @@ class Service(ABC):
 
 class ServiceDataBase:
     def __init__(self, rmh: 'RootManager'):
-        self._rmh:'RootManager' = rmh
-        self._services:list[Service] = []
+        self._rmh: 'RootManager' = rmh
+        self._services: List[Service] = []
 
     @property
     def rmh(self) -> 'RootManager':
@@ -111,16 +113,23 @@ class ServiceDataBase:
                     print(f"Service module '{module_name}' has errors and is not being loaded: {e}", file=sys.stderr)
                     continue
 
-    def add_service(self, service:Service):
+    def add_service(self, service: Service):
+        self.rmh.debug(f"Added service '{service}'")
         service.db = self
         if service.is_available():
             self._services.append(service)
             service.init()
 
-    def find_service(self, service_type:ServiceType, name:str) -> Service:
+    def find_service(self, service_type: ServiceType, name: str) -> Service:
         for service in self._services:
             if (service.type.value == service_type.value) and (service.name == name):
                 return service
         raise Exception(f"Service '{name}' of type '{service_type.value}' could not be found")
+
+    def find_default_service(self, service_type: ServiceType) -> Service:
+        for service in self._services:
+            if service.type.value == service_type.value:
+                return service
+        raise Exception(f"Service type '{service_type.value}' could not be found")
 
 

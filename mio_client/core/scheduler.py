@@ -28,9 +28,10 @@ class Job:
         self._parent_set:'JobSet' = None
 
     def __str__(self):
-        string = f"{self._binary.name}"
+        string: str = f"{self._binary.name}"
         for arg in self.arguments:
             string += f" {arg}"
+        return string
 
     @property
     def wd(self) -> Path:
@@ -234,10 +235,16 @@ class JobScheduler(ABC):
     @property
     def db(self) -> 'JobSchedulerDatabase':
         return self._db
-
     @db.setter
     def db(self, value: 'JobSchedulerDatabase'):
         self._db = value
+
+    @property
+    def rmh(self) -> 'RootManager':
+        return self._rmh
+    @rmh.setter
+    def rmh(self, value: 'RootManager'):
+        self._rmh = value
 
     @property
     def jobs_dispatched(self) -> List[Job]:
@@ -253,7 +260,10 @@ class JobScheduler(ABC):
 
     def dispatch_job(self, job: Job, configuration: JobSchedulerConfiguration) -> JobResults:
         self.jobs_dispatched.append(job)
-        return self.do_dispatch_job(job, configuration)
+        self.rmh.debug(f"Dispatching job '{job}'")
+        results: JobResults = self.do_dispatch_job(job, configuration)
+        self.rmh.debug(f"Finished job '{job}' with return code '{results.return_code}'")
+        return results
 
     def dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
         return self.do_dispatch_job_set(job_set, configuration)
@@ -272,6 +282,10 @@ class JobSchedulerDatabase:
         self._rmh = rmh
         self._task_schedulers: list[JobScheduler] = []
 
+    @property
+    def rmh(self) -> 'RootManager':
+        return self._rmh
+    
     def discover_schedulers(self):
         scheduler_directory = os.path.join(os.path.dirname(__file__), '..', 'schedulers')
         for filename in os.listdir(scheduler_directory):
@@ -290,11 +304,12 @@ class JobSchedulerDatabase:
                     print(f"Scheduler module '{module_name}' has errors and is not being loaded: {e}", file=sys.stderr)
                     continue
 
-    def add_scheduler(self, task_scheduler: 'JobScheduler'):
-        task_scheduler.db = self
-        if task_scheduler.is_available():
-            self._task_schedulers.append(task_scheduler)
-            task_scheduler.init()
+    def add_scheduler(self, job_scheduler: 'JobScheduler'):
+        self.rmh.debug(f"Added scheduler '{job_scheduler}'")
+        job_scheduler.db = self
+        if job_scheduler.is_available():
+            self._task_schedulers.append(job_scheduler)
+            job_scheduler.init()
 
     def find_scheduler(self, name: str) -> 'JobScheduler':
         for task_scheduler in self._task_schedulers:
