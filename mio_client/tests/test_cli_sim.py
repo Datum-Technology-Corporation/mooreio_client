@@ -50,13 +50,14 @@ class TestCliSim:
         assert mio_client.cli.root_manager.user.authenticated == False
         return result
 
-    def publish_ip(self, capsys, project_path: Path, ip_name: str):
+    def publish_ip(self, capsys, project_path: Path, ip_name: str) -> OutputCapture:
         result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name])
         assert result.return_code == 0
         assert "Published IP" in result.text
         assert "successfully" in result.text
+        return result
 
-    def install_ip(self, capsys, project_path:Path, ip_name:str=""):
+    def install_ip(self, capsys, project_path:Path, ip_name: str="") -> OutputCapture:
         if ip_name == "":
             result = self.run_cmd(capsys, [f'--wd={project_path}', 'install'])
         else:
@@ -67,8 +68,9 @@ class TestCliSim:
         else:
             assert "Installed IP" in result.text
             assert "successfully" in result.text
+        return result
 
-    def uninstall_ip(self, capsys, project_path:Path, ip_name:str=""):
+    def uninstall_ip(self, capsys, project_path:Path, ip_name: str="") -> OutputCapture:
         if ip_name == "":
             result = self.run_cmd(capsys, [f'--wd={project_path}', 'uninstall'])
         else:
@@ -79,27 +81,31 @@ class TestCliSim:
         else:
             assert "Uninstalled IP" in result.text
             assert "successfully" in result.text
+        return result
 
-    def cmp_ip(self, capsys, project_path:Path, ip_name:str):
+    def cmp_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-C'])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-C', '-a', app])
         assert result.return_code == 0
+        return result
 
-    def elab_ip(self, capsys, project_path:Path, ip_name:str):
+    def elab_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-E'])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-E', '-a', app])
         assert result.return_code == 0
+        return result
 
-    def cmpelab_ip(self, capsys, project_path:Path, ip_name:str):
+    def cmpelab_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-CE'])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-CE', '-a', app])
         assert result.return_code == 0
+        return result
 
-    def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
-               cov:bool=False, args_boolean:list[str]=[], args_value:dict[str,str]={}):
+    def sim_ip(self, capsys, project_path: Path, app: str, ip_name:str, test_name: str, seed: int=1, waves: bool=False,
+               cov: bool=False, args_boolean: list[str]=[], args_value: dict[str,str]={}) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         optional_args = []
@@ -116,13 +122,14 @@ class TestCliSim:
         else:
             plus_args = []
         result = self.run_cmd(capsys, [
-            f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
+            f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}', '-a', app
         ] + optional_args + plus_args)
         assert result.return_code == 0
+        return result
 
-    def one_shot_sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
-                        cov:bool=False, defines_boolean:list[str]=[], defines_value:dict[str,str]={},
-                        args_boolean:list[str]=[], args_value:dict[str,str]={}) -> OutputCapture:
+    def one_shot_sim_ip(self, capsys, project_path: Path, app: str, ip_name: str, test_name: str, seed: int=1, waves: bool=False,
+                        cov: bool=False, defines_boolean: list[str]=[], defines_value: dict[str,str]={},
+                        args_boolean: list[str]=[], args_value: dict[str,str]={}) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
         optional_args = []
@@ -143,7 +150,7 @@ class TestCliSim:
         else:
             plus_args = []
         result = self.run_cmd(capsys, [
-            f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
+            f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}', '-a', app
         ] + optional_args + plus_args)
         assert result.return_code == 0
         return result
@@ -158,42 +165,36 @@ class TestCliSim:
             log_text = log_file.read()
         return log_text
 
-    @pytest.mark.single_process
-    def test_cli_cmp_ip(self, capsys):
+    def cli_cmp_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmp_ip(capsys, test_project_path, "def_ss")
+        self.cmp_ip(capsys, test_project_path, app, "def_ss")
 
-    @pytest.mark.single_process
-    def test_cli_cmp_elab_ip(self, capsys):
+    def cli_cmp_elab_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmp_ip(capsys, test_project_path, "def_ss")
-        self.elab_ip(capsys, test_project_path, "def_ss")
+        self.cmp_ip(capsys, test_project_path, app, "def_ss")
+        self.elab_ip(capsys, test_project_path, app, "def_ss")
 
-    @pytest.mark.single_process
-    def test_cli_cmpelab_ip(self, capsys):
+    def cli_cmpelab_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmpelab_ip(capsys, test_project_path, "def_ss")
+        self.cmpelab_ip(capsys, test_project_path, app, "def_ss")
 
-    @pytest.mark.single_process
-    def test_cli_cmp_elab_sim_ip(self, capsys):
+    def cli_cmp_elab_sim_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmp_ip(capsys, test_project_path, "def_ss_tb")
-        self.elab_ip(capsys, test_project_path, "def_ss_tb")
-        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1)
+        self.cmp_ip(capsys, test_project_path, app, "def_ss_tb")
+        self.elab_ip(capsys, test_project_path, app, "def_ss_tb")
+        self.sim_ip(capsys, test_project_path, app, "def_ss_tb", "smoke", 1)
 
-    @pytest.mark.single_process
-    def test_cli_cmpelab_sim_ip(self, capsys):
+    def cli_cmpelab_sim_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmpelab_ip(capsys, test_project_path, "def_ss_tb")
-        self.sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1, waves=True, cov=False)
+        self.cmpelab_ip(capsys, test_project_path, app, "def_ss_tb")
+        self.sim_ip(capsys, test_project_path, app, "def_ss_tb", "smoke", 1, waves=True, cov=False)
 
-    @pytest.mark.single_process
-    def test_cli_sim_args_ip(self, capsys):
+    def cli_sim_args_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         defines_boolean = [
@@ -208,7 +209,7 @@ class TestCliSim:
         args_value = {
             "LUCKY_NUMBER": "42",
         }
-        result = self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1,
+        result = self.one_shot_sim_ip(capsys, test_project_path, app, "def_ss_tb", "smoke", 1,
                                       waves=False, cov=True, defines_boolean=defines_boolean,
                                       defines_value=defines_value, args_boolean=args_boolean, args_value=args_value)
         log_text = self.get_sim_log_text()
@@ -217,27 +218,72 @@ class TestCliSim:
         assert "ABC_BLOCK is enabled" in log_text
         assert "Your lucky number is 42" in log_text
 
-    @pytest.mark.single_process
-    def test_cli_sim_targets_ip(self, capsys):
+    def cli_sim_targets_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         defines_boolean = []
         defines_value = {}
         args_boolean = []
         args_value = {}
-        result = self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb#abc", "smoke", 1,
+        result = self.one_shot_sim_ip(capsys, test_project_path, app, "def_ss_tb#abc", "smoke", 1,
                                       waves=False, cov=True, defines_boolean=defines_boolean,
                                       defines_value=defines_value, args_boolean=args_boolean, args_value=args_value)
         log_text = self.get_sim_log_text()
         assert "My number is 456" in log_text
         assert "DATA_WIDTH is 64" in log_text
         assert "ABC_BLOCK_ENABLED is true" in log_text
-        result = self.one_shot_sim_ip(capsys, test_project_path, "def_ss_tb", "smoke", 1,
+        result = self.one_shot_sim_ip(capsys, test_project_path, app, "def_ss_tb", "smoke", 1,
                                       waves=False, cov=True, defines_boolean=defines_boolean,
                                       defines_value=defines_value, args_boolean=args_boolean, args_value=args_value)
         log_text = self.get_sim_log_text()
         assert "My number is 123" in log_text
         assert "DATA_WIDTH is 32" in log_text
         assert "ABC_BLOCK_ENABLED is true" in log_text
+
+    # DSim
+    @pytest.mark.single_process
+    def test_cli_cmp_ip_dsim(self, capsys):
+        self.cli_cmp_ip(capsys, "dsim")
+    @pytest.mark.single_process
+    def test_cli_cmp_elab_ip_dsim(self, capsys):
+        self.cli_cmp_elab_ip(capsys, "dsim")
+    @pytest.mark.single_process
+    def test_cli_cmpelab_ip_dsim(self, capsys):
+        self.cli_cmpelab_ip(capsys, "dsim")
+    @pytest.mark.single_process
+    def test_cli_cmp_elab_sim_ip_dsim(self, capsys):
+        self.cli_cmp_elab_sim_ip(capsys, "dsim")
+    @pytest.mark.single_process
+    def test_cli_cmpelab_sim_ip_dsim(self, capsys):
+        self.cli_cmpelab_sim_ip(capsys, "dsim")
+    @pytest.mark.single_process
+    def test_cli_sim_args_ip_dsim(self, capsys):
+        self.cli_sim_args_ip(capsys, "dsim")
+    @pytest.mark.single_process
+    def test_cli_sim_targets_ip_dsim(self, capsys):
+        self.cli_sim_targets_ip(capsys, "dsim")
+
+    # Vivado
+    @pytest.mark.single_process
+    def test_cli_cmp_ip_vivado(self, capsys):
+        self.cli_cmp_ip(capsys, "vivado")
+    @pytest.mark.single_process
+    def test_cli_cmp_elab_ip_vivado(self, capsys):
+        self.cli_cmp_elab_ip(capsys, "vivado")
+    @pytest.mark.single_process
+    def test_cli_cmpelab_ip_vivado(self, capsys):
+        self.cli_cmpelab_ip(capsys, "vivado")
+    @pytest.mark.single_process
+    def test_cli_cmp_elab_sim_ip_vivado(self, capsys):
+        self.cli_cmp_elab_sim_ip(capsys, "vivado")
+    @pytest.mark.single_process
+    def test_cli_cmpelab_sim_ip_vivado(self, capsys):
+        self.cli_cmpelab_sim_ip(capsys, "vivado")
+    @pytest.mark.single_process
+    def test_cli_sim_args_ip_vivado(self, capsys):
+        self.cli_sim_args_ip(capsys, "vivado")
+    @pytest.mark.single_process
+    def test_cli_sim_targets_ip_vivado(self, capsys):
+        self.cli_sim_targets_ip(capsys, "vivado")
 
 

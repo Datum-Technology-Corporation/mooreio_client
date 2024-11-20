@@ -4,18 +4,18 @@
 
 
 {% if needs_licensing %}##################################################### LICENSING #######################################################
-{{ licensing_sv_path }}
+{{ licensing_vhdl_path }}
 ##################################################### LICENSING #######################################################
 {% endif %}###################################################### DEFINES ########################################################
-{% for define in defines_boolean %}{% if defines_boolean[define] %}+define+{{ define }}
-{% endif %}{% endfor %}{% for define in defines_values %}+define+{{ define }}={{ defines_values[define] }}
+{% for define in defines_boolean %}{% if defines_boolean[define] %}-d {{ define }}
+{% endif %}{% endfor %}{% for define in defines_values %}-d {{ define }}={{ defines_values[define] }}
 {% endfor %}###################################################### DEFINES ########################################################
 
 
 {% for sub in sub_file_lists %}##################################################### DEPENDENCY ######################################################
 # Name: {{ sub.name }}
 # Directories
-{% for dir in sub.directories %}+incdir+{{ dir }}
+{% for dir in sub.directories %}-i {{ dir }}
 {% endfor %}# Files
 {% for file in sub.files %}{{ file }}
 {% endfor %}##################################################### DEPENDENCY ######################################################
@@ -24,7 +24,7 @@
 {% endfor %}######################################################## TOP ##########################################################
 # Name: {{ name }}
 # Directories
-{% for dir in directories %}+incdir+{{ dir }}
+{% for dir in directories %}-i {{ dir }}
 {% endfor %}# Files
 {% for file in files %}{{ file }}
 {% endfor %}######################################################## TOP ##########################################################
