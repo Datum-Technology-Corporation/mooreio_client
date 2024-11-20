@@ -17,7 +17,7 @@ class ServiceType(Enum):
     UNKNOWN = "Unknown"
     CUSTOM = "Custom"
     PACKAGE_MANAGEMENT = "Package Management"
-    LOGIC_SIMULATION = "logic Simulation"
+    LOGIC_SIMULATION = "Logic Simulation"
     REGRESSION = "Regression"
     LOGIC_EMULATION = "logic Emulation"
     LOGIC_SYNTHESIS = "logic Synthesis"
@@ -108,9 +108,9 @@ class ServiceDataBase:
                             service_instance = service(self._rmh)
                             self.add_service(service_instance)
                         except Exception as e:
-                            print(f"Service '{service}' has errors and is not being loaded: {e}", file=sys.stderr)
+                            self.rmh.warning(f"Service '{service}' has errors and is not being loaded: {e}")
                 except Exception as e:
-                    print(f"Service module '{module_name}' has errors and is not being loaded: {e}", file=sys.stderr)
+                    self.rmh.warning(f"Service module '{module_name}' has errors and is not being loaded: {e}")
                     continue
 
     def add_service(self, service: Service):

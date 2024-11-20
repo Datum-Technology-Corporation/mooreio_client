@@ -53,6 +53,11 @@ class Authentication(Model):
     offline: bool
 
 
+class Applications(Model):
+    editor: constr(pattern=VALID_POSIX_PATH_REGEX)
+    web_browser: constr(pattern=VALID_POSIX_PATH_REGEX)
+
+
 class LogicSimulation(Model):
     root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
     regression_directory_name: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
@@ -61,6 +66,7 @@ class LogicSimulation(Model):
     test_result_path_template: str
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
+    vscode_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
     metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
@@ -142,6 +148,7 @@ class Configuration(Model):
     docs: Docs
     encryption: Encryption
     authentication: Authentication
+    applications: Applications
 
     def check(self):
         pass

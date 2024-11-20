@@ -321,7 +321,7 @@ class Ip(Model):
         return ip_definition
 
     @classmethod
-    def load(cls, file_path):
+    def load_from_yaml(cls, file_path: Path):
         with open(file_path, 'r') as f:
             data = yaml.safe_load(f)
             if data is None:
@@ -329,6 +329,10 @@ class Ip(Model):
             instance = cls(**data)
             instance.file_path = file_path
             return instance
+    def save_to_yaml(self, file_path: Path):
+        with open(file_path, 'w') as file:
+            model_data: Dict = self.model_dump(exclude_unset=True)
+            yaml.safe_dump(model_data, file_path)
 
     @property
     def uid(self) -> int:
@@ -812,7 +816,7 @@ class IpDataBase():
         else:
             for file in ip_files:
                 try:
-                    ip_model = Ip.load(file)
+                    ip_model = Ip.load_from_yaml(file)
                     if ip_model.ip.vendor == UNDEFINED_CONST:
                         if self.find_ip(ip_model.ip.name, "*", SimpleSpec(str(ip_model.ip.version)), raise_exception_if_not_found=False):
                             continue

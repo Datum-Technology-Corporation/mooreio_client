@@ -12,8 +12,10 @@ from ..core.command import Command
 from ..core.phase import Phase
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
-from ..services.simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, LogicSimulatorElaborationConfiguration, \
-    LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration, UvmVerbosity
+from ..services.simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, \
+    LogicSimulatorElaborationConfiguration, \
+    LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration, UvmVerbosity, \
+    LogicSimulatorCoverageMergeConfiguration, LogicSimulatorCoverageMergeReport
 from ..services.simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
@@ -80,8 +82,8 @@ Examples:
    mio regr my_ip axi_xc.sanity -d  # Dry-run sanity regression for IP 'uvm_my_ip', from test suite 'axi_xc.ts.yml"""
 
 
-VERBOSITY_LEVELS = ["none","low","medium","high","debug"]
-LOGIC_SIMULATORS = ["dsim"]
+VERBOSITY_LEVELS = ["none", "low", "medium", "high", "full", "debug"]
+LOGIC_SIMULATORS = ["dsim", "vivado"]
 
 
 def get_commands():
@@ -127,10 +129,12 @@ class Simulate(Command):
         self._elaboration_configuration: LogicSimulatorElaborationConfiguration
         self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
         self._simulation_configuration: LogicSimulatorSimulationConfiguration
+        self._coverage_merge_configuration: LogicSimulatorCoverageMergeConfiguration
         self._compilation_report: LogicSimulatorCompilationReport
         self._elaboration_report: LogicSimulatorElaborationReport
         self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
         self._simulation_report: LogicSimulatorSimulationReport
+        self._coverage_merge_report: LogicSimulatorCoverageMergeReport
         self._success: bool = False
         self._defines_boolean: List[str] = []
         self._defines_value: Dict[str, str] = {}
@@ -178,6 +182,10 @@ class Simulate(Command):
         return self._simulation_configuration
 
     @property
+    def coverage_merge_configuration(self) -> LogicSimulatorCoverageMergeConfiguration:
+        return self._coverage_merge_configuration
+
+    @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
         return self._compilation_report
 
@@ -192,6 +200,10 @@ class Simulate(Command):
     @property
     def simulation_report(self) -> LogicSimulatorSimulationReport:
         return self._simulation_report
+
+    @property
+    def coverage_merge_report(self) -> LogicSimulatorCoverageMergeReport:
+        return self._coverage_merge_report
 
     @property
     def success(self) -> bool:
@@ -276,7 +288,7 @@ class Simulate(Command):
                     raise Exception(f"Argument '{arg}' does not match any of the expected patterns.")
         self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
 
-    def phase_post_validate_configuration_space(self, phase):
+    def phase_post_validate_configuration_space(self, phase: Phase):
         if self.app == LogicSimulators.UNDEFINED:
             if not self.rmh.configuration.logic_simulation.default_simulator:
                 phase.error = Exception(f"No simulator specified (-a/--app) and no default simulator in the Configuration")
@@ -284,20 +296,23 @@ class Simulate(Command):
             else:
                 self._app = self.rmh.configuration.logic_simulation.default_simulator.value
 
-    def phase_post_scheduler_discovery(self, phase:Phase):
+    def phase_post_scheduler_discovery(self, phase: Phase):
         try:
             # TODO Add support for other schedulers
             self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
         except Exception as e:
             phase.error = e
 
-    def phase_post_service_discovery(self, phase:Phase):
+    def phase_post_service_discovery(self, phase: Phase):
         try:
             self._simulator = self.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, self.app.value)
         except Exception as e:
             phase.error = e
+        else:
+            if not self.simulator.supports_uvm:
+                phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
 
-    def phase_post_ip_discovery(self, phase:Phase):
+    def phase_post_ip_discovery(self, phase: Phase):
         self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
         if not self.ip:
             phase.error = Exception(f"IP '{self.ip_definition}' could not be found")
@@ -313,11 +328,16 @@ class Simulate(Command):
                     self._do_compile_and_elaborate = False
             else:
                 if self.do_compile and self.do_elaborate:
-                    self._do_compile = False
-                    self._do_elaborate = False
-                    self._do_compile_and_elaborate = True
+                    if self.simulator.supports_two_step_simulation:
+                        self._do_compile = False
+                        self._do_elaborate = False
+                        self._do_compile_and_elaborate = True
+                    else:
+                        self._do_compile = True
+                        self._do_elaborate = True
+                        self._do_compile_and_elaborate = False
     
-    def phase_main(self, phase:Phase):
+    def phase_main(self, phase: Phase):
         if self.do_prepare_dut:
             self.prepare_dut(phase)
         if self.do_compile:
@@ -336,10 +356,10 @@ class Simulate(Command):
         if self.do_simulate:
             self.simulate(phase)
 
-    def prepare_dut(self, phase:Phase):
+    def prepare_dut(self, phase: Phase):
         pass
 
-    def compile(self, phase:Phase):
+    def compile(self, phase: Phase):
         self._compilation_configuration = LogicSimulatorCompilationConfiguration()
         if self.parsed_cli_arguments.errors:
             self.compilation_configuration.max_errors = self.parsed_cli_arguments.errors
@@ -352,11 +372,11 @@ class Simulate(Command):
         self.compilation_configuration.target = self.ip_definition.target
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
-    def elaborate(self, phase:Phase):
+    def elaborate(self, phase: Phase):
         self._elaboration_configuration = LogicSimulatorElaborationConfiguration()
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
-    def compile_and_elaborate(self, phase:Phase):
+    def compile_and_elaborate(self, phase: Phase):
         self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationConfiguration()
         if self.parsed_cli_arguments.errors:
             self._compilation_and_elaboration_configuration.max_errors = self.parsed_cli_arguments.errors
@@ -369,7 +389,7 @@ class Simulate(Command):
         self.compilation_and_elaboration_configuration.target = self.ip_definition.target
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
 
-    def simulate(self, phase:Phase):
+    def simulate(self, phase: Phase):
         self._simulation_configuration = LogicSimulatorSimulationConfiguration()
         self.simulation_configuration.seed = self.parsed_cli_arguments.seed if self.parsed_cli_arguments.seed is not None else 1
         self.simulation_configuration.verbosity = self.parsed_cli_arguments.verbosity if self.parsed_cli_arguments.verbosity is not None else UvmVerbosity.MEDIUM
@@ -382,8 +402,17 @@ class Simulate(Command):
         self.simulation_configuration.args_value = self.args_value
         self.simulation_configuration.target = self.ip_definition.target
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
+        if self.simulation_configuration.enable_coverage:
+            self._coverage_merge_configuration = LogicSimulatorCoverageMergeConfiguration()
+            self.coverage_merge_configuration.input_simulation_reports.target_name = self.ip_definition.target
+            self.coverage_merge_configuration.input_simulation_reports.output_path = self.simulation_report.coverage_directory
+            self.coverage_merge_configuration.input_simulation_reports.create_html_report = True
+            self.coverage_merge_configuration.input_simulation_reports.html_report_path = self.simulation_report.coverage_directory
+            self.coverage_merge_configuration.input_simulation_reports.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
+            self.coverage_merge_configuration.input_simulation_reports.append(self.simulation_report)
+            self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_configuration, self.scheduler)
 
-    def phase_report(self, phase:Phase):
+    def phase_report(self, phase: Phase):
         self._success = True
         if self.do_compile:
             self._success &= self.compilation_report.success
@@ -410,26 +439,28 @@ class Simulate(Command):
             self.print_simulation_report(phase)
         print(banner)
 
-    def phase_final(self, phase):
+    def phase_final(self, phase: Phase):
         if not self.success:
             phase.error = Exception(f"Logic Simulation failed.")
 
-    def print_prepare_dut_report(self, phase:Phase):
+    def print_prepare_dut_report(self, phase: Phase):
         pass
 
-    def print_compilation_report(self, phase:Phase):
+    def print_compilation_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.compilation_report.num_errors}E\033[0m" if self.compilation_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.compilation_report.num_errors}W\033[0m" if self.compilation_report.num_errors > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
         if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
             print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
-            print(f"*     * {self.compilation_report.sv_log_path}")
-            print(f"*     * {self.compilation_report.vhdl_log_path}")
+            print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
+            print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
         else:
             if self.compilation_report.has_sv_files_to_compile:
-                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_report.sv_log_path}")
-            if self.compilation_report.has_vhdl_files_to_compile:
-                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_report.vhdl_log_path}")
+                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
+            elif self.compilation_report.has_vhdl_files_to_compile:
+                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
         if not self.compilation_report.success:
             print('*' * 119)
             for error in self.compilation_report.errors:
@@ -437,11 +468,12 @@ class Simulate(Command):
             for fatal in self.compilation_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
     
-    def print_elaboration_report(self, phase:Phase):
+    def print_elaboration_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_warnings}W\033[0m" if self.elaboration_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
-        print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.elaboration_report.log_path}")
+        print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+        print(f"  * Log: {self.rmh.configuration.applications.editor} {self.elaboration_report.log_path}")
         if not self.elaboration_report.success:
             print('*' * 119)
             for error in self.elaboration_report.errors:
@@ -449,11 +481,12 @@ class Simulate(Command):
             for fatal in self.elaboration_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
     
-    def print_compilation_and_elaboration_report(self, phase:Phase):
+    def print_compilation_and_elaboration_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_warnings}W\033[0m" if self.compilation_and_elaboration_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
-        print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_and_elaboration_report.log_path}")
+        print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+        print(f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
         if not self.compilation_and_elaboration_report.success:
             print('*' * 119)
             for error in self.compilation_and_elaboration_report.errors:
@@ -461,11 +494,17 @@ class Simulate(Command):
             for fatal in self.compilation_and_elaboration_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
 
-    def print_simulation_report(self, phase:Phase):
+    def print_simulation_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.simulation_report.num_errors}E\033[0m" if self.simulation_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.simulation_report.num_warnings}W\033[0m" if self.simulation_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.simulation_report.num_fatals > 0 else ""
-        print(f" Simulation results - {errors_str} {warnings_str}{fatal_str}: {self.simulation_report.log_path}")
+        print(f" Simulation results - {errors_str} {warnings_str}{fatal_str}:")
+        print(f"  * Log: {self.rmh.configuration.applications.editor} {self.simulation_report.log_path}")
+        if self.simulation_configuration.enable_waveform_capture:
+            view_waves_command: str = self.simulator.get_view_waves_command(self.simulation_configuration, self.simulation_report)
+            print(f"  * Waves: {view_waves_command} &")
+        if self.simulation_configuration.enable_coverage:
+            print(f"  * Coverage: {self.rmh.configuration.applications.web_browser} {self.coverage_merge_report.html_report_index_path} &")
         if not self.simulation_report.success:
             print('*' * 119)
             for error in self.simulation_report.errors:
@@ -664,6 +703,9 @@ class Regression(Command):
             self._regression_database = self.rmh.service_database.find_default_service(ServiceType.REGRESSION)
         except Exception as e:
             phase.error = e
+        else:
+            if not self.simulator.supports_uvm:
+                phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
 
     def phase_post_ip_discovery(self, phase: Phase):
         self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
@@ -688,9 +730,14 @@ class Regression(Command):
                         self._do_elaborate = True
                         self._do_compile_and_elaborate = False
                     else:
-                        self._do_compile = False
-                        self._do_elaborate = False
-                        self._do_compile_and_elaborate = True
+                        if self.simulator.supports_two_step_simulation:
+                            self._do_compile = False
+                            self._do_elaborate = False
+                            self._do_compile_and_elaborate = True
+                        else:
+                            self._do_compile = True
+                            self._do_elaborate = True
+                            self._do_compile_and_elaborate = False
     
     def phase_main(self, phase: Phase):
         self.prepare_dut(phase)
@@ -779,13 +826,15 @@ class Regression(Command):
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
             if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
                 print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
-                print(f"*     * {self.compilation_report.sv_log_path}")
-                print(f"*     * {self.compilation_report.vhdl_log_path}")
+                print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
+                print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
             else:
                 if self.compilation_report.has_sv_files_to_compile:
-                    print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_report.sv_log_path}")
+                    print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                    print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
                 if self.compilation_report.has_vhdl_files_to_compile:
-                    print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_report.vhdl_log_path}")
+                    print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                    print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
             if not self.compilation_report.success:
                 print('*' * 119)
                 for error in self.compilation_report.errors:
@@ -798,7 +847,8 @@ class Regression(Command):
             errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
             warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_warnings}W\033[0m" if self.elaboration_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
-            print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.elaboration_report.log_path}")
+            print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+            print(f"  * Log: {self.rmh.configuration.applications.editor} {self.elaboration_report.log_path}")
             if not self.elaboration_report.success:
                 print('*' * 119)
                 for error in self.elaboration_report.errors:
@@ -811,7 +861,8 @@ class Regression(Command):
             errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
             warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_warnings}W\033[0m" if self.compilation_and_elaboration_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
-            print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}: {self.compilation_and_elaboration_report.log_path}")
+            print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+            print(f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
             if not self.compilation_and_elaboration_report.success:
                 print('*' * 119)
                 for error in self.compilation_and_elaboration_report.errors:
@@ -828,15 +879,20 @@ class Regression(Command):
             if self.parsed_cli_arguments.app == "dsim":
                 print(f"DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
         else:
-            self.regression_report.generate_xml_report()
+            self.regression_report.generate_junit_xml_report()
             self.regression_report.generate_html_report()
             if self.regression_report.success:
                 print(f"Regression passed: {len(self.regression_report.simulation_reports)} tests")
             else:
                 print(f"{len(self.regression_report.failing_tests)} tests failed:")
                 for failed_test in self.regression_report.failing_tests:
-                    print(f" * {failed_test.test_name} - {failed_test.seed}")
+                    args_str: str = ""
+                    for arg in failed_test.user_args_boolean:
+                        args_str += f" +{arg}"
+                    for arg in failed_test.user_args_value:
+                        args_str += f" +{arg}={failed_test.user_args_value[arg]}"
+                    print(f" * {failed_test.test_name} - {failed_test.seed}{args_str}")
             print(f"Test Report: '{self.regression_report.html_report_file_name}'")
-            if self.regression_report.has_coverage:
+            if self.regression_report.cov_enabled:
                 print(f"Coverage Report: '{self.regression_report.coverage_report_file_name}'")
-            print(f"JUnit XML Report: '{self.regression_report.xml_report_file_name}'")
+            print(f"JUnit XML Report: '{self.regression_report.junit_xml_report_file_name}'")

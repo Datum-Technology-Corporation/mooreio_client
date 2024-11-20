@@ -1,6 +1,10 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+[applications]
+editor="vi"
+web_browser="firefox"
+
 [logic_simulation]
 root_path="sim"
 regression_directory_name="regr"

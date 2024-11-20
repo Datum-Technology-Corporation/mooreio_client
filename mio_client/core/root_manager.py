@@ -57,7 +57,7 @@ class RootManager:
         self._name: str = name
         self._wd: Path = wd
         self._md: Path = self.wd / ".mio"
-        self._temp_dir: Path = self.wd / "temp"
+        self._temp_dir: Path = self.md / "temp"
         self._locally_installed_ip_dir: Path = self.md / "installed_ip"
         self._global_ip_local_copy_dir: Path = self.md / "global_ip"
         self._url_base: str = url_base
@@ -91,8 +91,7 @@ class RootManager:
         :return: The name of the object as a string.
         """
         return self.name
-    
-    
+
     @property
     def name(self) -> str:
         """
@@ -746,6 +745,7 @@ class RootManager:
         current_phase = self.create_phase('post_validate_configuration_space')
         current_phase.next()
         self.command.do_phase_post_validate_configuration_space(current_phase)
+        self.relocate_data_files(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
 
@@ -1104,12 +1104,13 @@ class RootManager:
         else:
             self.configuration.check()
             self.debug(f"Final configuration tree:\n{merged_configuration}")
-            if self.configuration.project.local_mode:
-                self.debug(f"Relocating MIO data files to project")
-                new_data_files_path = self.temp_dir / "mio_data_files"
-                self.copy_directory(self._data_files_path, new_data_files_path)
-                self._data_files_path = new_data_files_path
 
+    def relocate_data_files(self, phase: Phase):
+        if self.configuration.project.local_mode:
+            self.debug(f"Relocating MIO data files to project")
+            new_data_files_path = self.temp_dir / "mio_data_files"
+            self.copy_directory(self._data_files_path, new_data_files_path)
+            self._data_files_path = new_data_files_path
 
     def phase_scheduler_discovery(self, phase: Phase):
         self._scheduler_database = JobSchedulerDatabase(self)

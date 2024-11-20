@@ -1,6 +1,8 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.dom.minidom import parseString
 import datetime
 import os
 import re
@@ -11,6 +13,7 @@ from typing import Optional, List, Dict, Union, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from xml.etree import ElementTree
 
+from jinja2 import Template
 from semantic_version import Version
 from tqdm import tqdm
 
@@ -30,7 +33,7 @@ from simulation import LogicSimulatorSimulationConfiguration, LogicSimulatorComp
     LogicSimulatorElaborationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration, \
     LogicSimulatorSimulationReport, LogicSimulator, LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, \
     LogicSimulatorCompilationAndElaborationReport, SimulatorMetricsDSim, DSimCloudJob, DSimCloudSimulationConfiguration, \
-    UvmVerbosity
+    UvmVerbosity, LogicSimulatorCoverageMergeConfiguration, LogicSimulatorCoverageMergeReport
 
 
 #######################################################################################################################
@@ -401,41 +404,167 @@ class RegressionSimulationReport:
         self.test_spec: ResolvedTestSpec
         self.sim_report: LogicSimulatorSimulationReport
 
+class TestGroupReport(Model):
+    name: Optional[str] = ""
+    success: Optional[bool] = False
+    num_tests: Optional[PositiveInt] = 0
+    num_passed_tests: Optional[PositiveInt] = 0
+    num_passed_tests_with_no_warnings: Optional[PositiveInt] = 0
+    num_passed_tests_with_warnings: Optional[PositiveInt] = 0
+    num_failed_tests: Optional[PositiveInt] = 0
+    passing_tests_percentage: Optional[PositiveFloat] = 0
+    failing_tests_percentage: Optional[PositiveFloat] = 0
+    simulation_reports: Optional[List[LogicSimulatorSimulationReport]] = []
+    passed_tests: Optional[List[LogicSimulatorSimulationReport]] = []
+    passed_tests_with_no_warnings: Optional[List[LogicSimulatorSimulationReport]] = []
+    passed_tests_with_warnings: Optional[List[LogicSimulatorSimulationReport]] = []
+    failed_tests: Optional[List[LogicSimulatorSimulationReport]] = []
+    test_set_report: Optional['TestSetReport'] = None
+
+class TestSetReport(Model):
+    name: Optional[str] = ""
+    success: Optional[bool] = False
+    num_tests: Optional[PositiveInt] = 0
+    num_passed_tests: Optional[PositiveInt] = 0
+    num_passed_tests_with_no_warnings: Optional[PositiveInt] = 0
+    num_passed_tests_with_warnings: Optional[PositiveInt] = 0
+    num_failed_tests: Optional[PositiveInt]
+    passing_tests_percentage: Optional[PositiveFloat] = 0
+    failing_tests_percentage: Optional[PositiveFloat] = 0
+    test_group_reports: Optional[List[TestGroupReport]] = []
+
 class RegressionReport(Model):
-    regression: Optional[Regression] = None
+    name: Optional[str] = ""
+    full_name: Optional[str] = ""
+    target_name: Optional[str] = ""
+    simulator: Optional[LogicSimulators] = LogicSimulators.UNDEFINED
+    results_path: Optional[Path] = None
     success: Optional[bool] = False
     compilation_report: Optional[LogicSimulatorCompilationReport] = None
     elaboration_report: Optional[LogicSimulatorElaborationReport] = None
     compilation_and_elaboration_report: Optional[LogicSimulatorCompilationAndElaborationReport] = None
     simulation_reports: Optional[List[RegressionSimulationReport]] = []
-    all_passing_tests: Optional[List[RegressionSimulationReport]] = []
+    coverage_merge_report: LogicSimulatorCoverageMergeReport = None
+    num_tests: Optional[PositiveInt] = 0
+    num_passing_tests: Optional[PositiveInt] = 0
+    num_passing_tests_with_no_warnings: Optional[PositiveInt] = 0
+    num_passing_tests_with_warnings: Optional[PositiveInt] = 0
+    num_failing_tests: Optional[PositiveInt] = 0
+    passing_tests_percentage: Optional[PositiveFloat] = 0
+    failing_tests_percentage: Optional[PositiveFloat] = 0
+    passing_tests: Optional[List[RegressionSimulationReport]] = []
     passing_tests_with_no_warnings: Optional[List[RegressionSimulationReport]] = []
     passing_tests_with_warnings: Optional[List[RegressionSimulationReport]] = []
     failing_tests: Optional[List[RegressionSimulationReport]] = []
-    dsim_cloud_simulation_job_file_path: Path = Path()
-    has_coverage: bool = False
+    test_set_reports: Optional[List[TestSetReport]]
+    dsim_cloud_simulation_job_file_path: Optional[Path] = Path()
+    cov_enabled: Optional[bool] = False
+    waves_enabled: Optional[bool] = False
+    timestamp_start: datetime.datetime = datetime.datetime.now()
+    timestamp_end: datetime.datetime
+    duration: datetime.timedelta
 
     def __init__(self, **data):
         super().__init__(**data)
-        self._xml_report_file_name: Path = Path()
-        self._html_report_file_name: Path = Path()
-        self._coverage_report_file_name: Path = Path()
+        self._regression: Regression = None
 
     @property
-    def xml_report_file_name(self) -> Path:
-        return self._xml_report_file_name
+    def junit_xml_report_file_name(self) -> Path:
+        return self.results_path / "junit_test_report.xml"
     @property
     def html_report_file_name(self) -> Path:
-        return self._html_report_file_name
+        return self.results_path / "test_report.html"
     @property
     def coverage_report_file_name(self) -> Path:
-        return self._coverage_report_file_name
+        return self.coverage_merge_report.html_report_path
+    @property
+    def regression(self) -> Regression:
+        return self._regression
+    @regression.setter
+    def regression(self, value: Regression):
+        self._regression = value
 
-    def generate_xml_report(self):
-        pass
+    def generate_junit_xml_report_tree(self) -> ElementTree.ElementTree:
+        test_suite_path_str: str = str(os.path.relpath(self.regression.test_suite.file_path, self.regression.rmh.project_root_path))
+        timestamp_str: str = self.timestamp_start.strftime('%Y-%m-%dT%H:%M:%S')
+        root: Element = Element('testsuites')
+        root.set('name', self.name)
+        root.set('tests', str(len(self.simulation_reports)))
+        root.set('time', str(self.duration.total_seconds()))
+        root.set('timestamp', timestamp_str)
+        root.set('failures', str(len(self.failing_tests)))
+        root_testsuite: SubElement = SubElement(root, 'testsuite')
+        root_testsuite.set('name', self.regression.name)
+        root_testsuite.set('tests', str(len(self.simulation_reports)))
+        root_testsuite.set('time', str(self.duration.total_seconds()))
+        root_testsuite.set('timestamp', timestamp_str)
+        root_testsuite.set('failures', str(len(self.failing_tests)))
+        root_testsuite.set('file', test_suite_path_str)
+        root_testsuite_properties: SubElement = SubElement(root_testsuite, 'properties')
+        target_property: SubElement = SubElement(root_testsuite_properties, 'property')
+        target_property.set('name', 'target')
+        target_property.set('value', self.target_name)
+        coverage_property: SubElement = SubElement(root_testsuite_properties, 'property')
+        coverage_property.set('name', 'coverage')
+        coverage_property.set('value', self.regression.verbosity.value)
+        waves_property: SubElement = SubElement(root_testsuite_properties, 'property')
+        waves_property.set('name', 'waves')
+        waves_property.set('value', str(self.regression.waves_enabled))
+        verbosity_property: SubElement = SubElement(root_testsuite_properties, 'property')
+        verbosity_property.set('name', 'verbosity')
+        verbosity_property.set('value', self.regression.verbosity.value)
+        for test_set in self.test_set_reports:
+            test_set_testsuite: SubElement = SubElement(root_testsuite_properties, 'testsuite')
+            test_set_testsuite.set('name', test_set.name)
+            test_set_testsuite.set('tests', str(test_set.num_tests))
+            test_set_testsuite.set('failures', str(test_set.num_failed_tests))
+            for test_group in test_set.test_group_reports:
+                test_group_testsuite: SubElement = SubElement(test_set_testsuite, 'testsuite')
+                test_group_testsuite.set('name', test_group.name)
+                test_group_testsuite.set('tests', str(test_group.num_tests))
+                test_group_testsuite.set('failures', str(test_group.num_failed_tests))
+                for simulation_report in test_group.simulation_reports:
+                    simulation_report_testcase: SubElement = SubElement(test_group_testsuite, 'testcase')
+                    simulation_report_testcase.set('name', simulation_report.test_name)
+                    simulation_report_testcase.set('classname', simulation_report.uvm_test_class_name)
+                    simulation_report_testcase.set('time', str(simulation_report.duration.total_seconds()))
+                    simulation_report_properties: SubElement = SubElement(simulation_report_testcase, 'properties')
+                    seed_property: SubElement = SubElement(simulation_report_properties, 'property')
+                    seed_property.set('name', 'seed')
+                    seed_property.set('value', str(simulation_report.seed))
+                    for error_message in simulation_report.errors:
+                        error_error: SubElement = SubElement(simulation_report_testcase, 'error')
+                        error_error.set('message', error_message)
+                    for fatal_message in simulation_report.fatals:
+                        fatal_failure: SubElement = SubElement(simulation_report_testcase, 'failure')
+                        fatal_failure.set('message', fatal_message)
+                    for warning_message in simulation_report.fatals:
+                        warning_warning: SubElement = SubElement(simulation_report_testcase, 'warning')
+                        warning_warning.set('message', warning_message)
+                    for arg in simulation_report.user_args_boolean:
+                        arg_property: SubElement = SubElement(simulation_report_properties, 'property')
+                        arg_property.set('name', f'+{arg}')
+                        arg_property.set('value', 'true')
+                    for arg in simulation_report.user_args_value:
+                        arg_property: SubElement = SubElement(simulation_report_properties, 'property')
+                        arg_property.set('name', f'+{arg}')
+                        arg_property.set('value', simulation_report.user_args_value[arg])
+        tree = ElementTree.ElementTree(root)
+        return tree
+
+    def generate_junit_xml_report(self):
+        xml_tree: ElementTree.ElementTree = self.generate_junit_xml_report_tree()
+        xml_tree.write(self.junit_xml_report_file_name, encoding='utf-8', xml_declaration=True)
+
+    def generate_html_report_doc(self) -> str:
+        template: Template = self.regression.rmh.j2_env.get_template("regression_test_report.html.j2")
+        rendered_template: str = template.render(self.dump_model())
+        return rendered_template
 
     def generate_html_report(self):
-        pass
+        html_report_doc: str = self.generate_html_report_doc()
+        with open(self.html_report_file_name, 'w') as html_report_file:
+            html_report_file.write(html_report_doc)
 
 
 class RegressionRunner:
@@ -461,25 +590,9 @@ class RegressionRunner:
             self.dsim_cloud_simulation()
         else:
             self.parallel_simulation()
-        self.regression.timestamp_end = datetime.datetime.now()
         self.regression.duration = self.regression.timestamp_end - self.regression.timestamp_start
-        if self.config.dry_mode:
-            self.report.success = True
-            if self.ip.has_vhdl_content:
-                self.report.compilation_report.success = True
-                self.report.elaboration_report.success = True
-            else:
-                self.report.compilation_and_elaboration_report.success = True
-        else:
-            for simulation_report in self.report.simulation_reports:
-                if simulation_report.sim_report.success:
-                    self.report.all_passing_tests.append(simulation_report)
-                    if simulation_report.sim_report.num_warnings == 0:
-                        self.report.passing_tests_with_no_warnings.append(simulation_report)
-                    else:
-                        self.report.passing_tests_with_warnings.append(simulation_report)
-                else:
-                    self.report.failing_tests.append(simulation_report)
+        self.fill_report()
+        self.merge_coverage()
         return self.report
     
     def parallel_simulation(self):
@@ -496,6 +609,7 @@ class RegressionRunner:
                             self.rmh.current_phase.error = e
                         finally:
                             pbar.update(1)
+            self.report.timestamp_end = datetime.datetime.now()
             self.report.success = True
             for simulation_report in self.report.simulation_reports:
                 self.report.success &= simulation_report.success
@@ -529,6 +643,7 @@ class RegressionRunner:
         # 3. Create DSim Cloud Configuration object and fill it in from our regression configuration
         cloud_simulation_config: DSimCloudSimulationConfiguration = DSimCloudSimulationConfiguration()
         cloud_simulation_config.name = f"{self.ip.ip.name}-{self.regression.name}"
+        cloud_simulation_config.name = cloud_simulation_config.name.replace("_", "-")
         cloud_simulation_config.results_path = self.regression.results_path
         cloud_simulation_config.dry_mode = self.config.dry_mode
         cloud_simulation_config.timeout = self.regression.max_duration
@@ -544,6 +659,8 @@ class RegressionRunner:
         cloud_simulation_report = simulator.dsim_cloud_simulate(self.ip, cloud_simulation_config, self.scheduler)
         # 5. Populate regression report from DSim Cloud Report
         self.report.success = cloud_simulation_report.success
+        self.report.timestamp_start = cloud_simulation_report.timestamp_start
+        self.report.timestamp_end = cloud_simulation_report.timestamp_end
         self.report.dsim_cloud_simulation_job_file_path = cloud_simulation_report.cloud_job_file_path
         self.report.compilation_report = cloud_simulation_report.compilation_report
         self.report.elaboration_report = cloud_simulation_report.elaboration_report
@@ -554,6 +671,111 @@ class RegressionRunner:
             regression_sim_report.test_spec = test_spec
             regression_sim_report.sim_report = simulation_report
             self.report.simulation_reports.append(regression_sim_report)
+
+    def merge_coverage(self):
+        if self.report.success and self.regression.cov_enabled:
+            coverage_merge_config: LogicSimulatorCoverageMergeConfiguration = LogicSimulatorCoverageMergeConfiguration()
+            coverage_merge_config.input_simulation_reports = self.report.simulation_reports
+            coverage_merge_config.output_path = self.regression.results_path / "coverage_report"
+            coverage_merge_config.create_html_report = True
+            coverage_merge_config.html_report_path = self.regression.results_path / "test_report"
+            coverage_merge_config.merge_log_file_path = self.regression.results_path / f"cov_merge.{self.simulator.name}.log"
+            self.report.coverage_merge_report = self.simulator.coverage_merge(self.ip, coverage_merge_config, self.scheduler)
+            self.report._coverage_report_file_name = self.report.coverage_merge_report.html_report_path
+
+
+    def fill_report(self):
+        if self.config.dry_mode:
+            self.report.success = True
+            if self.ip.has_vhdl_content:
+                self.report.compilation_report.success = True
+                self.report.elaboration_report.success = True
+            else:
+                self.report.compilation_and_elaboration_report.success = True
+        else:
+            self.report.results_path = self.regression.results_path
+            self.report.cov_enabled = self.regression.cov_enabled
+            self.report.waves_enabled = self.regression.waves_enabled
+            test_group_map: Dict[TestGroup, TestGroupReport] = {}
+            for test_set_name in self.regression.test_sets:
+                test_set = self.regression.test_sets[test_set_name]
+                test_set_report = TestSetReport()
+                test_set_report.name = test_set_name
+                test_set_report.num_tests = 0
+                for test_group_name in test_set.test_groups:
+                    test_group = test_set.test_groups[test_group_name]
+                    test_group_report = TestGroupReport()
+                    test_set_report.test_group_reports.append(test_group_report)
+                    test_group_map[test_group] = test_group_report
+                    test_group_report.test_set_report = test_set_report
+                    test_group_report.name = test_group_name
+                    test_group_report.num_tests = 0
+            for seed in self.regression.test_specs:
+                test_spec = self.regression.test_specs[seed]
+                for simulation_report in self.report.simulation_reports:
+                    if simulation_report.seed == seed:
+                        test_group_report = test_group_map[test_spec.test_group]
+                        test_group_report.num_tests += 1
+                        test_group_report.test_set_report.num_tests += 1
+                        if simulation_report.success:
+                            test_group_report.passed_tests.append(simulation_report)
+                            test_group_report.num_passed_tests += 1
+                            test_group_report.test_set_report.num_passed_tests += 1
+                            if simulation_report.num_warnings > 0:
+                                test_group_report.passed_tests_with_warnings.append(simulation_report)
+                                test_group_report.num_passed_tests_with_warnings += 1
+                                test_group_report.test_set_report.num_passed_tests_with_warnings += 1
+                            else:
+                                test_group_report.passed_tests_with_no_warnings.append(simulation_report)
+                                test_group_report.num_passed_tests_with_no_warnings += 1
+                                test_group_report.test_set_report.num_passed_tests_with_no_warnings += 1
+                        else:
+                            test_group_report.failed_tests.append(simulation_report)
+                            test_group_report.num_failed_tests += 1
+                            test_group_report.test_set_report.num_failed_tests += 1
+                        break
+            for simulation_report in self.report.simulation_reports:
+                test_spec: ResolvedTestSpec = self.regression.test_specs[simulation_report.seed]
+                if simulation_report.sim_report.success:
+                    self.report.passing_tests.append(simulation_report)
+                    if simulation_report.sim_report.num_warnings == 0:
+                        self.report.passing_tests_with_no_warnings.append(simulation_report)
+                    else:
+                        self.report.passing_tests_with_warnings.append(simulation_report)
+                else:
+                    self.report.failing_tests.append(simulation_report)
+            self.report.simulator = self.config.app
+            self.report.num_tests = len(self.report.simulation_reports)
+            self.report.num_passing_tests = len(self.report.passing_tests)
+            self.report.num_passing_tests_with_no_warnings = len(self.report.passing_tests_with_no_warnings)
+            self.report.num_passing_tests_with_warnings = len(self.report.passing_tests_with_warnings)
+            self.report.num_failing_tests = len(self.report.failing_tests)
+            if self.report.num_passing_tests == 0:
+                self.report.passing_tests_percentage = 0
+            else:
+                self.report.passing_tests_percentage = (self.report.num_passing_tests / self.report.num_tests) * 100
+            if self.report.num_failing_tests == 0:
+                self.report.failing_tests_percentage = 0
+            else:
+                self.report.failing_tests_percentage = (self.report.num_failing_tests / self.report.num_tests) * 100
+            for test_set_report in self.report.test_set_reports:
+                if test_set_report.num_passing_tests == 0:
+                    test_set_report.passing_tests_percentage = 0
+                else:
+                    test_set_report.passing_tests_percentage = (test_set_report.num_passed_tests / test_set_report.num_tests) * 100
+                if test_set_report.num_failing_tests == 0:
+                    test_set_report.failing_tests_percentage = 0
+                else:
+                    test_set_report.failing_tests_percentage = (test_set_report.num_failing_tests / test_set_report.num_tests) * 100
+                    for test_group_report in test_set_report.test_group_reports:
+                        if test_group_report.num_passing_tests == 0:
+                            test_group_report.passing_tests_percentage = 0
+                        else:
+                            test_group_report.passing_tests_percentage = (test_group_report.num_passed_tests / test_group_report.num_tests) * 100
+                        if test_group_report.num_failing_tests == 0:
+                            test_group_report.failing_tests_percentage = 0
+                        else:
+                            test_group_report.failing_tests_percentage = (test_group_report.num_failing_tests / test_group_report.num_tests) * 100
 
 
 class RegressionDatabase(Service):
@@ -610,17 +832,24 @@ class RegressionDatabase(Service):
         return None
 
     def find_regression_default_test_suite(self, regression_name: str, raise_exception_if_not_found: bool=False):
+        test_suite: TestSuite = None
         if len(self._test_suites) == 0:
             raise Exception(f"No Test Suites")
         elif len(self._test_suites) == 1:
-            if regression_name in self._test_suites[0].resolved_regressions:
-                return self._test_suites[0].resolved_regressions[regression_name]
-            else:
-                if raise_exception_if_not_found:
-                    raise Exception(f"Regression '{regression_name}' not found in default Test Suite")
-                return None
+            test_suite = self._test_suites[0]
         else:
-            raise Exception(f"More than one Test Suite present, must specify (cannot use default)")
+            for ts in self._test_suites:
+                if ts.name == "default":
+                    test_suite = ts
+                    break
+        if not test_suite:
+            raise Exception(f"Could not find default Test Suite")
+        if regression_name in test_suite.resolved_regressions:
+            return test_suite.resolved_regressions[regression_name]
+        else:
+            if raise_exception_if_not_found:
+                raise Exception(f"Regression '{regression_name}' not found in default Test Suite")
+            return None
     
     def get_regression_runner(self, ip: Ip, regression: Regression, simulator: LogicSimulator, config: RegressionConfiguration) -> RegressionRunner:
         regression_runner: RegressionRunner = RegressionRunner(self, ip, regression, simulator, config)
