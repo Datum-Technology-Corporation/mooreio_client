@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 from semantic_version import Version
+import atexit
+import signal
 
 
 class Job:
@@ -103,6 +105,10 @@ class Job:
         if value is not None:
             self._is_part_of_set = True
         self._parent_set = value
+
+    def write_to_file(self, file_path: Path):
+        with file_path.open('w') as file:
+            file.write(str(self))
     
 
 class JobSet:
@@ -126,11 +132,13 @@ class JobSet:
 
 class JobSchedulerConfiguration:
     def __init__(self, rmh: 'RootManager'):
-        self._output_to_terminal:bool = True
-        self._max_number_of_parallel_processes:int = 1
-        self._dry_run:bool = False
+        self._output_to_terminal: bool = True
+        self._max_number_of_parallel_processes :int = 1
+        self._dry_run: bool  = False
         self._has_job_set:bool = False
-        self._job_set:JobSet
+        self._job_set: JobSet
+        self._timeout: float = 60
+        self._kill_job_on_termination = True
 
     @property
     def output_to_terminal(self) -> bool:
@@ -154,6 +162,13 @@ class JobSchedulerConfiguration:
         self._dry_run = value
 
     @property
+    def timeout(self) -> float:
+        return self._timeout
+    @timeout.setter
+    def timeout(self, value: float):
+        self._timeout = value
+
+    @property
     def has_job_set(self) -> bool:
         return self._has_job_set
 
@@ -165,6 +180,14 @@ class JobSchedulerConfiguration:
         if value is not None:
             self._has_job_set = True
         self._job_set = value
+
+    @property
+    def kill_job_on_termination(self) -> bool:
+        return self._kill_job_on_termination
+    @kill_job_on_termination.setter
+    def kill_job_on_termination(self, value: bool):
+        self._kill_job_on_termination = value
+
 
 
 class JobResults:
@@ -222,7 +245,11 @@ class JobScheduler(ABC):
         self._name = name
         self._version = None
         self._db = None
-        self._jobs_dispatched:List[Job] = []
+        self._jobs_dispatched: List[Job] = []
+        self._jobs_in_progress: List[Job] = []
+        signal.signal(signal.SIGINT, self._handle_signal)
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        atexit.register(self.cleanup)
 
     @property
     def name(self) -> str:
@@ -250,6 +277,10 @@ class JobScheduler(ABC):
     def jobs_dispatched(self) -> List[Job]:
         return self._jobs_dispatched
 
+    @property
+    def jobs_in_progress(self) -> List[Job]:
+        return self._jobs_in_progress
+
     @abstractmethod
     def is_available(self) -> bool:
         pass
@@ -258,11 +289,19 @@ class JobScheduler(ABC):
     def init(self):
         pass
 
+    @abstractmethod
+    def cleanup(self):
+        pass
+
     def dispatch_job(self, job: Job, configuration: JobSchedulerConfiguration) -> JobResults:
         self.jobs_dispatched.append(job)
-        self.rmh.debug(f"Dispatching job '{job}'")
+        if not configuration.dry_run:
+            self.jobs_in_progress.append(job)
+            self.rmh.debug(f"Dispatching job '{job}'")
         results: JobResults = self.do_dispatch_job(job, configuration)
-        self.rmh.debug(f"Finished job '{job}' with return code '{results.return_code}'")
+        if not configuration.dry_run:
+            self.jobs_in_progress.remove(job)
+            self.rmh.debug(f"Finished job '{job}' with return code '{results.return_code}'")
         return results
 
     def dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
@@ -275,6 +314,11 @@ class JobScheduler(ABC):
     @abstractmethod
     def do_dispatch_job_set(self, job_set: JobSet, configuration: JobSchedulerConfiguration):
         pass
+
+    def _handle_signal(self, signum, frame):
+        print(f"Received signal {signum}. Terminating subprocess...")
+        self.cleanup()
+        #raise SystemExit(0)
 
 
 class JobSchedulerDatabase:

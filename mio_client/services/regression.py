@@ -151,8 +151,8 @@ class Regression:
     
     def render_cmp_config(self, target_name: str="default") -> LogicSimulatorCompilationConfiguration:
         config = LogicSimulatorCompilationConfiguration()
-        config.use_custom_results_path = True
-        config.custom_sim_results_path = self.results_path
+        config.use_custom_logs_path = True
+        config.custom_logs_path = self.results_path
         config.max_errors = self.max_errors
         config.enable_waveform_capture = self.waves_enabled
         config.enable_coverage = self.waves_enabled
@@ -161,13 +161,13 @@ class Regression:
     
     def render_elab_config(self, target_name: str="default") -> LogicSimulatorElaborationConfiguration:
         config = LogicSimulatorElaborationConfiguration()
-        config.use_custom_results_path = True
-        config.custom_sim_results_path = self.results_path
+        config.use_custom_logs_path = True
+        config.custom_logs_path = self.results_path
         return config
     
     def render_cmp_elab_config(self, target_name: str="default") -> LogicSimulatorCompilationAndElaborationConfiguration:
         config = LogicSimulatorCompilationAndElaborationConfiguration()
-        config.use_custom_results_path = True
+        config.use_custom_logs_path = True
         config.custom_sim_results_path = self.results_path
         config.max_errors = self.max_errors
         config.enable_waveform_capture = self.waves_enabled
@@ -191,8 +191,8 @@ class Regression:
                             seeds.append(random_int)
                     for seed in seeds:
                         config = LogicSimulatorSimulationConfiguration()
-                        config.use_custom_results_path = True
-                        config.custom_sim_results_path = self.results_path
+                        config.use_custom_logs_path = True
+                        config.custom_logs_path = self.results_path
                         config.seed = seed
                         config.verbosity = self.verbosity
                         config.max_errors = self.max_errors
@@ -200,6 +200,7 @@ class Regression:
                         config.enable_waveform_capture = self.waves_enabled
                         config.enable_coverage = self.cov_enabled
                         config.test_name = test_spec.test_name
+                        config.print_to_terminal = False
                         for key, value in test_spec.args.items():
                             if isinstance(value, bool):
                                 if value:
@@ -428,7 +429,7 @@ class TestSetReport(Model):
     num_passed_tests: Optional[PositiveInt] = 0
     num_passed_tests_with_no_warnings: Optional[PositiveInt] = 0
     num_passed_tests_with_warnings: Optional[PositiveInt] = 0
-    num_failed_tests: Optional[PositiveInt]
+    num_failed_tests: Optional[PositiveInt] = 0
     passing_tests_percentage: Optional[PositiveFloat] = 0
     failing_tests_percentage: Optional[PositiveFloat] = 0
     test_group_reports: Optional[List[TestGroupReport]] = []
@@ -437,6 +438,7 @@ class RegressionReport(Model):
     name: Optional[str] = ""
     full_name: Optional[str] = ""
     target_name: Optional[str] = ""
+    test_suite_file_path: Optional[Path] = Path()
     simulator: Optional[LogicSimulators] = LogicSimulators.UNDEFINED
     results_path: Optional[Path] = None
     success: Optional[bool] = False
@@ -444,7 +446,7 @@ class RegressionReport(Model):
     elaboration_report: Optional[LogicSimulatorElaborationReport] = None
     compilation_and_elaboration_report: Optional[LogicSimulatorCompilationAndElaborationReport] = None
     simulation_reports: Optional[List[RegressionSimulationReport]] = []
-    coverage_merge_report: LogicSimulatorCoverageMergeReport = None
+    coverage_merge_report: Optional[LogicSimulatorCoverageMergeReport] = None
     num_tests: Optional[PositiveInt] = 0
     num_passing_tests: Optional[PositiveInt] = 0
     num_passing_tests_with_no_warnings: Optional[PositiveInt] = 0
@@ -456,17 +458,18 @@ class RegressionReport(Model):
     passing_tests_with_no_warnings: Optional[List[RegressionSimulationReport]] = []
     passing_tests_with_warnings: Optional[List[RegressionSimulationReport]] = []
     failing_tests: Optional[List[RegressionSimulationReport]] = []
-    test_set_reports: Optional[List[TestSetReport]]
+    test_set_reports: Optional[List[TestSetReport]] = []
     dsim_cloud_simulation_job_file_path: Optional[Path] = Path()
     cov_enabled: Optional[bool] = False
     waves_enabled: Optional[bool] = False
-    timestamp_start: datetime.datetime = datetime.datetime.now()
-    timestamp_end: datetime.datetime
-    duration: datetime.timedelta
+    verbosity: Optional[UvmVerbosity] = UvmVerbosity.MEDIUM
+    timestamp_start: Optional[datetime.datetime] = datetime.datetime.now()
+    timestamp_end: Optional[datetime.datetime] = datetime.datetime.now()
+    duration: Optional[datetime.timedelta] = datetime.timedelta()
 
-    def __init__(self, **data):
+    def __init__(self, rmh: 'RootManager', **data):
         super().__init__(**data)
-        self._regression: Regression = None
+        self._rmh = rmh
 
     @property
     def junit_xml_report_file_name(self) -> Path:
@@ -477,15 +480,9 @@ class RegressionReport(Model):
     @property
     def coverage_report_file_name(self) -> Path:
         return self.coverage_merge_report.html_report_path
-    @property
-    def regression(self) -> Regression:
-        return self._regression
-    @regression.setter
-    def regression(self, value: Regression):
-        self._regression = value
 
     def generate_junit_xml_report_tree(self) -> ElementTree.ElementTree:
-        test_suite_path_str: str = str(os.path.relpath(self.regression.test_suite.file_path, self.regression.rmh.project_root_path))
+        test_suite_path_str: str = str(os.path.relpath(self.test_suite_file_path, self._rmh.project_root_path))
         timestamp_str: str = self.timestamp_start.strftime('%Y-%m-%dT%H:%M:%S')
         root: Element = Element('testsuites')
         root.set('name', self.name)
@@ -494,7 +491,7 @@ class RegressionReport(Model):
         root.set('timestamp', timestamp_str)
         root.set('failures', str(len(self.failing_tests)))
         root_testsuite: SubElement = SubElement(root, 'testsuite')
-        root_testsuite.set('name', self.regression.name)
+        root_testsuite.set('name', self.name)
         root_testsuite.set('tests', str(len(self.simulation_reports)))
         root_testsuite.set('time', str(self.duration.total_seconds()))
         root_testsuite.set('timestamp', timestamp_str)
@@ -506,13 +503,13 @@ class RegressionReport(Model):
         target_property.set('value', self.target_name)
         coverage_property: SubElement = SubElement(root_testsuite_properties, 'property')
         coverage_property.set('name', 'coverage')
-        coverage_property.set('value', self.regression.verbosity.value)
+        coverage_property.set('value', str(self.cov_enabled))
         waves_property: SubElement = SubElement(root_testsuite_properties, 'property')
         waves_property.set('name', 'waves')
-        waves_property.set('value', str(self.regression.waves_enabled))
+        waves_property.set('value', str(self.waves_enabled))
         verbosity_property: SubElement = SubElement(root_testsuite_properties, 'property')
         verbosity_property.set('name', 'verbosity')
-        verbosity_property.set('value', self.regression.verbosity.value)
+        verbosity_property.set('value', self.verbosity.value)
         for test_set in self.test_set_reports:
             test_set_testsuite: SubElement = SubElement(root_testsuite_properties, 'testsuite')
             test_set_testsuite.set('name', test_set.name)
@@ -557,8 +554,8 @@ class RegressionReport(Model):
         xml_tree.write(self.junit_xml_report_file_name, encoding='utf-8', xml_declaration=True)
 
     def generate_html_report_doc(self) -> str:
-        template: Template = self.regression.rmh.j2_env.get_template("regression_test_report.html.j2")
-        rendered_template: str = template.render(self.dump_model())
+        template: Template = self._rmh.j2_env.get_template("regression_test_report.html.j2")
+        rendered_template: str = template.render(self.model_dump())
         return rendered_template
 
     def generate_html_report(self):
@@ -572,7 +569,7 @@ class RegressionRunner:
         self.db: 'RegressionDatabase' = db
         self.rmh: 'RootManager' = self.db.rmh
         self.config: RegressionConfiguration = config
-        self.report: RegressionReport = RegressionReport()
+        self.report: RegressionReport = RegressionReport(self.rmh)
         self.phase: Phase = None
         self.ip: Ip = ip
         self.regression: Regression = regression
@@ -590,7 +587,7 @@ class RegressionRunner:
             self.dsim_cloud_simulation()
         else:
             self.parallel_simulation()
-        self.regression.duration = self.regression.timestamp_end - self.regression.timestamp_start
+        #self.regression.duration = self.regression.timestamp_end - self.regression.timestamp_start
         self.fill_report()
         self.merge_coverage()
         return self.report
@@ -612,7 +609,7 @@ class RegressionRunner:
             self.report.timestamp_end = datetime.datetime.now()
             self.report.success = True
             for simulation_report in self.report.simulation_reports:
-                self.report.success &= simulation_report.success
+                self.report.success &= simulation_report.sim_report.success
     
     def launch_simulation(self, config: LogicSimulatorSimulationConfiguration):
         sim_report: LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, config, self.scheduler)
@@ -675,23 +672,27 @@ class RegressionRunner:
     def merge_coverage(self):
         if self.report.success and self.regression.cov_enabled:
             coverage_merge_config: LogicSimulatorCoverageMergeConfiguration = LogicSimulatorCoverageMergeConfiguration()
-            coverage_merge_config.input_simulation_reports = self.report.simulation_reports
             coverage_merge_config.output_path = self.regression.results_path / "coverage_report"
             coverage_merge_config.create_html_report = True
-            coverage_merge_config.html_report_path = self.regression.results_path / "test_report"
+            coverage_merge_config.html_report_path = self.regression.results_path / "coverage_report"
             coverage_merge_config.merge_log_file_path = self.regression.results_path / f"cov_merge.{self.simulator.name}.log"
+            for sim_config in self.report.simulation_reports:
+                coverage_merge_config.input_simulation_reports.append(sim_config.sim_report)
             self.report.coverage_merge_report = self.simulator.coverage_merge(self.ip, coverage_merge_config, self.scheduler)
             self.report._coverage_report_file_name = self.report.coverage_merge_report.html_report_path
 
 
     def fill_report(self):
+        self.report.test_suite_file_path = self.regression.test_suite.file_path
+        self.report.verbosity = self.regression.verbosity
         if self.config.dry_mode:
             self.report.success = True
-            if self.ip.has_vhdl_content:
+            if self.report.compilation_report:
                 self.report.compilation_report.success = True
-                self.report.elaboration_report.success = True
-            else:
-                self.report.compilation_and_elaboration_report.success = True
+            if self.report.elaboration_report:
+                self.report.compilation_report.success = True
+            if self.report.compilation_report:
+                self.report.compilation_report.success = True
         else:
             self.report.results_path = self.regression.results_path
             self.report.cov_enabled = self.regression.cov_enabled
@@ -713,15 +714,15 @@ class RegressionRunner:
             for seed in self.regression.test_specs:
                 test_spec = self.regression.test_specs[seed]
                 for simulation_report in self.report.simulation_reports:
-                    if simulation_report.seed == seed:
+                    if simulation_report.sim_report.seed == seed:
                         test_group_report = test_group_map[test_spec.test_group]
                         test_group_report.num_tests += 1
                         test_group_report.test_set_report.num_tests += 1
-                        if simulation_report.success:
+                        if simulation_report.sim_report.success:
                             test_group_report.passed_tests.append(simulation_report)
                             test_group_report.num_passed_tests += 1
                             test_group_report.test_set_report.num_passed_tests += 1
-                            if simulation_report.num_warnings > 0:
+                            if simulation_report.sim_report.num_warnings > 0:
                                 test_group_report.passed_tests_with_warnings.append(simulation_report)
                                 test_group_report.num_passed_tests_with_warnings += 1
                                 test_group_report.test_set_report.num_passed_tests_with_warnings += 1
@@ -735,7 +736,7 @@ class RegressionRunner:
                             test_group_report.test_set_report.num_failed_tests += 1
                         break
             for simulation_report in self.report.simulation_reports:
-                test_spec: ResolvedTestSpec = self.regression.test_specs[simulation_report.seed]
+                test_spec: ResolvedTestSpec = self.regression.test_specs[simulation_report.sim_report.seed]
                 if simulation_report.sim_report.success:
                     self.report.passing_tests.append(simulation_report)
                     if simulation_report.sim_report.num_warnings == 0:

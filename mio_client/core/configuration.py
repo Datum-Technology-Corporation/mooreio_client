@@ -4,7 +4,7 @@
 from typing import List, Optional
 
 import yaml
-from pydantic import BaseModel, constr, FilePath, PositiveInt
+from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat
 from model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
 from enum import Enum
@@ -66,6 +66,10 @@ class LogicSimulation(Model):
     test_result_path_template: str
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
+    compilation_timeout: PositiveFloat
+    elaboration_timeout: PositiveFloat
+    compilation_and_elaboration_timeout: PositiveFloat
+    simulation_timeout: PositiveFloat
     vscode_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
@@ -95,7 +99,6 @@ class LogicSimulation(Model):
     cadence_xcelium_default_elaboration_arguments: List[str] = []
     aldec_riviera_pro_default_elaboration_arguments: List[str] = []
     metrics_dsim_default_compilation_and_elaboration_arguments: List[str] = []
-    xilinx_vivado_default_compilation_and_elaboration_arguments: List[str] = []
     synopsys_vcs_default_compilation_and_elaboration_arguments: List[str] = []
     siemens_questa_default_compilation_and_elaboration_arguments: List[str] = []
     cadence_xcelium_default_compilation_and_elaboration_arguments: List[str] = []

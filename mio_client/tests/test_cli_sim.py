@@ -17,6 +17,7 @@ class TestCliSim:
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
         mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
+        mio_client.cli.TEST_MODE = True
 
     def remove_directory(self, path:Path):
         try:
@@ -153,6 +154,15 @@ class TestCliSim:
             f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}', '-a', app
         ] + optional_args + plus_args)
         assert result.return_code == 0
+        if cov:
+            assert os.path.isdir(mio_client.cli.root_manager.command.coverage_merge_report.output_path)
+            if mio_client.cli.root_manager.command.coverage_merge_report.has_html_report:
+                assert os.path.isdir(mio_client.cli.root_manager.command.coverage_merge_report.html_report_path)
+                assert os.path.isfile(mio_client.cli.root_manager.command.coverage_merge_report.html_report_index_path)
+                assert os.path.getsize(mio_client.cli.root_manager.command.coverage_merge_report.html_report_index_path) > 0
+            if mio_client.cli.root_manager.command.coverage_merge_report.has_merge_log:
+                assert os.path.isfile(mio_client.cli.root_manager.command.coverage_merge_report.merge_log_file_path)
+                assert os.path.getsize(mio_client.cli.root_manager.command.coverage_merge_report.merge_log_file_path) > 0
         return result
 
     def check_ip_database(self, exp_count:int):
@@ -173,8 +183,8 @@ class TestCliSim:
     def cli_cmp_elab_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.cmp_ip(capsys, test_project_path, app, "def_ss")
-        self.elab_ip(capsys, test_project_path, app, "def_ss")
+        self.cmp_ip(capsys, test_project_path, app, "def_ss_tb")
+        self.elab_ip(capsys, test_project_path, app, "def_ss_tb")
 
     def cli_cmpelab_ip(self, capsys, app: str):
         self.reset_workspace()
@@ -271,14 +281,8 @@ class TestCliSim:
     def test_cli_cmp_elab_ip_vivado(self, capsys):
         self.cli_cmp_elab_ip(capsys, "vivado")
     @pytest.mark.single_process
-    def test_cli_cmpelab_ip_vivado(self, capsys):
-        self.cli_cmpelab_ip(capsys, "vivado")
-    @pytest.mark.single_process
     def test_cli_cmp_elab_sim_ip_vivado(self, capsys):
         self.cli_cmp_elab_sim_ip(capsys, "vivado")
-    @pytest.mark.single_process
-    def test_cli_cmpelab_sim_ip_vivado(self, capsys):
-        self.cli_cmpelab_sim_ip(capsys, "vivado")
     @pytest.mark.single_process
     def test_cli_sim_args_ip_vivado(self, capsys):
         self.cli_sim_args_ip(capsys, "vivado")

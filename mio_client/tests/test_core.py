@@ -11,7 +11,8 @@ from semantic_version import Version
 from mio_client.core.command import Command
 from mio_client.core.phase import Phase
 from mio_client.core.root_manager import RootManager
-from mio_client.services.simulation import SimulatorMetricsDSim, SimulatorXilinxVivado
+from mio_client.services.simulation import SimulatorMetricsDSim
+from mio_client.services.simulation import SimulatorXilinxVivado
 from .common import OutputCapture
 
 #######################################################################################################################
@@ -230,7 +231,7 @@ class TestCore:
         pass
 
     def create_root_manager(self, work_directory: Path, user_directory: Path):
-        self.rmh: RootManager = RootManager("Test Root Manager", work_directory, URL_BASE, URL_AUTHENTICATION, user_directory)
+        self.rmh: RootManager = RootManager("Test Root Manager", work_directory, URL_BASE, URL_AUTHENTICATION, True, user_directory)
 
     def run_command(self, command_type, work_directory: Path, user_directory: Path):
         self.create_root_manager(work_directory, user_directory)
