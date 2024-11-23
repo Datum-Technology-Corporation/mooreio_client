@@ -6,3 +6,7 @@
 
 [logic_simulation]
 default_simulator="dsim"
+compilation_timeout=5
+elaboration_timeout=5
+compilation_and_elaboration_timeout=5
+simulation_timeout=10

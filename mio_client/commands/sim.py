@@ -404,11 +404,11 @@ class Simulate(Command):
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
         if self.simulation_configuration.enable_coverage:
             self._coverage_merge_configuration = LogicSimulatorCoverageMergeConfiguration()
-            self.coverage_merge_configuration.input_simulation_reports.target_name = self.ip_definition.target
-            self.coverage_merge_configuration.input_simulation_reports.output_path = self.simulation_report.coverage_directory
-            self.coverage_merge_configuration.input_simulation_reports.create_html_report = True
-            self.coverage_merge_configuration.input_simulation_reports.html_report_path = self.simulation_report.coverage_directory
-            self.coverage_merge_configuration.input_simulation_reports.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
+            self.coverage_merge_configuration.target_name = self.ip_definition.target
+            self.coverage_merge_configuration.output_path = self.simulation_report.coverage_directory
+            self.coverage_merge_configuration.create_html_report = True
+            self.coverage_merge_configuration.html_report_path = self.simulation_report.coverage_directory
+            self.coverage_merge_configuration.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
             self.coverage_merge_configuration.input_simulation_reports.append(self.simulation_report)
             self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_configuration, self.scheduler)
 
@@ -872,27 +872,27 @@ class Regression(Command):
 
     def print_regression_report(self, phase: Phase):
         if self.dry_mode:
-            print(f"Regression Dry Mode - {len(self.regression_configuration.simulation_configs)} tests would have been run:")
+            print(f" Regression Dry Mode - {len(self.regression_configuration.simulation_configs)} tests would have been run:")
             for seed in self.regression_configuration.simulation_configs:
                 simulation_config = self.regression_configuration.simulation_configs[seed]
                 print(f" * {simulation_config.summary_str()}")
             if self.parsed_cli_arguments.app == "dsim":
-                print(f"DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
+                print(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
         else:
             self.regression_report.generate_junit_xml_report()
             self.regression_report.generate_html_report()
             if self.regression_report.success:
-                print(f"Regression passed: {len(self.regression_report.simulation_reports)} tests")
+                print(f" Regression passed: {len(self.regression_report.simulation_reports)} tests")
             else:
                 print(f"{len(self.regression_report.failing_tests)} tests failed:")
                 for failed_test in self.regression_report.failing_tests:
                     args_str: str = ""
-                    for arg in failed_test.user_args_boolean:
+                    for arg in failed_test.sim_report.user_args_boolean:
                         args_str += f" +{arg}"
-                    for arg in failed_test.user_args_value:
-                        args_str += f" +{arg}={failed_test.user_args_value[arg]}"
-                    print(f" * {failed_test.test_name} - {failed_test.seed}{args_str}")
-            print(f"Test Report: '{self.regression_report.html_report_file_name}'")
+                    for arg in failed_test.sim_report.user_args_value:
+                        args_str += f" +{arg}={failed_test.sim_report.user_args_value[arg]}"
+                    print(f" * {failed_test.sim_report.test_name} - {failed_test.sim_report.seed}{args_str}")
+            print(f"T est Report: '{self.regression_report.html_report_file_name}'")
             if self.regression_report.cov_enabled:
-                print(f"Coverage Report: '{self.regression_report.coverage_report_file_name}'")
-            print(f"JUnit XML Report: '{self.regression_report.junit_xml_report_file_name}'")
+                print(f" Coverage Report: '{self.regression_report.coverage_report_file_name}'")
+            print(f" JUnit XML Report: '{self.regression_report.junit_xml_report_file_name}'")

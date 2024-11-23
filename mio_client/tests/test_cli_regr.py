@@ -19,6 +19,7 @@ class TestCliRegr:
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
         mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
+        mio_client.cli.TEST_MODE = True
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = mio_client.cli.main(args)
@@ -29,7 +30,8 @@ class TestCliRegr:
         try:
             if not os.path.exists(path):
                 return
-            shutil.rmtree(path)
+            else:
+                os.remove(path)
         except OSError as e:
             print(f"An error occurred while removing file '{path}': {e}")
 
@@ -43,15 +45,15 @@ class TestCliRegr:
 
     def reset_workspace(self):
         self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", ".mdc")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets" , ".mdc")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", ".mio")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets" , ".mio")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", "sim")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets" , "sim")))
         self.remove_file(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", "mdc_config.yml")))
         self.remove_file(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", "mdc_ignore")))
-        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", ".mio")))
-        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", "sim")))
-        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets", ".mdc")))
-        self.remove_file(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets", "mdc_config.yml")))
-        self.remove_file(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets", "mdc_ignore")))
-        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets", ".mio")))
-        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets", "sim")))
+        self.remove_file(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets" , "mdc_config.yml")))
+        self.remove_file(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets" , "mdc_ignore")))
 
     def regr_ip(self, capsys, app: str, project_path: Path, ip_name: str, regression_name: str="", dry_mode: bool=False, target_name: str="", test_suite_name: str="") -> OutputCapture:
         if ip_name == "":
@@ -70,17 +72,16 @@ class TestCliRegr:
         if dry_mode:
             optional_args.append('--dry')
         results: OutputCapture = self.run_cmd(capsys, [
-            f'--wd={project_path}', 'regr', ip_str, regression_str
+            f'--wd={project_path}', '--dbg', 'regr', ip_str, regression_str
         ] + optional_args)
         assert results.return_code == 0
-        if dry_mode:
-            assert 'DSim Cloud Simulation Job File' in results.text
         return results
 
-    def check_regr_results(self, result: OutputCapture, dry_mode: bool, num_tests_expected: int):
+    def check_regr_results(self, result: OutputCapture, app: str, dry_mode: bool, num_tests_expected: int):
         if dry_mode:
             assert f'Regression Dry Mode - {num_tests_expected} tests would have been run:' in result.text
-            assert f"DSim Cloud Simulation Job File:" in result.text
+            if app == "dsim":
+                assert f"DSim Cloud Simulation Job File:" in result.text
         else:
             assert f'Regression passed: {num_tests_expected} tests' in result.text
 
@@ -88,37 +89,37 @@ class TestCliRegr:
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "sanity", True)
-        self.check_regr_results(results, True, 1)
+        self.check_regr_results(results, app, True, 1)
 
     def cli_regr_dry_target_no_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "nightly", True, 'abc')
-        self.check_regr_results(results, True, 2)
+        self.check_regr_results(results, app, True, 2)
 
     def cli_regr_dry_target_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "weekly", True, 'abc', 'special')
-        self.check_regr_results(results, True, 4)
+        self.check_regr_results(results, app, True, 4)
 
     def cli_regr_wet_no_target_no_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "bugs", False)
-        self.check_regr_results(results, False, 1)
+        self.check_regr_results(results, app, False, 1)
 
     def cli_regr_wet_target_no_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "weekly", False, 'abc')
-        self.check_regr_results(results, False, 3)
+        self.check_regr_results(results, app, False, 3)
 
     def cli_regr_wet_target_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "nightly", False, 'abc', 'special')
-        self.check_regr_results(results, False, 3)
+        self.check_regr_results(results, app, False, 3)
 
     # DSim
     @pytest.mark.single_process

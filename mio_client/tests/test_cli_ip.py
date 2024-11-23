@@ -18,6 +18,7 @@ class TestCliIp:
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
         mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
+        mio_client.cli.TEST_MODE = True
 
     def remove_directory(self, path:Path):
         try:

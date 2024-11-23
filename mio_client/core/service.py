@@ -34,11 +34,11 @@ class ServiceType(Enum):
 
 class Service(ABC):
     def __init__(self, rmh: 'RootManager', vendor_name: str="", name: str="", full_name: str=""):
-        self._rmh = rmh
-        self._name = name
-        self._vendor_name = vendor_name
-        self._full_name = full_name
-        self._type = ServiceType.UNKNOWN
+        self._rmh: 'RootManager' = rmh
+        self._name: str = name
+        self._vendor_name: str = vendor_name
+        self._full_name: str = full_name
+        self._type: ServiceType = ServiceType.UNKNOWN
         self._version: semantic_version.Version
 
     @property
@@ -116,7 +116,7 @@ class ServiceDataBase:
     def add_service(self, service: Service):
         self.rmh.debug(f"Added service '{service}'")
         service.db = self
-        if service.is_available():
+        if service.is_available:
             self._services.append(service)
             service.init()
 

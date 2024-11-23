@@ -44,7 +44,7 @@ class RootManager:
     """
     Component which performs all vital tasks and executes phases.
     """
-    def __init__(self, name: str, wd: Path, url_base: str, url_authentication: str, user_home_path:Path=os.path.expanduser("~/.mio")):
+    def __init__(self, name: str, wd: Path, url_base: str, url_authentication: str, test_mode: bool = False, user_home_path:Path=os.path.expanduser("~/.mio")):
         """
         Initialize an instance of the Root Manager.
 
@@ -55,6 +55,7 @@ class RootManager:
         :param user_home_path: Path to user home directory
         """
         self._name: str = name
+        self._test_mode: bool = test_mode
         self._wd: Path = wd
         self._md: Path = self.wd / ".mio"
         self._temp_dir: Path = self.md / "temp"
@@ -99,6 +100,10 @@ class RootManager:
         :rtype: str
         """
         return self._name
+
+    @property
+    def test_mode(self) -> bool:
+        return self._test_mode
 
     @property
     def wd(self) -> Path:
@@ -277,6 +282,23 @@ class RootManager:
         return self._current_phase
     
     def run(self, command: Command) -> int:
+        if self.test_mode:
+            self.run_sequence(command)
+            return 0
+        else:
+            try:
+                self.run_sequence(command)
+            except PhaseEndProcessException as e:
+                if e.message != "":
+                    self.fatal(e.message)
+                return 0
+            except Exception as e:
+                self.fatal(str(e))
+                return 1
+            else:
+                return 0
+
+    def run_sequence(self, command: Command):
         """
         The `run` method is responsible for executing a series of phases to complete a command.
 
@@ -305,36 +327,26 @@ class RootManager:
         - phase_shutdown
         - phase_final
         """
-        try:
-            self.set_command(command)
-            self.do_phase_init()
-            self.do_phase_load_default_configuration()
-            self.do_phase_load_user_data()
-            self.do_phase_authenticate()
-            self.do_phase_save_user_data()
-            self.do_phase_locate_project_file()
-            self.do_phase_create_common_files_and_directories()
-            self.do_phase_load_project_configuration()
-            self.do_phase_load_user_configuration()
-            self.do_phase_validate_configuration_space()
-            self.do_phase_scheduler_discovery()
-            self.do_phase_service_discovery()
-            self.do_phase_ip_discovery()
-            self.do_phase_main()
-            self.do_phase_check()
-            self.do_phase_report()
-            self.do_phase_cleanup()
-            self.do_phase_shutdown()
-            self.do_phase_final()
-        except PhaseEndProcessException as e:
-            if e.message != "":
-                self.fatal(e.message)
-            return 0
-        except Exception as e:
-            self.fatal(str(e))
-            return 1
-        else:
-            return 0
+        self.set_command(command)
+        self.do_phase_init()
+        self.do_phase_load_default_configuration()
+        self.do_phase_load_user_data()
+        self.do_phase_authenticate()
+        self.do_phase_save_user_data()
+        self.do_phase_locate_project_file()
+        self.do_phase_create_common_files_and_directories()
+        self.do_phase_load_project_configuration()
+        self.do_phase_load_user_configuration()
+        self.do_phase_validate_configuration_space()
+        self.do_phase_scheduler_discovery()
+        self.do_phase_service_discovery()
+        self.do_phase_ip_discovery()
+        self.do_phase_main()
+        self.do_phase_check()
+        self.do_phase_report()
+        self.do_phase_cleanup()
+        self.do_phase_shutdown()
+        self.do_phase_final()
     
     def set_command(self, command: Command):
         """
