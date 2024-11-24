@@ -39,9 +39,7 @@
 <table class="table table-hover table-condensed" style="background-color: white;">
 <thead>
 <tr>
-<th></th>
-<th>Set</th>
-<th>Group</th>
+<th>Set[.Group]</th>
 <th>Name</th>
 <th>Seed</th>
 <th>Arguments</th>
@@ -53,8 +51,7 @@
 <tbody>
 {% for test in failing_tests %}
 <tr>
-<td>{{ test.test_spec.test_group.test_set.name }}</td>
-<td>{{ test.test_spec.test_group.name }}</td>
+<td>{{ test.test_spec.test_group.test_set.name }}.{{ test.test_spec.test_group.name }}</td>
 <td>{{ test.test_spec.name }}</td>
 <td>{{ test.sim_report.seed }}</td>
 <td>{{ test.sim_report.args_str }}</td>
@@ -78,22 +75,20 @@
 <table class="table table-hover table-condensed" style="background-color: white;">
 <thead>
 <tr>
-<th>Set</th>
-<th>Group</th>
+<th>Set[.Group]</th>
 <th>Name</th>
 <th>Seed</th>
 <th>Arguments</th>
 <th>#Warnings</th>
 <th>#Errors</th>
-<th>Duration</th>
-<th>Result</th>
+<th>Duration (sec)</th>
+<th>Conclusion</th>
 </tr>
 </thead>
 <tbody>
 {% for test in group.failing_tests %}
 <tr class="danger">
-<td>{{ test.test_spec.test_group.test_set.name }}</td>
-<td>{{ test.test_spec.test_group.name }}</td>
+<td>{{ test.test_spec.test_group.test_set.name }}.{{ test.test_spec.test_group.name }}</td>
 <td>{{ test.test_spec.name }}</td>
 <td>{{ test.sim_report.seed }}</td>
 <td>{{ test.sim_report.args_str }}</td>
@@ -105,8 +100,7 @@
 {% endfor %}
 {% for test in group.passing_tests %}
 <tr>
-<td>{{ test.test_spec.test_group.test_set.name }}</td>
-<td>{{ test.test_spec.test_group.name }}</td>
+<td>{{ test.test_spec.test_group.test_set.name }}.{{ test.test_spec.test_group.name }}</td>
 <td>{{ test.test_spec.name }}</td>
 <td>{{ test.sim_report.seed }}</td>
 <td>{{ test.sim_report.args_str }}</td>

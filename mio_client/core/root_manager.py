@@ -7,6 +7,7 @@ from http import HTTPMethod
 from pathlib import Path
 from typing import List, Dict
 
+import shutil
 import jinja2
 import requests
 import toml
@@ -439,7 +440,6 @@ class RootManager:
             directory = os.path.dirname(dst)
             if directory and not os.path.exists(directory):
                 os.makedirs(directory)
-            import shutil
             shutil.copy2(src, dst)
         except OSError as e:
             print(f"An error occurred while copying file from '{src}' to '{dst}': {e}")
@@ -481,7 +481,7 @@ class RootManager:
         except OSError as e:
             print(f"An error occurred while creating directory '{path}': {e}")
 
-    def move_directory(self, src: Path, dst: Path):
+    def move_directory(self, src: Path, dst: Path, force: bool = False):
         """
         Move a directory from src to dst.
         :param src: Path to the source directory.
@@ -491,7 +491,12 @@ class RootManager:
         try:
             if not os.path.exists(src):
                 raise FileNotFoundError(f"Source directory '{src}' does not exist")
-            os.rename(src, dst)
+            if os.path.exists(dst):
+                if force:
+                    self.remove_directory(dst)
+                else:
+                    raise FileExistsError(f"Destination directory '{dst}' already exists")
+            shutil.move(src, dst)
         except OSError as e:
             print(f"An error occurred while moving directory from '{src}' to '{dst}': {e}")
 
@@ -508,7 +513,6 @@ class RootManager:
             directory = os.path.dirname(dst)
             if directory and not os.path.exists(directory):
                 os.makedirs(directory)
-            import shutil
             shutil.copytree(src, dst)
         except OSError as e:
             print(f"An error occurred while copying directory from '{src}' to '{dst}': {e}")

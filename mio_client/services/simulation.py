@@ -1136,6 +1136,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         self._cloud_sim_state: DSimCloudSimulationState = DSimCloudSimulationState.BUILDING_JOB
         self._cloud_sim_installation_path: Path = Path()
         self._cloud_job_id: str = ""
+        self._cloud_job_finished: bool = False
         signal.signal(signal.SIGINT, self._handle_signal)
         signal.signal(signal.SIGTERM, self._handle_signal)
         atexit.register(self.cleanup)
@@ -1676,6 +1677,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             report.success = True
         else:
             self.cloud_sim_state = DSimCloudSimulationState.SIMULATING
+            report.timestamp_start = datetime.datetime.now()
             self._cloud_job_id = self.dsim_cloud_submit_job(ip, cloud_simulation_config, report, scheduler)
             # 8. Timeout
             with ThreadPoolExecutor() as executor:
@@ -1686,14 +1688,19 @@ class SimulatorMetricsDSim(LogicSimulator):
                     self.dsim_cloud_job_kill(self._cloud_job_id, ip, cloud_simulation_config, report, scheduler)
                     raise TimeoutError(
                         f"DSim Cloud Simulation '{cloud_simulation_config.name}' exceeded {cloud_simulation_config.timeout} hour(s).")
+            report.timestamp_end = datetime.datetime.now()
+            report.duration = report.timestamp_end - report.timestamp_start
             # 9. Download artifacts
             self.cloud_sim_state = DSimCloudSimulationState.DOWNLOADING_ARTIFACTS
             self.dsim_cloud_job_download(self._cloud_job_id, ip, cloud_simulation_config, report, scheduler)
             # 10. Parse logs
             self.cloud_sim_state = DSimCloudSimulationState.PARSING_RESULTS
+            report.success = True
             if ip.has_vhdl_content:
                 self.parse_compilation_logs(ip, cloud_simulation_config.compilation_config, report.compilation_report)
                 self.parse_elaboration_logs(ip, cloud_simulation_config.elaboration_config, report.elaboration_report)
+                report.success &= report.compilation_report.success
+                report.success &= report.elaboration_report.success
             else:
                 self.parse_compilation_and_elaboration_logs(ip, cloud_simulation_config.compilation_and_elaboration_config, report.compilation_and_elaboration_report)
             for simulation_report in report.simulation_reports:
@@ -1702,6 +1709,7 @@ class SimulatorMetricsDSim(LogicSimulator):
                 simulation_report.duration = (simulation_report.timestamp_end - simulation_report.timestamp_start) / len(report.simulation_reports)
                 simulation_config = config_report_map[simulation_report]
                 self.parse_simulation_logs(ip, simulation_config, simulation_report)
+                report.success &= simulation_report.success
             self.cloud_sim_state = DSimCloudSimulationState.FINISHED
         return report
 
@@ -1740,9 +1748,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             elif "this is not a dsim cloud workspace" in stderr:
                 return DSimCloudWorkspaceStatus.DESTROYED
             else:
-                return DSimCloudWorkspaceStatus.DESTROYED
-                # TODO Fix `mdc status` problem where it does not return any stdout/stderr
-                #raise Exception(f"Failed to check status for DSim Workspace:\n{results.stderr}\n{results.stdout}")
+                raise Exception(f"Failed to check status for DSim Workspace:\n{results.stderr}\n{results.stdout}")
         else:
             stdout: str = results.stdout.lower()
             if ('local workspace:' in stdout) and ('dsim cloud jobs:' in stdout):
@@ -1774,12 +1780,16 @@ class SimulatorMetricsDSim(LogicSimulator):
         if results.return_code != 0:
             raise Exception(f"Failed to submit DSim cloud job:\n{results.stderr}\n{results.stdout}")
         else:
-            job_id_match: re.Match[str] = re.search(r'Job Id:\s*(\S+)\'$', results.stdout)
-            if job_id_match:
-                job_id: str = job_id_match.group(1).replace("\\n", "").strip()
-                return job_id
+            stdout: str = results.stdout.lower()
+            if "job submitted." in stdout:
+                job_id_match: re.Match[str] = re.search(r'job id:\s*(\S+)$', stdout)
+                if job_id_match:
+                    job_id: str = job_id_match.group(1).replace("\\n", "").strip()
+                    return job_id
+                else:
+                    raise Exception(f"Job ID not found in the DSim Cloud submission response: {results.stdout}")
             else:
-                raise Exception("Job ID not found in the DSim Cloud submission response")
+                raise Exception(f"Failure in DSim Cloud submission response: {results.stdout}")
 
     def dsim_cloud_job_status_wait(self, job_id: str, ip: Ip, config: DSimCloudSimulationConfiguration, report: DSimCloudSimulationReport, scheduler: JobScheduler):
         scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
@@ -1798,6 +1808,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         if results.return_code != 0:
             raise Exception(
                 f"Failed DSim Cloud job - ID '{job_id}':\n{results.stderr}\n{results.stdout}")
+        self._cloud_job_finished = True
         report.timestamp_start = results.timestamp_start
         report.timestamp_end = results.timestamp_end
         report.duration = report.timestamp_end - report.timestamp_start
@@ -1833,15 +1844,14 @@ class SimulatorMetricsDSim(LogicSimulator):
             else:
                 cmp_elab_log_path: Path = cmp_elab_task_downloaded_artifacts_path / report.compilation_and_elaboration_report.log_path.name
                 self.rmh.move_file(cmp_elab_log_path, report.compilation_and_elaboration_report.log_path)
-            for ii in range(len(self._cloud_sim_tasks_simulate)):
-                sim_task_downloaded_artifacts_path: Path = destination_path / f"results-{ii}"
+            for sim_config in config.simulation_configs:
+                sim_task_downloaded_artifacts_path: Path = destination_path / f"results-{sim_config.seed}"
                 if self.rmh.directory_exists(sim_task_downloaded_artifacts_path):
                     for item in sim_task_downloaded_artifacts_path.iterdir():
                         if item.is_dir():
                             sim_results_destination = config.results_path / item.name
-                            self.rmh.move_directory(item, sim_results_destination)
-        #self.rmh.remove_directory(destination_path)
-                
+                            self.rmh.move_directory(item, sim_results_destination, True)
+        self.rmh.remove_directory(destination_path)
 
     def dsim_cloud_job_kill(self, job_id: str, ip: Ip, config: DSimCloudSimulationConfiguration, report: DSimCloudSimulationReport, scheduler: JobScheduler):
         scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
@@ -1861,6 +1871,7 @@ class SimulatorMetricsDSim(LogicSimulator):
     def parse_compilation_logs(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                report.success = True
                 super().parse_compilation_logs(ip, config, report)
         else:
             super().parse_compilation_logs(ip, config, report)
@@ -1868,6 +1879,7 @@ class SimulatorMetricsDSim(LogicSimulator):
     def parse_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                report.success = True
                 super().parse_elaboration_logs(ip, config, report)
         else:
             super().parse_elaboration_logs(ip, config, report)
@@ -1875,6 +1887,7 @@ class SimulatorMetricsDSim(LogicSimulator):
     def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                report.success = True
                 super().parse_compilation_and_elaboration_logs(ip, config, report)
         else:
             super().parse_compilation_and_elaboration_logs(ip, config, report)
@@ -1882,18 +1895,17 @@ class SimulatorMetricsDSim(LogicSimulator):
     def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
+                report.success = True
                 super().parse_simulation_logs(ip, config, report)
         else:
             super().parse_simulation_logs(ip, config, report)
 
     def _handle_signal(self, signum, frame):
-        if self.cloud_mode:
-            self.rmh.warning(f"Received signal {signum}. Terminating DSim Cloud Job '{self._cloud_job_id}' ...")
-            self.cleanup()
-            #raise SystemExit(0)
+        self.cleanup()
+        #raise SystemExit(0)
 
     def cleanup(self):
-        if self.cloud_mode and (self._cloud_job_id != ""):
+        if self.cloud_mode and (not self._cloud_job_finished) and (self._cloud_job_id != ""):
             scheduler = self.rmh.scheduler_database.get_default_scheduler()
             scheduler_config: JobSchedulerConfiguration = JobSchedulerConfiguration(self.rmh)
             scheduler_config.output_to_terminal = self.rmh.print_trace
