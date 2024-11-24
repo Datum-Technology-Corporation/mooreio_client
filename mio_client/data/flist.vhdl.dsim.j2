@@ -3,16 +3,16 @@
 ###################################################### WARNING ########################################################
 
 
-{% if data.needs_licensing %}##################################################### LICENSING #######################################################
-{{ data.licensing_vhdl_path }}
+{% if needs_licensing %}##################################################### LICENSING #######################################################
+{{ licensing_vhdl_path }}
 ##################################################### LICENSING #######################################################
 {% endif %}###################################################### DEFINES ########################################################
-{% for define in data.defines_boolean %}{% if data.defines_boolean[define] %}+define+{{ define }}
-{% endif %}{% endfor %}{% for define in data.defines_values %}+define+{{ define }}={{ data.defines_values[define] }}
+{% for define in defines_boolean %}{% if defines_boolean[define] %}+define+{{ define }}
+{% endif %}{% endfor %}{% for define in defines_values %}+define+{{ define }}={{ defines_values[define] }}
 {% endfor %}###################################################### DEFINES ########################################################
 
 
-{% for sub in data.sub_file_lists %}##################################################### DEPENDENCY ######################################################
+{% for sub in sub_file_lists %}##################################################### DEPENDENCY ######################################################
 # Name: {{ sub.name }}
 # Directories
 {% for dir in sub.directories %}+incdir+{{ dir }}
@@ -22,9 +22,9 @@
 
 
 {% endfor %}######################################################## TOP ##########################################################
-# Name: {{ data.name }}
+# Name: {{ name }}
 # Directories
-{% for dir in data.directories %}+incdir+{{ dir }}
+{% for dir in directories %}+incdir+{{ dir }}
 {% endfor %}# Files
-{% for file in data.files %}{{ file }}
+{% for file in files %}{{ file }}
 {% endfor %}######################################################## TOP ##########################################################

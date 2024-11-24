@@ -1,0 +1,33 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
+ts:
+  name: default
+  ip: def_ss_tb
+  target: ["*"]
+  waves: [sanity, bugs]
+  cov  : [nightly, weekly]
+  verbosity:
+    sanity : high
+    nightly: medium
+    weekly : low
+    bugs   : debug
+  max_duration:
+    sanity :  0.25
+    nightly:  5
+    weekly : 12
+    bugs   :  1
+  max_jobs:
+    sanity :  5
+    nightly: 10
+    weekly : 20
+    bugs   :  1
+
+tests:
+  functional:
+    smoke:
+      sanity: [1]
+      nightly: 2
+      weekly: 3
+      bugs: [4]

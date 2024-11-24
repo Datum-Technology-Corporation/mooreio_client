@@ -16,6 +16,7 @@ class TestCliUser:
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
         mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
+        mio_client.cli.TEST_MODE = True
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = mio_client.cli.main(args)
