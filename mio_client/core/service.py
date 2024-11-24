@@ -126,6 +126,13 @@ class ServiceDataBase:
                 return service
         raise Exception(f"Service '{name}' of type '{service_type.value}' could not be found")
 
+    def find_all_services_by_type(self, service_type: ServiceType) -> List[Service]:
+        services: List[Service] = []
+        for service in self._services:
+            if service.type.value == service_type.value:
+                services.append(service)
+        return services
+
     def find_default_service(self, service_type: ServiceType) -> Service:
         for service in self._services:
             if service.type.value == service_type.value:

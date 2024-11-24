@@ -34,10 +34,10 @@ Examples:
 
 
 def get_commands():
-    return [Login, Logout]
+    return [LoginCommand, LogoutCommand]
 
 
-class Login(Command):
+class LoginCommand(Command):
     @staticmethod
     def name() -> str:
         return "login"
@@ -90,7 +90,7 @@ class Login(Command):
         phase.end_process_message = f"Logged in successfully as '{self.rmh.user.username}'."
 
 
-class Logout(Command):
+class LogoutCommand(Command):
     @staticmethod
     def name() -> str:
         return "logout"

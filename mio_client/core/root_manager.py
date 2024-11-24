@@ -526,7 +526,6 @@ class RootManager:
         try:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Directory '{path}' does not exist")
-            import shutil
             shutil.rmtree(path)
         except OSError as e:
             print(f"An error occurred while removing directory '{path}': {e}")

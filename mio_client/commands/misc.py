@@ -22,10 +22,10 @@ Examples:
 
 
 def get_commands():
-    return [Help]
+    return [HelpCommand]
 
 
-class Help(Command):
+class HelpCommand(Command):
     @staticmethod
     def name() -> str:
         return "help"

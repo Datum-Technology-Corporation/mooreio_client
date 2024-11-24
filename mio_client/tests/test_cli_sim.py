@@ -165,6 +165,16 @@ class TestCliSim:
                 assert os.path.getsize(mio_client.cli.root_manager.command.coverage_merge_report.merge_log_file_path) > 0
         return result
 
+    def clean_ip(self, capsys, project_path: Path, ip_name: str):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', ip_name])
+
+    def deep_clean(self, capsys, project_path: Path):
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', '--deep'])
+        assert result.return_code == 0
+        assert not (project_path / ".mio").exists()
+
     def check_ip_database(self, exp_count:int):
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
             raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
@@ -179,17 +189,23 @@ class TestCliSim:
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmp_ip(capsys, test_project_path, app, "def_ss")
+        self.clean_ip(capsys, test_project_path, "def_ss")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_cmp_elab_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmp_ip(capsys, test_project_path, app, "def_ss_tb")
         self.elab_ip(capsys, test_project_path, app, "def_ss_tb")
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_cmpelab_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmpelab_ip(capsys, test_project_path, app, "def_ss")
+        self.clean_ip(capsys, test_project_path, "def_ss")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_cmp_elab_sim_ip(self, capsys, app: str):
         self.reset_workspace()
@@ -197,12 +213,16 @@ class TestCliSim:
         self.cmp_ip(capsys, test_project_path, app, "def_ss_tb")
         self.elab_ip(capsys, test_project_path, app, "def_ss_tb")
         self.sim_ip(capsys, test_project_path, app, "def_ss_tb", "smoke", 1)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_cmpelab_sim_ip(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.cmpelab_ip(capsys, test_project_path, app, "def_ss_tb")
         self.sim_ip(capsys, test_project_path, app, "def_ss_tb", "smoke", 1, waves=True, cov=False)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_sim_args_ip(self, capsys, app: str):
         self.reset_workspace()
@@ -227,6 +247,8 @@ class TestCliSim:
         assert "DATA_WIDTH=32" in log_text
         assert "ABC_BLOCK is enabled" in log_text
         assert "Your lucky number is 42" in log_text
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_sim_targets_ip(self, capsys, app: str):
         self.reset_workspace()
@@ -249,6 +271,8 @@ class TestCliSim:
         assert "My number is 123" in log_text
         assert "DATA_WIDTH is 32" in log_text
         assert "ABC_BLOCK_ENABLED is true" in log_text
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     # DSim
     @pytest.mark.single_process

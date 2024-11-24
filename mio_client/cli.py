@@ -46,6 +46,7 @@ Full Command List (`mio help CMD` for help on a specific command):
       publish        Publishes IP to Server (must have mio admin account)
 
    EDA Automation
+      clean          Delete IP EDA artifacts and/or Moore.io Project directory contents (/.mio)
       sim            Performs necessary steps to simulate an IP with any simulator
       regr           Runs regression against an IP"""
 
