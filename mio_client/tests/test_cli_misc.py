@@ -13,7 +13,7 @@ from .common import OutputCapture
 class TestCliMisc:
     @pytest.fixture(autouse=True)
     def setup(self):
-        pass
+        mio_client.cli.TEST_MODE = True
 
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = mio_client.cli.main(args)

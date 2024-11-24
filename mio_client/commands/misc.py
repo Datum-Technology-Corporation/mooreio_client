@@ -1,7 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from . import user, ip, eda
+from . import user, ip, sim
 from ..core.phase import Phase
 from ..core.command import Command
 

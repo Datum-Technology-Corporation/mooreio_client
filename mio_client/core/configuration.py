@@ -2,8 +2,10 @@
 # All rights reserved.
 #######################################################################################################################
 from typing import List, Optional
-from pydantic import BaseModel, constr, FilePath, PositiveInt
-from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
+
+import yaml
+from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat
+from model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
 from enum import Enum
 
@@ -19,13 +21,24 @@ class UvmVersions(Enum):
 
 
 class LogicSimulators(Enum):
-    UNDEFINED = "__UNDEFINED__"
+    UNDEFINED = UNDEFINED_CONST
     DSIM = "dsim"
     VIVADO = "vivado"
     VCS = "vcs"
     XCELIUM = "xcelium"
     QUESTA = "questa"
     RIVIERA = "riviera"
+    #UNDEFINED = "!Undefined!"
+    #DSIM = "Metrics DSim"
+    #VIVADO = "Xilinx Vivado"
+    #VCS = "Synopsys VCS"
+    #XCELIUM = "Cadence XCelium"
+    #QUESTA = "Siemens QuestaSim"
+    #RIVIERA = "Aldec Riviera-PRO"
+
+class DSimCloudComputeSizes(Enum):
+    S4 = "s4"
+    S8 = "s8"
 
 
 class Project(Model):
@@ -33,10 +46,16 @@ class Project(Model):
     sync_id: Optional[PositiveInt] = 0
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
+    local_mode: bool
 
 
 class Authentication(Model):
     offline: bool
+
+
+class Applications(Model):
+    editor: constr(pattern=VALID_POSIX_PATH_REGEX)
+    web_browser: constr(pattern=VALID_POSIX_PATH_REGEX)
 
 
 class LogicSimulation(Model):
@@ -47,8 +66,15 @@ class LogicSimulation(Model):
     test_result_path_template: str
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
+    compilation_timeout: PositiveFloat
+    elaboration_timeout: PositiveFloat
+    compilation_and_elaboration_timeout: PositiveFloat
+    simulation_timeout: PositiveFloat
+    vscode_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    metrics_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
     metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    metrics_dsim_cloud_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     synopsys_vcs_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     siemens_questa_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
@@ -73,7 +99,6 @@ class LogicSimulation(Model):
     cadence_xcelium_default_elaboration_arguments: List[str] = []
     aldec_riviera_pro_default_elaboration_arguments: List[str] = []
     metrics_dsim_default_compilation_and_elaboration_arguments: List[str] = []
-    xilinx_vivado_default_compilation_and_elaboration_arguments: List[str] = []
     synopsys_vcs_default_compilation_and_elaboration_arguments: List[str] = []
     siemens_questa_default_compilation_and_elaboration_arguments: List[str] = []
     cadence_xcelium_default_compilation_and_elaboration_arguments: List[str] = []
@@ -126,6 +151,7 @@ class Configuration(Model):
     docs: Docs
     encryption: Encryption
     authentication: Authentication
+    applications: Applications
 
     def check(self):
         pass

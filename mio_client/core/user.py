@@ -1,6 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+from pathlib import Path
 from typing import Optional
 
 import yaml
@@ -32,6 +33,12 @@ class User(Model):
             if data is None:
                 data = {}
             return cls(**data)
+
+    def save(self, file_path: Path):
+        """Save the current User instance to a YAML file."""
+        with open(file_path, 'w') as f:
+            model_data: dict = self.model_dump()
+            yaml.safe_dump(model_data, f)
 
     @property
     def use_pre_set_username(self) -> bool:
