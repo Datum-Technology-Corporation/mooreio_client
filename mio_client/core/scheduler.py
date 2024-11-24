@@ -135,7 +135,7 @@ class JobSchedulerConfiguration:
         self._output_to_terminal: bool = True
         self._max_number_of_parallel_processes :int = 1
         self._dry_run: bool  = False
-        self._has_job_set:bool = False
+        self._has_job_set: bool = False
         self._job_set: JobSet
         self._timeout: float = 60
         self._kill_job_on_termination = True

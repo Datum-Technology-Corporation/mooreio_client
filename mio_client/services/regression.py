@@ -587,7 +587,7 @@ class RegressionRunner:
             self.dsim_cloud_simulation()
         else:
             self.parallel_simulation()
-        #self.regression.duration = self.regression.timestamp_end - self.regression.timestamp_start
+        self.report.duration = self.report.timestamp_end - self.report.timestamp_start
         self.fill_report()
         self.merge_coverage()
         return self.report
@@ -683,6 +683,7 @@ class RegressionRunner:
 
 
     def fill_report(self):
+        self.report.target_name = self.config.target
         self.report.test_suite_file_path = self.regression.test_suite.file_path
         self.report.verbosity = self.regression.verbosity
         if self.config.dry_mode:
