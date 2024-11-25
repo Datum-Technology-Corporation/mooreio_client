@@ -33,7 +33,7 @@ class SubProcessScheduler(JobScheduler):
     def do_dispatch_job(self, job: Job, configuration: SubProcessSchedulerConfiguration) -> JobResults:
         results = JobResults()
         results.timestamp_start = datetime.now()
-        command_list: list[str] = [str(job.binary)] + job.arguments
+        command_list: list[str] = job.pre_arguments + [str(job.binary)] + job.arguments
         command_str = "  ".join(command_list)
         path = os.environ['PATH']
         path = f"{job.pre_path}:{path}:{job.post_path}"

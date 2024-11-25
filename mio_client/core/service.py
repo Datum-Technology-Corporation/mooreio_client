@@ -30,6 +30,7 @@ class ServiceType(Enum):
     STATIC_TIMING_ANALYSIS = "Static Timing Analysis (STA)"
     DESIGN_FOR_TEST = "Design for Test (DFT)"
     CLOCK_DOMAIN_CROSSING_ANALYSIS = "Clock Domain Crossing (CDC) Analysis"
+    DOCUMENTATION_GENERATOR = "Documentation Generator"
 
 
 class Service(ABC):

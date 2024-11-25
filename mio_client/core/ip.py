@@ -786,6 +786,13 @@ class IpDataBase():
     def get_all_ip(self) -> List[Ip]:
         return self._ip_list
 
+    def get_all_ip_by_location_type(self, location_type: IpLocationType) -> List[Ip]:
+        ip_list = []
+        for ip in self._ip_list:
+            if ip.location_type == location_type:
+                ip_list.append(ip)
+        return ip_list
+
     def find_ip_definition(self, definition: IpDefinition, raise_exception_if_not_found: bool=True) -> Ip:
         ip:Ip
         if definition.vendor_name_is_specified:

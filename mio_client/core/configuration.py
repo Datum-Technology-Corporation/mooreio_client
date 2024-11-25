@@ -127,6 +127,7 @@ class Ip(Model):
 
 class Docs(Model):
     root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    doxygen_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
 
 
 class Encryption(Model):

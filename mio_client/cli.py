@@ -44,6 +44,7 @@ Full Command List (`mio help CMD` for help on a specific command):
       login          Starts session with IP Marketplace
       package        Creates a compressed (and encrypted) archive of an IP
       publish        Publishes IP to Server (must have mio admin account)
+      dox            Generates source reference documentation with Doxygen
 
    EDA Automation
       clean          Delete IP EDA artifacts and/or Moore.io Project directory contents (/.mio)
