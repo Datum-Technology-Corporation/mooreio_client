@@ -284,8 +284,14 @@ class RootManager:
     
     def run(self, command: Command) -> int:
         if self.test_mode:
-            self.run_sequence(command)
-            return 0
+            try:
+                self.run_sequence(command)
+            except PhaseEndProcessException as e:
+                if e.message != "":
+                    self.fatal(e.message)
+                return 0
+            else:
+                return 0
         else:
             try:
                 self.run_sequence(command)
@@ -386,7 +392,7 @@ class RootManager:
         if phase.end_process:
             raise PhaseEndProcessException(phase.end_process_message)
     
-    def file_exists(self, path: Path):
+    def file_exists(self, path: Path) -> bool:
         """
         Check if a file exists at the specified path.
         :param path: Path to the file.
@@ -456,7 +462,7 @@ class RootManager:
             os.remove(path)
         except OSError as e:
             error = f"An error occurred while removing file '{path}': {e}"
-            raise PhaseEndProcessException(error)
+            raise Exception(error)
 
     def directory_exists(self, path: Path):
         """
@@ -526,7 +532,6 @@ class RootManager:
         try:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Directory '{path}' does not exist")
-            import shutil
             shutil.rmtree(path)
         except OSError as e:
             print(f"An error occurred while removing directory '{path}': {e}")
@@ -1060,16 +1065,18 @@ class RootManager:
         except Exception as e:
             phase.error = Exception(f"Failed to save User Data at '{self._user_data_file_path}': {e}")
 
+    def locate_project_file(self) -> Path:
+        current_path = self.wd
+        while current_path != os.path.dirname(current_path):  # Stop if we're at the root directory
+            candidate_path = Path(os.path.join(current_path, 'mio.toml'))
+            if self.file_exists(candidate_path):
+                return Path(candidate_path)
+            # Move up one directory
+            current_path = os.path.dirname(current_path)
+
     def phase_locate_project_file(self, phase: Phase):
-        current_path = self._wd
         try:
-            while current_path != os.path.dirname(current_path):  # Stop if we're at the root directory
-                candidate_path = Path(os.path.join(current_path, 'mio.toml'))
-                if self.file_exists(candidate_path):
-                    self._project_configuration_path = Path(candidate_path)
-                    return
-                # Move up one directory
-                current_path = os.path.dirname(current_path)
+            self._project_configuration_path = self.locate_project_file()
         except Exception as e:
             phase.error = Exception(f"Could not locate Project 'mio.toml': {e}")
         else:

@@ -77,6 +77,16 @@ class TestCliRegr:
         assert results.return_code == 0
         return results
 
+    def clean_ip(self, capsys, project_path: Path, ip_name: str):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', ip_name])
+
+    def deep_clean(self, capsys, project_path: Path):
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', '--deep'])
+        assert result.return_code == 0
+        assert not (project_path / ".mio").exists()
+
     def check_regr_results(self, result: OutputCapture, app: str, dry_mode: bool, num_tests_expected: int):
         if dry_mode:
             assert f'Regression Dry Mode - {num_tests_expected} tests would have been run:' in result.text
@@ -90,36 +100,48 @@ class TestCliRegr:
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "sanity", True)
         self.check_regr_results(results, app, True, 1)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_regr_dry_target_no_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "nightly", True, 'abc')
         self.check_regr_results(results, app, True, 2)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_regr_dry_target_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "weekly", True, 'abc', 'special')
         self.check_regr_results(results, app, True, 4)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_regr_wet_no_target_no_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "bugs", False)
         self.check_regr_results(results, app, False, 1)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_regr_wet_target_no_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "weekly", False, 'abc')
         self.check_regr_results(results, app, False, 3)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     def cli_regr_wet_target_ts(self, capsys, app: str):
         self.reset_workspace()
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_targets"))
         results = self.regr_ip(capsys, app, test_project_path, "def_ss_tb", "nightly", False, 'abc', 'special')
         self.check_regr_results(results, app, False, 3)
+        self.clean_ip(capsys, test_project_path, "def_ss_tb")
+        self.deep_clean(capsys, test_project_path)
 
     # DSim
     @pytest.mark.single_process

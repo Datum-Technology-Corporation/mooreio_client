@@ -87,9 +87,8 @@ venv/bin/activate: requirements-dev.txt
 	$(call print_banner, Setting up virtual environment and installing dependencies)
 	python3 -m venv venv
 	chmod +x venv/bin/activate
-	. ./venv/bin/activate
-	$(PIP) install -r ./requirements.txt
-	$(PIP) install -r ./requirements-dev.txt
+	. ./venv/bin/activate && $(PIP) install -r ./requirements.txt
+	. ./venv/bin/activate && $(PIP) install -r ./requirements-dev.txt
 venv: venv/bin/activate
 	. ./venv/bin/activate
 

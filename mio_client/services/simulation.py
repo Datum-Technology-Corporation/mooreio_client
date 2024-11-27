@@ -350,7 +350,7 @@ class LogicSimulator(Service, ABC):
         pass
 
     def create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, scheduler: JobScheduler) -> LogicSimulatorLibraryCreationReport:
-        report = LogicSimulatorLibraryCreationReport()
+        report = LogicSimulatorLibraryCreationReport(name=f"Library Creation for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
         scheduler_config.output_to_terminal = self.rmh.print_trace
@@ -360,7 +360,7 @@ class LogicSimulator(Service, ABC):
         return report
 
     def delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, scheduler: JobScheduler) -> LogicSimulatorLibraryDeletionReport:
-        report = LogicSimulatorLibraryDeletionReport()
+        report = LogicSimulatorLibraryDeletionReport(name=f"Library Deletion for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
         scheduler_config.output_to_terminal = self.rmh.print_trace
@@ -443,7 +443,7 @@ class LogicSimulator(Service, ABC):
         else:
             logs_path =  self.simulation_logs_path
         report.log_path = logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.log"
-        report.cmd_log_file_path = logs_path / f"{ip.result_file_name}.cmp_elab.{self.name}.cmd.log"
+        report.cmd_log_file_path = logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.cmd.log"
         self.rmh.create_directory(report.work_directory)
         report.shared_objects = self.get_all_shared_objects(ip, config, report.ordered_dependencies)
         self.do_compile_and_elaborate(ip, config, report, scheduler, scheduler_config)
@@ -1266,7 +1266,10 @@ class SimulatorMetricsDSim(LogicSimulator):
         pass
 
     def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, report: LogicSimulatorLibraryDeletionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
-        pass
+        report.work_directory = self.work_path / f"{ip.work_directory_name}"
+        if self.rmh.directory_exists(report.work_directory):
+            self.rmh.remove_directory(report.work_directory)
+        report.success = True
 
     def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         defines_str = ""
@@ -2053,7 +2056,10 @@ class SimulatorXilinxVivado(LogicSimulator):
     def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration,
                           report: LogicSimulatorLibraryDeletionReport, scheduler: JobScheduler,
                           scheduler_config: JobSchedulerConfiguration):
-        pass
+        report.work_directory = self.work_path / f"{ip.work_directory_name}"
+        if self.rmh.directory_exists(report.work_directory):
+            self.rmh.remove_directory(report.work_directory)
+        report.success = True
 
     def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration,
                    report: LogicSimulatorCompilationReport, scheduler: JobScheduler,

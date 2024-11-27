@@ -1,10 +1,15 @@
 import warnings
 from enum import Enum
 from pathlib import Path
+from typing import Dict
 
 from semantic_version import SimpleSpec
 
-from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration
+from phase import Phase
+from scheduler import JobScheduler
+from service import ServiceType
+from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration, \
+    LogicSimulatorLibraryDeletionConfiguration, LogicSimulatorLibraryDeletionReport
 from ..core.command import Command
 from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
@@ -80,6 +85,21 @@ Examples:
    mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project"""
 
 
+CLEAN_HELP_TEXT = """Moore.io Clean Command
+   Deletes output artifacts from EDA tools and/or Moore.io Project directory contents (/.mio).
+   Only logic simulation artifacts are currently supported.
+   
+Usage:
+   mio clean [IP] [OPTIONS]
+   
+Options:
+   -d, --deep  # Removes Project Moore.io directory (/.mio)
+   
+Examples:
+   mio clean my_ip   # Delete compilation, elaboration and simulation artifacts for IP 'my_ip'
+   mio clean --deep  # Removes contents of Project Moore.io directory (/.mio)"""
+
+
 class InstallMode(Enum):
     UNKNOWN = 0
     ALL = 1
@@ -88,7 +108,7 @@ class InstallMode(Enum):
 
 
 def get_commands():
-    return [List, Package, Publish, Install, Uninstall]
+    return [List, PackageCommand, PublishCommand, InstallCommand, UninstallCommand, CleanCommand]
 
 
 class List(Command):
@@ -117,7 +137,7 @@ class List(Command):
         phase.end_process = True
 
 
-class Package(Command):
+class PackageCommand(Command):
     def __init__(self):
         super().__init__()
         self._ip_definition: 'IpDefinition'
@@ -184,13 +204,13 @@ class Package(Command):
 
 
 
-class Publish(Command):
+class PublishCommand(Command):
     def __init__(self):
         super().__init__()
         self._ip_definition: 'IpDefinition'
         self._ip: 'Ip'
         self._publishing_certificate: IpPublishingCertificate
-        self._customer:str
+        self._customer: str
 
     @property
     def ip_definition(self) -> 'IpDefinition':
@@ -269,7 +289,7 @@ class Publish(Command):
             warnings.warn(f"Failed to delete compressed tarball for IP '{self.ip}': {e}")
 
 
-class Install(Command):
+class InstallCommand(Command):
     def __init__(self):
         super().__init__()
         self._ip_definition: 'IpDefinition' = None
@@ -305,7 +325,7 @@ class Install(Command):
     def needs_authentication(self) -> bool:
         return True
 
-    def phase_init(self, phase):
+    def phase_init(self, phase: Phase):
         if self.parsed_cli_arguments.ip == "*":
             self._mode = InstallMode.ALL
         else:
@@ -318,7 +338,7 @@ class Install(Command):
             except Exception as e:
                 phase.error = Exception(f"Invalid version specifier: {e}")
 
-    def phase_post_ip_discovery(self, phase):
+    def phase_post_ip_discovery(self, phase: Phase):
         if self.mode != InstallMode.ALL:
             self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
             if self.ip:
@@ -326,7 +346,7 @@ class Install(Command):
             else:
                 self._mode = InstallMode.REMOTE
 
-    def phase_main(self, phase):
+    def phase_main(self, phase: Phase):
         if self.mode == InstallMode.REMOTE:
             self.ip_definition.find_results = self.rmh.ip_database.ip_definition_is_available_on_server(self.ip_definition)
             if self.ip_definition.find_results.found:
@@ -366,17 +386,17 @@ class Install(Command):
         if self.rmh.ip_database.need_to_find_dependencies_on_remote:
             phase.error = Exception(f"Failed to resolve all IP dependencies after {depth} attempts")
 
-    def phase_report(self, phase):
+    def phase_report(self, phase: Phase):
         if self.mode == InstallMode.ALL:
             print(f"Installed all IPs successfully.")
         else:
             print(f"Installed IP '{self.ip}' successfully.")
 
-    def phase_cleanup(self, phase):
+    def phase_cleanup(self, phase: Phase):
         pass
 
 
-class Uninstall(Command):
+class UninstallCommand(Command):
     def __init__(self):
         super().__init__()
         self._ip_definition: 'IpDefinition'
@@ -407,14 +427,14 @@ class Uninstall(Command):
     def needs_authentication(self) -> bool:
         return False
 
-    def phase_init(self, phase):
+    def phase_init(self, phase: Phase):
         if self.parsed_cli_arguments.ip != "*":
             self._uninstall_all = False
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
         else:
             self._uninstall_all = True
 
-    def phase_post_ip_discovery(self, phase):
+    def phase_post_ip_discovery(self, phase: Phase):
         if not self.uninstall_all:
             try:
                 if self.ip_definition.vendor_name_is_specified:
@@ -424,18 +444,133 @@ class Uninstall(Command):
             except Exception as e:
                 phase.error = e
 
-    def phase_main(self, phase):
+    def phase_main(self, phase: Phase):
         if self.uninstall_all:
             self.rmh.ip_database.uninstall_all()
         else:
             self.rmh.ip_database.uninstall(self.ip)
 
-    def phase_report(self, phase):
+    def phase_report(self, phase: Phase):
         if self.uninstall_all:
             print(f"Uninstalled all IPs successfully.")
         else:
             print(f"Uninstalled IP '{self.ip}' successfully.")
 
-    def phase_cleanup(self, phase):
+    def phase_cleanup(self, phase: Phase):
         pass
+
+
+class CleanCommand(Command):
+    def __init__(self):
+        super().__init__()
+        self._ip_definition: 'IpDefinition'
+        self._ip: 'Ip'
+        self._deep_clean: bool
+        self._scheduler: JobScheduler
+        self._simulators: list[LogicSimulator] = []
+        self._configuration: LogicSimulatorLibraryDeletionConfiguration = LogicSimulatorLibraryDeletionConfiguration()
+        self._reports: Dict[LogicSimulator, LogicSimulatorLibraryDeletionReport] = {}
+        self._success: bool = False
+
+    @staticmethod
+    def name() -> str:
+        return "clean"
+
+    @property
+    def ip_definition(self) -> 'IpDefinition':
+        return self._ip_definition
+
+    @property
+    def ip(self) -> 'Ip':
+        return self._ip
+
+    @property
+    def deep_clean(self) -> bool:
+        return self._deep_clean
+    
+    @property
+    def simulators(self) -> list[LogicSimulator]:
+        return self._simulators
+
+    @property
+    def scheduler(self) -> JobScheduler:
+        return self._scheduler
+
+    @property
+    def configuration(self) -> LogicSimulatorLibraryDeletionConfiguration:
+        return self._configuration
+
+    @property
+    def reports(self) -> Dict[LogicSimulator, LogicSimulatorLibraryDeletionReport]:
+        return self._reports
+
+    @property
+    def success(self) -> bool:
+        return self._success
+
+    @staticmethod
+    def add_to_subparsers(subparsers):
+        parser_clean = subparsers.add_parser('clean', help=CLEAN_HELP_TEXT, add_help=False)
+        parser_clean.add_argument('ip', help='Target IP', nargs='?', default="*")
+        parser_clean.add_argument('-d', "--deep", help='Removes Project Moore.io directory (/.mio)', action="store_true", default=False , required=False)
+
+    def needs_authentication(self) -> bool:
+        return False
+
+    def phase_init(self, phase: Phase):
+        if self.parsed_cli_arguments.ip != "*":
+            self._deep_clean = False
+            self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+        else:
+            if self.parsed_cli_arguments.deep:
+                self._deep_clean = True
+            else:
+                phase.error = Exception(f"Must specify '-d/--deep' when not specifying an IP to clean")
+
+    def phase_post_scheduler_discovery(self, phase: Phase):
+        try:
+            # TODO Add support for other schedulers
+            self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
+        except Exception as e:
+            phase.error = e
+
+    def phase_post_service_discovery(self, phase: Phase):
+        try:
+            self._simulators = self.rmh.service_database.find_all_services_by_type(ServiceType.LOGIC_SIMULATION)
+        except Exception as e:
+            phase.error = e
+
+    def phase_post_ip_discovery(self, phase: Phase):
+        if not self.deep_clean:
+            try:
+                if self.ip_definition.vendor_name_is_specified:
+                    self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name, self.ip_definition.vendor_name)
+                else:
+                    self._ip = self.rmh.ip_database.find_ip(self.ip_definition.ip_name)
+            except Exception as e:
+                phase.error = e
+
+    def phase_main(self, phase: Phase):
+        if self.deep_clean:
+            self.rmh.remove_directory(self.rmh.md)
+            self._success = True
+        else:
+            self._success = True
+            for simulator in self._simulators:
+                self._reports[simulator] = simulator.delete_library(self.ip, self.configuration, self.scheduler)
+                self._success &= self._reports[simulator].success
+            if not self._success:
+                phase.error = Exception(f"Failed to clean IP '{self.ip}'")
+
+    def phase_report(self, phase: Phase):
+        if self.deep_clean:
+            if self.success:
+                self.rmh.info(f"Deleted '{self.rmh.md}' successfully.")
+            else:
+                self.rmh.error(f"Failed to delete '{self.rmh.md}'.")
+        else:
+            if self.success:
+                self.rmh.info(f"Cleaned IP '{self.ip}' successfully.")
+            else:
+                self.rmh.error(f"Failed to clean IP '{self.ip}'.")
 

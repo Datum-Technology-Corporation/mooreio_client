@@ -1,0 +1,10 @@
+vendor: acme
+name: def_ss
+full_name: DEF Sub-System
+version: "1.0.0"
+ip_type: ss
+has_docs_directory: false
+has_scripts_directory: false
+has_examples_directory: false
+hdl_src_directory: "."
+hdl_top_sv_files: ["def_ss_top.sv"]

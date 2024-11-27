@@ -256,6 +256,10 @@ class TestSuite(Model):
             instance._db = db
             instance._file_path = file_path
             return instance
+    
+    def save(self, path: Path):
+        with open(path, 'w') as f:
+            yaml.dump(self.model_dump(), f)
 
     @property
     def name(self) -> str:

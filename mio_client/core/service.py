@@ -30,6 +30,7 @@ class ServiceType(Enum):
     STATIC_TIMING_ANALYSIS = "Static Timing Analysis (STA)"
     DESIGN_FOR_TEST = "Design for Test (DFT)"
     CLOCK_DOMAIN_CROSSING_ANALYSIS = "Clock Domain Crossing (CDC) Analysis"
+    DOCUMENTATION_GENERATOR = "Documentation Generator"
 
 
 class Service(ABC):
@@ -125,6 +126,13 @@ class ServiceDataBase:
             if (service.type.value == service_type.value) and (service.name == name):
                 return service
         raise Exception(f"Service '{name}' of type '{service_type.value}' could not be found")
+
+    def find_all_services_by_type(self, service_type: ServiceType) -> List[Service]:
+        services: List[Service] = []
+        for service in self._services:
+            if service.type.value == service_type.value:
+                services.append(service)
+        return services
 
     def find_default_service(self, service_type: ServiceType) -> Service:
         for service in self._services:

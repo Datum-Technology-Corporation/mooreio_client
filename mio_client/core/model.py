@@ -1,9 +1,14 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+from enum import StrEnum, Enum
+from pathlib import Path
+
+import yaml
 from pydantic import BaseModel, Field, ValidationError
 import re
 
+from semantic_version import Version
 
 UNDEFINED_CONST = "______UNDEFINED______"
 
@@ -17,7 +22,13 @@ VALID_LOGIC_SIMULATION_TIMESCALE_REGEX= re.compile(r'^\d+(ms|us|ns|ps|fs)/\d+(ms
 
 
 class Model(BaseModel):
-    model_config = {
-        'arbitrary_types_allowed': True
-    }
+    class Config:
+        #use_enum_values = True  # Ensures enums are serialized using their values
+        arbitrary_types_allowed = True
 
+# Define custom representer for semantic_version.Version
+def version_representer(dumper, data):
+    return dumper.represent_str(str(data))
+
+# Register the custom representer
+yaml.SafeDumper.add_representer(Version, version_representer)

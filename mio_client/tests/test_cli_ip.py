@@ -51,7 +51,7 @@ class TestCliIp:
     def package_ip(self, capsys, project_path: Path, ip_name: str, destination:Path):
         if destination.exists():
             destination.unlink()
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'package', ip_name, str(destination)])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'package', ip_name, str(destination)])
         fucking_text = result.text
         assert result.return_code == 0
         assert "Packaged IP" in result.text
@@ -64,18 +64,18 @@ class TestCliIp:
 
     def publish_ip(self, capsys, project_path: Path, ip_name: str, customer:str=""):
         if customer!="":
-            result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name, f"-c {customer}"])
+            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'publish', ip_name, f"-c {customer}"])
         else:
-            result = self.run_cmd(capsys, [f'--wd={project_path}', 'publish', ip_name])
+            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'publish', ip_name])
         assert result.return_code == 0
         assert "Published IP" in result.text
         assert "successfully" in result.text
 
     def install_ip(self, capsys, project_path:Path, ip_name:str=""):
         if ip_name == "":
-            result = self.run_cmd(capsys, [f'--wd={project_path}', 'install'])
+            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'install'])
         else:
-            result = self.run_cmd(capsys, [f'--wd={project_path}', 'install', ip_name])
+            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'install', ip_name])
         assert result.return_code == 0
         if ip_name == "":
             assert "Installed all IPs successfully" in result.text
@@ -85,9 +85,9 @@ class TestCliIp:
 
     def uninstall_ip(self, capsys, project_path:Path, ip_name:str=""):
         if ip_name == "":
-            result = self.run_cmd(capsys, [f'--wd={project_path}', 'uninstall'])
+            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'uninstall'])
         else:
-            result = self.run_cmd(capsys, [f'--wd={project_path}', 'uninstall', ip_name])
+            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'uninstall', ip_name])
         assert result.return_code == 0
         if ip_name == "":
             assert "Uninstalled all IPs successfully" in result.text
@@ -98,19 +98,19 @@ class TestCliIp:
     def cmp_ip(self, capsys, project_path:Path, ip_name:str):
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-C'])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-C'])
         assert result.return_code == 0
 
     def elab_ip(self, capsys, project_path:Path, ip_name:str):
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-E'])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-E'])
         assert result.return_code == 0
 
     def cmpelab_ip(self, capsys, project_path:Path, ip_name:str):
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', 'sim', ip_name, '-CE'])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-CE'])
         assert result.return_code == 0
 
     def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
@@ -131,7 +131,7 @@ class TestCliIp:
         else:
             plus_args = []
         result = self.run_cmd(capsys, [
-            f'--wd={project_path}', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
+            f'--wd={project_path}', '--dbg', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
         ] + optional_args + plus_args)
         assert result.return_code == 0
 
@@ -158,11 +158,21 @@ class TestCliIp:
         else:
             plus_args = []
         result = self.run_cmd(capsys, [
-            f'--wd={project_path}', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
+            f'--wd={project_path}', '--dbg', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
         ] + optional_args + plus_args)
         assert result.return_code == 0
         return result
+    
+    def clean_ip(self, capsys, project_path: Path, ip_name: str):
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', ip_name])
 
+    def deep_clean(self, capsys, project_path: Path):
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', '--deep'])
+        assert result.return_code == 0
+        assert not (project_path / ".mio").exists()
+    
     def check_ip_database(self, exp_count:int):
         if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
             raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
@@ -185,7 +195,7 @@ class TestCliIp:
     def test_cli_list_ip(self, capsys):
         self.reset_workspace()
         test_project_path = os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest")
-        result = self.run_cmd(capsys, [f'--wd={test_project_path}', 'list'])
+        result = self.run_cmd(capsys, [f'--wd={test_project_path}', '--dbg', 'list'])
         assert result.return_code == 0
         assert "Found 3" in result.text
 
@@ -257,6 +267,15 @@ class TestCliIp:
         # 13. Uninstall * from P4
         self.uninstall_ip(capsys, p4_path)
         self.check_ip_database(3)
+
+        # 14. Clean all IP
+        self.clean_ip(capsys, p1_path, 'a_vlib')
+        self.clean_ip(capsys, p2_path, 'b_agent')
+        self.clean_ip(capsys, p3_path, 'c_block')
+        self.clean_ip(capsys, p3_path, 'd_lib')
+        self.clean_ip(capsys, p4_path, 'e_ss')
+        self.clean_ip(capsys, p4_path, 'f_fpga')
+        self.clean_ip(capsys, p4_path, 'g_tb')
 
         # 13. Logout from P1
         self.logout(capsys)

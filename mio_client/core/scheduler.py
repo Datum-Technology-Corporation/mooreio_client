@@ -18,6 +18,7 @@ class Job:
         self._rmh: 'RootManager' = rmh
         self._wd: Path = wd
         self._name: str = name
+        self._pre_arguments: List[str] = []
         self._binary: Path = binary
         self._arguments: List[str] = arguments
         self._env_vars:dict = {}
@@ -75,6 +76,13 @@ class Job:
     def print_to_screen(self, value: bool):
         self._print_to_screen = value
 
+    @property
+    def pre_arguments(self) -> List[str]:
+        return self._pre_arguments
+    @pre_arguments.setter
+    def pre_arguments(self, value: List[str]):
+        self._pre_arguments = value
+    
     @property
     def arguments(self) -> List[str]:
         return self._arguments

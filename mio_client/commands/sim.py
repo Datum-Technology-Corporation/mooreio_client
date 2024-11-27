@@ -87,10 +87,10 @@ LOGIC_SIMULATORS = ["dsim", "vivado"]
 
 
 def get_commands():
-    return [Simulate, Regression]
+    return [SimulateCommand, RegressionCommand]
 
 
-class Simulate(Command):
+class SimulateCommand(Command):
     @staticmethod
     def name() -> str:
         return "sim"
@@ -513,7 +513,7 @@ class Simulate(Command):
                 print(f"\033[31m{fatal}\033[0m")
 
 
-class Regression(Command):
+class RegressionCommand(Command):
     @staticmethod
     def name() -> str:
         return "regr"

@@ -5,3 +5,6 @@ full_name="Always Be Clocking"
 
 [ip]
 local_paths=["dir_a/", "dir_b/"]
+
+[docs]
+root_path="./docs"

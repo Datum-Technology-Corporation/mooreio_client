@@ -25,11 +25,11 @@ class TestCliUser:
 
     def login(self, capsys, username: str, password: str) -> OutputCapture:
         os.environ['MIO_AUTHENTICATION_PASSWORD'] = password
-        result = self.run_cmd(capsys, ['login', f'-u {username}', f'--no-input'])
+        result = self.run_cmd(capsys, ['--dbg', 'login', f'-u {username}', f'--no-input'])
         return result
 
     def logout(self, capsys) -> OutputCapture:
-        result = self.run_cmd(capsys, ['logout'])
+        result = self.run_cmd(capsys, ['--dbg', 'logout'])
         return result
 
     @pytest.mark.single_process
