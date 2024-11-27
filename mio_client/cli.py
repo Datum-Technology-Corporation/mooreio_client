@@ -6,7 +6,7 @@ import pathlib
 import sys
 import os
 
-from mio_client.commands import sim, ip, misc, project, team, user, web
+from mio_client.commands import sim, ip, misc, project, team, user, web, gen
 from mio_client.core.root_manager import RootManager
 
 #######################################################################################################################
@@ -38,6 +38,9 @@ Options:
 Full Command List (`mio help CMD` for help on a specific command):
    Help and Shell/Editor Integration
       help           Prints documentation for mio commands
+      
+   Project and Code Management
+      init           Creates essential files necessary for new Projects/IPs
 
    IP and Credentials Management
       install        Installs all IP dependencies from IP Marketplace
@@ -47,9 +50,10 @@ Full Command List (`mio help CMD` for help on a specific command):
       dox            Generates source reference documentation with Doxygen
 
    EDA Automation
-      clean          Delete IP EDA artifacts and/or Moore.io Project directory contents (/.mio)
+      clean          Delete IP EDA artifacts and/or Moore.io Project directory contents (.mio)
       sim            Performs necessary steps to simulate an IP with any simulator
-      regr           Runs regression against an IP"""
+      regr           Runs regression against an IP
+      dox            Generates HTML reference documentation from source code with Doxygen"""
 
 
 #######################################################################################################################
@@ -148,6 +152,7 @@ def register_all_commands(subparsers):
     register_commands(commands, team.get_commands())
     register_commands(commands, user.get_commands())
     register_commands(commands, web.get_commands())
+    register_commands(commands, gen.get_commands())
     for command in commands:
         command.add_to_subparsers(subparsers)
     return commands

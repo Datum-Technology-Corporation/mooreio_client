@@ -20,6 +20,7 @@ def get_fixture_data(file: str) -> Dict:
 @pytest.fixture(scope="session")
 def valid_local_dv_agent_1_data():
     return get_fixture_data("valid_local_dv_agent_1")
+
 @pytest.fixture(scope="session")
 def valid_local_dv_tb_fsoc_1_data():
     return get_fixture_data("valid_local_dv_tb_fsoc_1")
