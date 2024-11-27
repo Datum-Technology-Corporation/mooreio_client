@@ -1,0 +1,6 @@
+name: uninit_local_simplest
+full_name: Un-initialized, Local, Simplest
+ip_directories: [dir_a, dir_b]
+sim_directory: sim
+has_docs: true
+docs_directory: docs

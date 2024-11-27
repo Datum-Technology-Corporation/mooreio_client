@@ -1,0 +1,18 @@
+vendor: acme
+name: def_ss_tb
+full_name: DEF Sub-System Test Bench
+version: "3.2.1"
+ip_type: dv_tb
+has_docs_directory: true
+docs_directory: docs
+has_scripts_directory: false
+has_examples_directory: false
+dut_type: ip
+dut_name: def_ss
+dut_version: "1.0.0"
+hdl_src_directory: src
+hdl_src_sub_directories: ["."]
+hdl_top_sv_files: ["def_ss_tb_pkg.sv"]
+hdl_top: ["def_ss_tb"]
+hdl_tests_path: "tests"
+hdl_test_name_template: "def_ss_{{ name }}_test_c"
