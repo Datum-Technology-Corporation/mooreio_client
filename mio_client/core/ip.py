@@ -5,15 +5,17 @@ import base64
 import os
 import tarfile
 from collections import defaultdict, deque
+from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPMethod
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, List, Union, Any, Dict
+from typing import Optional, List, Union, Any, Dict, Literal
 
 import jinja2
 import yaml
 from pydantic import constr, PositiveInt, ValidationError
+from pydantic.main import IncEx
 from semantic_version import SimpleSpec
 
 from .model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
@@ -61,8 +63,6 @@ class IpLicenseType(Enum):
     PUBLIC_OPEN_SOURCE = "public_open_source"
     COMMERCIAL = "commercial"
     PRIVATE = "private"
-
-
         
 
 class IpPublishingConfirmation(Model):
@@ -147,6 +147,18 @@ class Structure(Model):
     examples_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     hdl_src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
 
+    def model_dump(self, **kwargs):
+        return_dict = {
+            'hdl_src_path': self.hdl_src_path,
+        }
+        if self.scripts_path != UNDEFINED_CONST:
+            return_dict['scripts_path'] = self.scripts_path
+        if self.docs_path != UNDEFINED_CONST:
+            return_dict['docs_path'] = self.docs_path
+        if self.examples_path != UNDEFINED_CONST:
+            return_dict['examples_path'] = self.examples_path
+        return return_dict
+
 
 class HdlSource(Model):
     directories: List[constr(pattern=VALID_POSIX_PATH_REGEX)]
@@ -157,12 +169,39 @@ class HdlSource(Model):
     tests_name_template: Optional[str] = UNDEFINED_CONST
     so_libs: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
 
+    def model_dump(self, **kwargs):
+        return_dict = {
+            'directories': self.directories,
+        }
+        if len(self.top_sv_files) > 0:
+            return_dict['top_sv_files'] = self.top_sv_files
+        if len(self.top_vhdl_files) > 0:
+            return_dict['top_vhdl_files'] = self.top_vhdl_files
+        if len(self.top) > 0:
+            return_dict['top'] = self.top
+        if self.tests_path != UNDEFINED_CONST:
+            return_dict['tests_path'] = self.tests_path
+        if self.tests_name_template != UNDEFINED_CONST:
+            return_dict['tests_name_template'] = self.tests_name_template
+        if len(self.so_libs) > 0:
+            return_dict['so_libs'] = self.so_libs
+        return return_dict
+
 
 class DesignUnderTest(Model):
     type: DutType
     name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = UNDEFINED_CONST
-    version: Optional[SemanticVersionSpec] = SemanticVersionSpec()
-    target: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
+    version: SemanticVersionSpec
+    target: constr(pattern=VALID_NAME_REGEX)
+
+    def model_dump(self, **kwargs):
+        return_dict = {
+            'type': self.type.value,
+            'name': self.name,
+            'version': str(self.version),
+            'target': self.target,
+        }
+        return return_dict
 
 
 class Parameter(Model):
@@ -178,25 +217,55 @@ class Target(Model):
     elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
     sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
 
+    def model_dump(self, **kwargs):
+        return_dict = {
+        }
+        if self.dut != UNDEFINED_CONST:
+            return_dict['dut'] = self.dut
+        if len(self.cmp) > 0:
+            return_dict['cmp'] = self.cmp
+        if len(self.elab) > 0:
+            return_dict['elab'] = self.elab
+        if len(self.sim) > 0:
+            return_dict['sim'] = self.sim
+        return return_dict
 
 
 class About(Model):
     sync: bool
-    sync_id: Optional[PositiveInt] = 0
-    sync_revision: Optional[str] = UNDEFINED_CONST
-    encrypted: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
-    mlicensed: Optional[bool] = False
-    pkg_type: IpPkgType
     vendor: str
     name: constr(pattern=VALID_NAME_REGEX)
     full_name: str
     version: SemanticVersion
+    pkg_type: IpPkgType
+    sync_id: Optional[PositiveInt] = 0
+    sync_revision: Optional[str] = UNDEFINED_CONST
+    encrypted: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
+    mlicensed: Optional[bool] = False
+
+    def model_dump(self, **kwargs):
+        return_dict = {
+            'sync': self.sync,
+            'vendor': self.vendor,
+            'name': self.name,
+            'full_name': self.full_name,
+            'version': str(self.version),
+            'pkg_type': self.pkg_type.value,
+        }
+        if self.sync:
+            return_dict['sync_id'] = self.sync_id
+            return_dict['sync_revision'] = self.sync_revision
+        if len(self.encrypted) > 0:
+            return_dict['encrypted'] = self.encrypted
+        if self.mlicensed:
+            return_dict['mlicensed'] = self.mlicensed
+        return return_dict
 
 class Ip(Model):
     ip: About
-    dependencies: Optional[dict[constr(pattern=VALID_IP_OWNER_NAME_REGEX), SemanticVersionSpec]] = {}
     structure: Structure
     hdl_src: HdlSource
+    dependencies: Optional[dict[constr(pattern=VALID_IP_OWNER_NAME_REGEX), SemanticVersionSpec]] = {}
     dut: Optional[DesignUnderTest] = None
     targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
 
@@ -230,6 +299,25 @@ class Ip(Model):
         self._dependencies_to_find_online: List[IpDefinition] = []
         self._dependencies_resolved: bool = False
         self._uninstalled = False
+
+    def model_dump(self, **kwargs):
+        return_dict = {
+            'ip': self.ip.model_dump(**kwargs),
+            'structure': self.structure.model_dump(**kwargs),
+            'hdl_src': self.hdl_src.model_dump(**kwargs),
+        }
+        if len(self.dependencies) > 0:
+            return_dict['dependencies'] = {}
+            for key, value in self.dependencies.items():
+                return_dict['dependencies'][key] = str(value)
+        if len(self.targets) > 0:
+            return_dict['targets'] = {}
+            for name, target in self.targets.items():
+                return_dict['targets'][name] = target.model_dump(**kwargs)
+        if self.ip.pkg_type == IpPkgType.DV_TB:
+            return_dict['dut'] = self.dut.model_dump(**kwargs)
+        return return_dict
+
 
     def __str__(self):
         if self.ip.vendor != UNDEFINED_CONST:
@@ -331,8 +419,8 @@ class Ip(Model):
             return instance
     def save_to_yaml(self, file_path: Path):
         with open(file_path, 'w') as file:
-            model_data: Dict = self.model_dump(exclude_unset=True)
-            yaml.safe_dump(model_data, file_path)
+            model_data: Dict = self.model_dump(exclude_defaults=True)
+            yaml.safe_dump(model_data, file)
 
     @property
     def uid(self) -> int:
@@ -694,19 +782,21 @@ class Ip(Model):
             raise Exception(f"A cycle was detected in {self} dependencies")
 
     def check_target(self, name: str="default"):
-        if name not in self.targets:
-            raise Exception(f"Target '{name}' does not exist for IP '{self}'")
+        if self.targets:
+            if name not in self.targets:
+                raise Exception(f"Target '{name}' does not exist for IP '{self}'")
 
     def get_target_dut_target(self, target_name: str="default") -> str:
-        dut_target_name = ""
+        dut_target_name = "default"
         if not self.has_dut:
             raise Exception(f"IP '{self}' does not have DUT")
-        if target_name not in self.targets:
-            raise Exception(f"Target '{target_name}' does not exist for IP '{self}'")
-        if target_name != "default":
-            dut_target_name = self.targets["default"].dut
-        if self.targets[target_name].dut != UNDEFINED_CONST:
-            dut_target_name = self.targets[target_name].dut
+        if self.targets and target_name!="default":
+            if target_name not in self.targets:
+                raise Exception(f"Target '{target_name}' does not exist for IP '{self}'")
+            if target_name != "default":
+                dut_target_name = self.targets["default"].dut
+            if self.targets[target_name].dut != UNDEFINED_CONST:
+                dut_target_name = self.targets[target_name].dut
         return dut_target_name
 
     def get_target_cmp_bool_defines(self, target_name: str="default") -> Dict[str, bool]:
@@ -714,9 +804,10 @@ class Ip(Model):
             defines = self.get_target_cmp_bool_defines()
         else:
             defines = {}
-        for define, value in self.targets[target_name].cmp.items():
-            if isinstance(value, bool):
-                defines[define] = value
+        if self.targets:
+            for define, value in self.targets[target_name].cmp.items():
+                if isinstance(value, bool):
+                    defines[define] = value
         return defines
     
     def get_target_cmp_val_defines(self, target_name: str="default") -> Dict[str, str]:
@@ -724,9 +815,10 @@ class Ip(Model):
             defines = self.get_target_cmp_val_defines()
         else:
             defines = {}
-        for define, value in self.targets[target_name].cmp.items():
-            if not isinstance(value, bool):
-                defines[define] = value
+        if self.targets:
+            for define, value in self.targets[target_name].cmp.items():
+                if not isinstance(value, bool):
+                    defines[define] = value
         return defines
     
     def get_target_sim_bool_args(self, target_name: str="default") -> Dict[str, bool]:
@@ -734,9 +826,10 @@ class Ip(Model):
             defines = self.get_target_sim_bool_args()
         else:
             defines = {}
-        for define, value in self.targets[target_name].sim.items():
-            if isinstance(value, bool):
-                defines[define] = value
+        if self.targets:
+            for define, value in self.targets[target_name].sim.items():
+                if isinstance(value, bool):
+                    defines[define] = value
         return defines
     
     def get_target_sim_val_args(self, target_name: str="default") -> Dict[str, str]:
@@ -744,9 +837,10 @@ class Ip(Model):
             defines = self.get_target_sim_val_args()
         else:
             defines = {}
-        for define, value in self.targets[target_name].sim.items():
-            if not isinstance(value, bool):
-                defines[define] = value
+        if self.targets:
+            for define, value in self.targets[target_name].sim.items():
+                if not isinstance(value, bool):
+                    defines[define] = value
         return defines
 
 

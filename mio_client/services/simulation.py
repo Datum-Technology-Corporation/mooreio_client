@@ -443,7 +443,7 @@ class LogicSimulator(Service, ABC):
         else:
             logs_path =  self.simulation_logs_path
         report.log_path = logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.log"
-        report.cmd_log_file_path = logs_path / f"{ip.result_file_name}.cmp_elab.{self.name}.cmd.log"
+        report.cmd_log_file_path = logs_path / f"{ip.result_file_name}.cmpelab.{self.name}.cmd.log"
         self.rmh.create_directory(report.work_directory)
         report.shared_objects = self.get_all_shared_objects(ip, config, report.ordered_dependencies)
         self.do_compile_and_elaborate(ip, config, report, scheduler, scheduler_config)

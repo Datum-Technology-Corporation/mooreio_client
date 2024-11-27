@@ -7,13 +7,13 @@ from doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceConfigur
 from ..core.ip import IpLocationType, Ip
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
-from . import user, ip, sim
+from . import user, ip, sim, gen
 from ..core.phase import Phase
 from ..core.command import Command
 
 
 ALL_COMMANDS = [
-    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox"
+    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox", "init"
 ]
 
 HELP_TEXT = """Moore.io Help Command
@@ -82,6 +82,8 @@ class HelpCommand(Command):
             self.print_text_and_exit(phase, sim.REGR_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "dox":
             self.print_text_and_exit(phase, DOX_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "init":
+            self.print_text_and_exit(phase, gen.INIT_HELP_TEXT)
 
     def needs_authentication(self) -> bool:
         return False
