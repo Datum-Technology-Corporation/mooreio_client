@@ -1,14 +1,16 @@
-.. Moore.io CLI Client documentation master file, created by
-   sphinx-quickstart on Tue Oct  1 14:51:55 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to Moore.io CLI Client documentation!
-===============================================
+Moore.io CLI Client User Manual
+===============================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+   overview
+   installation
+   sample_session
+   concepts
+   commands
+   configuration_space
 
 
 
