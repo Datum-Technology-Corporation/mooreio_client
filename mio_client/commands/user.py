@@ -3,10 +3,21 @@
 #######################################################################################################################
 import os
 from ..core.command import Command
+from ..core.phase import Phase
 
 
+
+#######################################################################################################################
+# API Entry Point
+#######################################################################################################################
+def get_commands():
+    return [LoginCommand, LogoutCommand]
+
+
+#######################################################################################################################
+# Login Command
+#######################################################################################################################
 PASSWORD_ENV_VAR_NAME="MIO_AUTHENTICATION_PASSWORD"
-
 LOGIN_HELP_TEXT = f"""Moore.io User Login Command
    Authenticates session with Moore.io Server.
 
@@ -22,20 +33,6 @@ Examples:
    mio login                        # Log in with prompts for username and password 
    mio login -u user123             # Specify username inline and only get prompted for the password
    mio login -u user123 --no-input  # Authenticate without a keyboard (especially handy for CI)"""
-
-LOGOUT_HELP_TEXT = """Moore.io User Logout Command
-   De-authenticates session with Moore.io Server.
-   
-Usage:
-   mio logout
-   
-Examples:
-   mio logout"""
-
-
-def get_commands():
-    return [LoginCommand, LogoutCommand]
-
 
 class LoginCommand(Command):
     @staticmethod
@@ -57,14 +54,14 @@ class LoginCommand(Command):
             required=False
         )
 
-    def phase_init(self, phase):
+    def phase_init(self, phase: Phase):
         if self.parsed_cli_arguments.no_input and not self.parsed_cli_arguments.username:
-            phase.error(Exception("`--no-input` must be combined with `--username`"))
+            phase.error = Exception("`--no-input` must be combined with `--username`")
 
     def needs_authentication(self) -> bool:
         return True
 
-    def phase_post_load_default_configuration(self, phase):
+    def phase_post_load_default_configuration(self, phase: Phase):
         try:
             # TODO This is a hack and will break if the configuration tree definition changes
             offline = self.rmh.default_configuration['authentication']['offline']
@@ -73,7 +70,7 @@ class LoginCommand(Command):
         if offline:
             phase.error = Exception("Cannot log in: configuration is set to offline mode")
 
-    def phase_post_load_user_data(self, phase):
+    def phase_post_load_user_data(self, phase: Phase):
         if self.parsed_cli_arguments.no_input and self.parsed_cli_arguments.username:
             self.rmh.user.authenticated = False
             self.rmh.user.access_token = ""
@@ -85,10 +82,22 @@ class LoginCommand(Command):
             else:
                 self.rmh.user.pre_set_password = password
 
-    def phase_post_save_user_data(self, phase):
+    def phase_post_save_user_data(self, phase: Phase):
         phase.end_process = True
         phase.end_process_message = f"Logged in successfully as '{self.rmh.user.username}'."
 
+
+#######################################################################################################################
+# Logout Command
+#######################################################################################################################
+LOGOUT_HELP_TEXT = """Moore.io User Logout Command
+   De-authenticates session with Moore.io Server.
+   
+Usage:
+   mio logout
+   
+Examples:
+   mio logout"""
 
 class LogoutCommand(Command):
     @staticmethod
@@ -102,7 +111,7 @@ class LogoutCommand(Command):
     def needs_authentication(self) -> bool:
         return False
 
-    def phase_post_load_user_data(self, phase):
+    def phase_post_load_user_data(self, phase: Phase):
         if self.rmh.user.authenticated:
             try:
                 self.rmh.deauthenticate(phase)
@@ -116,7 +125,7 @@ class LogoutCommand(Command):
             phase.end_process = True
             phase.end_process_message = "Not authenticated: no action taken"
 
-    def phase_post_save_user_data(self, phase):
+    def phase_post_save_user_data(self, phase: Phase):
         phase.end_process = True
         phase.end_process_message = "Logged out successfully."
 

@@ -8,29 +8,10 @@ from unittest import SkipTest
 import pytest
 
 import mio_client.cli
-from .common import OutputCapture
+from .common import OutputCapture, TestBase
 
 
-class TestCliUser:
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        mio_client.cli.URL_BASE = "http://localhost:8000"
-        mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
-        mio_client.cli.TEST_MODE = True
-
-    def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = mio_client.cli.main(args)
-        text = capsys.readouterr().out.rstrip()
-        return OutputCapture(return_code, text)
-
-    def login(self, capsys, username: str, password: str) -> OutputCapture:
-        os.environ['MIO_AUTHENTICATION_PASSWORD'] = password
-        result = self.run_cmd(capsys, ['--dbg', 'login', f'-u {username}', f'--no-input'])
-        return result
-
-    def logout(self, capsys) -> OutputCapture:
-        result = self.run_cmd(capsys, ['--dbg', 'logout'])
-        return result
+class TestCliUser(TestBase):
 
     @pytest.mark.single_process
     @pytest.mark.integration

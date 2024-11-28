@@ -8,24 +8,14 @@ pipeline {
     }
 
     stages {
-        stage('Setup Virtual Environment') {
-            steps {
-                sh 'make venv'
-            }
-        }
-        stage('Lint') {
-            steps {
-                sh 'make lint'
-            }
-        }
         stage('Run Tests') {
             steps {
                 sh 'make test'
             }
         }
-        stage('Build Package') {
+        stage('Lint') {
             steps {
-                sh 'make build'
+                sh 'make lint'
             }
         }
         stage('Build Documentation') {
@@ -35,13 +25,18 @@ pipeline {
         }
         stage('Archive Docs') {
             steps {
-                archiveArtifacts artifacts: 'docs/_build/html/**/*', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'docs/build/**/*', allowEmptyArchive: true
+            }
+        }
+        stage('Build Package') {
+            steps {
+                sh 'make build'
             }
         }
     }
     post {
         always {
-            junit 'reports/*.xml'
+            junit 'reports/report.xml'
             cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'reports/coverage.xml'
         }
     }

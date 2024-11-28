@@ -8,6 +8,7 @@ import pytest
 import yaml
 from semantic_version import SimpleSpec
 
+from .common import TestBase
 from mio_client.core.ip import Ip
 
 
@@ -26,18 +27,20 @@ def valid_local_dv_tb_fsoc_1_data():
     return get_fixture_data("valid_local_dv_tb_fsoc_1")
 
 
-class TestIp:
+class TestIp(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self, valid_local_dv_agent_1_data, valid_local_dv_tb_fsoc_1_data):
         self.valid_local_dv_agent_1_data = valid_local_dv_agent_1_data
         self.valid_local_dv_tb_fsoc_1_data = valid_local_dv_tb_fsoc_1_data
 
+    @pytest.mark.core
     def test_agent_instance_creation(self):
-        ip_instance = Ip(**self.valid_local_dv_agent_1_data)
+        ip_instance = self.model_creation(Ip, self.valid_local_dv_agent_1_data)
         assert isinstance(ip_instance, Ip)
 
+    @pytest.mark.core
     def test_ip_agent_instance_required_fields(self):
-        ip_instance = Ip(**self.valid_local_dv_agent_1_data)
+        ip_instance = self.model_creation(Ip, self.valid_local_dv_agent_1_data)
         assert hasattr(ip_instance, 'ip')
         assert hasattr(ip_instance, 'structure')
         assert hasattr(ip_instance, 'hdl_src')
@@ -47,8 +50,9 @@ class TestIp:
         assert hasattr(ip_instance.ip, 'name')
         assert hasattr(ip_instance.ip, 'full_name')
 
+    @pytest.mark.core
     def test_tb_instance_has_all_fields(self):
-        ip_instance = Ip(**self.valid_local_dv_tb_fsoc_1_data)
+        ip_instance = self.model_creation(Ip, self.valid_local_dv_tb_fsoc_1_data)
         assert hasattr(ip_instance, 'ip')
         assert hasattr(ip_instance.ip, 'sync')
         assert hasattr(ip_instance.ip, 'pkg_type')
@@ -82,14 +86,16 @@ class TestIp:
         assert hasattr(ip_instance.targets['abc'], 'elab')
         assert hasattr(ip_instance.targets['xyz'], 'sim')
 
+    @pytest.mark.core
     def test_tb_invalid_dependencies_name(self):
         invalid_data = self.valid_local_dv_agent_1_data.copy()
         invalid_data['dependencies'] = {
             "invalid name": SimpleSpec(">1.0")
         }
         with pytest.raises(ValueError):
-            Ip(**invalid_data)
+            ip_instance = self.model_creation(Ip, invalid_data)
 
+    @pytest.mark.core
     def test_agent_invalid_target_name(self):
         invalid_data = self.valid_local_dv_agent_1_data.copy()
         invalid_data['targets']['abc']['cmp'] = {
@@ -97,4 +103,4 @@ class TestIp:
             "valid_name": "invalid data"
         }
         with pytest.raises(ValueError):
-            Ip(**invalid_data)
+            ip_instance = self.model_creation(Ip, invalid_data)

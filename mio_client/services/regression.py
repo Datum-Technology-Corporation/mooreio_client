@@ -22,14 +22,13 @@ from pydantic import PositiveInt, PositiveFloat
 from pydantic.types import constr
 from enum import Enum
 
-from configuration import LogicSimulators
-from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
-from mio_client.core.service import Service, ServiceType
-from mio_client.core.ip import Ip
-from mio_client.core.model import Model, VALID_NAME_REGEX
-from phase import Phase
-from scheduler import JobResults
-from simulation import LogicSimulatorSimulationConfiguration, LogicSimulatorCompilationConfiguration, \
+from ..core.configuration import LogicSimulators
+from ..core.scheduler import JobScheduler, Job, JobSchedulerConfiguration, JobResults
+from ..core.service import Service, ServiceType
+from ..core.ip import Ip
+from ..core.model import Model, VALID_NAME_REGEX
+from ..core.phase import Phase
+from .simulation import LogicSimulatorSimulationConfiguration, LogicSimulatorCompilationConfiguration, \
     LogicSimulatorElaborationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration, \
     LogicSimulatorSimulationReport, LogicSimulator, LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, \
     LogicSimulatorCompilationAndElaborationReport, SimulatorMetricsDSim, DSimCloudJob, DSimCloudSimulationConfiguration, \

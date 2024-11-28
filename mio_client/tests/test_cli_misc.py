@@ -7,18 +7,13 @@ from pathlib import Path
 import pytest
 
 import mio_client.cli
-from .common import OutputCapture
+from .common import OutputCapture, TestBase
 
 
-class TestCliMisc:
+class TestCliMisc(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self):
         mio_client.cli.TEST_MODE = True
-
-    def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = mio_client.cli.main(args)
-        text = capsys.readouterr().out.rstrip()
-        return OutputCapture(return_code, text)
 
     def test_cli_help(self, capsys):
         result = self.run_cmd(capsys, ['--help'])
@@ -35,6 +30,7 @@ class TestCliMisc:
         assert "Options" in result.text
         assert "Full Command List" in result.text
 
+    @pytest.mark.core
     def test_cli_version(self, capsys):
         result = self.run_cmd(capsys, ['--version'])
         self.check_version(result)
@@ -46,6 +42,7 @@ class TestCliMisc:
         assert "Moore.io Client" in result.text
         assert mio_client.cli.VERSION in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_help(self, capsys):
         result = self.run_cmd(capsys, ['help', 'help'])
         assert result.return_code == 0
@@ -56,6 +53,7 @@ class TestCliMisc:
         assert "Usage" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_login(self, capsys):
         result = self.run_cmd(capsys, ['help', 'login'])
         assert result.return_code == 0
@@ -65,6 +63,7 @@ class TestCliMisc:
         assert "Options" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_logout(self, capsys):
         result = self.run_cmd(capsys, ['help', 'logout'])
         assert result.return_code == 0
@@ -73,6 +72,7 @@ class TestCliMisc:
         assert "Usage" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_list(self, capsys):
         result = self.run_cmd(capsys, ['help', 'list'])
         assert result.return_code == 0
@@ -81,6 +81,7 @@ class TestCliMisc:
         assert "Usage" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_package(self, capsys):
         result = self.run_cmd(capsys, ['help', 'package'])
         assert result.return_code == 0
@@ -89,6 +90,7 @@ class TestCliMisc:
         assert "Usage" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_publish(self, capsys):
         result = self.run_cmd(capsys, ['help', 'publish'])
         assert result.return_code == 0
@@ -98,6 +100,7 @@ class TestCliMisc:
         assert "Options" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_install(self, capsys):
         result = self.run_cmd(capsys, ['help', 'install'])
         assert result.return_code == 0
@@ -107,6 +110,7 @@ class TestCliMisc:
         assert "Options" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_uninstall(self, capsys):
         result = self.run_cmd(capsys, ['help', 'uninstall'])
         assert result.return_code == 0
@@ -115,11 +119,41 @@ class TestCliMisc:
         assert "Usage" in result.text
         assert "Examples" in result.text
 
+    @pytest.mark.core
     def test_cli_help_command_sim(self, capsys):
         result = self.run_cmd(capsys, ['help', 'sim'])
         assert result.return_code == 0
         assert "Moore.io" in result.text
         assert "Logic Simulation Command" in result.text
+        assert "Usage" in result.text
+        assert "Options" in result.text
+        assert "Examples" in result.text
+
+    @pytest.mark.core
+    def test_cli_help_command_regr(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'regr'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "Regression Command" in result.text
+        assert "Usage" in result.text
+        assert "Options" in result.text
+        assert "Examples" in result.text
+
+    @pytest.mark.core
+    def test_cli_help_command_dox(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'dox'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "Doxygen Command" in result.text
+        assert "Usage" in result.text
+        assert "Examples" in result.text
+
+    @pytest.mark.core
+    def test_cli_help_command_init(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'init'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "Initialization Command" in result.text
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text

@@ -13,7 +13,7 @@ from mio_client.core.phase import Phase
 from mio_client.core.root_manager import RootManager
 from mio_client.services.simulation import SimulatorMetricsDSim
 from mio_client.services.simulation import SimulatorXilinxVivado
-from .common import OutputCapture
+from .common import OutputCapture, TestBase
 
 #######################################################################################################################
 # Test (ie mock) classes
@@ -225,7 +225,7 @@ class TestSimulatorVivadoCommand(Command):
 #######################################################################################################################
 # Tests
 #######################################################################################################################
-class TestCore:
+class TestCore(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self):
         pass
@@ -238,17 +238,20 @@ class TestCore:
         return_code: int = self.rmh.run(command_type)
         assert return_code == 0
 
+    @pytest.mark.core
     def test_root_manager_phase_order(self):
         wd: Path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         user_home: Path = Path(os.path.join(os.path.dirname(__file__), "data", "user", "home_dirs", "valid_local_1"))
         self.run_command(TestCommand, wd, user_home)
         assert self.rmh.command.numbers == list(range(1, 45))
 
+    @pytest.mark.core
     def test_simulator_dsim_init(self):
         wd: Path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         user_home: Path = Path(os.path.join(os.path.dirname(__file__), "data", "user", "home_dirs", "valid_local_1"))
         self.run_command(TestSimulatorDSimCommand, wd, user_home)
 
+    @pytest.mark.core
     def test_simulator_vivado_init(self):
         wd: Path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         user_home: Path = Path(os.path.join(os.path.dirname(__file__), "data", "user", "home_dirs", "valid_local_1"))

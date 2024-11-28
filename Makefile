@@ -14,13 +14,15 @@ help:
 	@echo "Usage: make [target]"
 	@echo
 	@echo "Targets:"
-	@echo "  all     : Sets up the virtual environment, runs tests, lints code, generates docs, and builds the package"
-	@echo "  venv    : Sets up a virtual environment and installs dependencies"
-	@echo "  test    : Runs all pytest test suites"
-	@echo "  lint    : Lints codebase with flake8"
-	@echo "  docs    : Generates Sphinx documentation"
-	@echo "  build   : Builds package for PyPI"
-	@echo "  clean   : Cleans up build artifacts and caches"
+	@echo "  venv       : Sets up a virtual environment and installs dependencies"
+	@echo "  test       : Runs all pytest test suites"
+	@echo "  test-core  : Runs tests which do not require licenses"
+	@echo "  test-dsim  : Runs tests which require Metrics DSim"
+	@echo "  test-vivado: Runs tests which require Xilinx Vivado"
+	@echo "  lint       : Lints codebase with flake8"
+	@echo "  docs       : Generates Sphinx documentation"
+	@echo "  build      : Builds package for PyPI"
+	@echo "  clean      : Deletes venv, cleans up build artifacts and caches"
 
 
 #######################################################################################################################
@@ -46,16 +48,16 @@ RESET = "\033[0m"
 #######################################################################################################################
 # Configuration parameters
 #######################################################################################################################
-
+PACKAGE_NAME := mooreio_client
 
 #######################################################################################################################
 # Functions
 #######################################################################################################################
 define print_banner
 	@echo
-	@echo $(BOLD)$(GREEN)***********************************************************************************************************************
-	@echo $(CYAN)[$(MAGENTA)MIO$(CYAN)-$(MAGENTA)CLIENT$(CYAN)-$(MAGENTA)MAKE$(CYAN)]$(RESET)$(BOLD)$(1) ...
-	@echo $(GREEN)***********************************************************************************************************************$(RESET)
+	@echo -e $(BOLD)$(GREEN)***********************************************************************************************************************
+	@echo -e $(CYAN)[$(MAGENTA)MIO$(CYAN)-$(MAGENTA)CLIENT$(CYAN)-$(MAGENTA)MAKE$(CYAN)]$(RESET)$(BOLD)$(1) ...
+	@echo -e $(GREEN)***********************************************************************************************************************$(RESET)
 endef
 
 
@@ -111,43 +113,89 @@ clean-venv:
 # Run all pytest test suites
 test: venv
 	$(call print_banner, Running all pytest tests)
+	mkdir -p reports
 	$(PYTEST)
-#$(PYTEST) -v --tb=long -rA -s --showlocals --dist=loadscope
-#$(PYTEST) -n auto --dist=loadscope
+
+# Run only core tests
+test-core: venv
+	$(call print_banner, Running core tests)
+	mkdir -p reports
+	$(PYTEST) -m core
+
+# Run only dsim tests
+test-dsim: venv
+	$(call print_banner, Running DSim tests)
+	mkdir -p reports
+	$(PYTEST) -m dsim
+
+# Run only vivado tests
+test-vivado: venv
+	$(call print_banner, Running Vivado tests)
+	mkdir -p reports
+	$(PYTEST) -m vivado
 
 # Lints codebase
 lint: venv
 	$(call print_banner, Linting codebase)
-	$(FLAKE8) mio_client
+	mkdir -p reports
+	$(FLAKE8) mio_client --format=html --htmldir=reports/lint
 
 
 #######################################################################################################################
 # Build Targets
-.PHONY: docs build clean-build publish
+.PHONY: clean docs clean-docs build clean-build publish-test publish-test-install publish publish-install
 #######################################################################################################################
+# Clean all outputs
+clean: clean-venv clean-build clean-docs
+	$(call print_banner, Cleaning remaining outputs)
+	rm -rf ./reports
+
 # Generates documentation
 docs: venv
 	$(call print_banner, Generating documentation)
-	$(SPHINX_API_DOC) -o docs/source/api .
-	$(SPHINX_BUILD) -b html docs/source docs/build
+	$(SPHINX_API_DOC) -o ./docs/source/mio_client ./mio_client/
+	$(SPHINX_BUILD) -b html ./docs/source docs/build
+
+# Cleans up all docs output files
+clean-docs:
+	$(call print_banner, Cleaning up docs output files)
+	rm -rf docs/build
+	rm -rf docs/source/mio_client
 
 # Builds package for PyPI
 build: venv
 	$(call print_banner, Building package)
-	$(PYTHON) setup.py sdist bdist_wheel
+	. ./venv/bin/activate && $(PYTHON) setup.py sdist bdist_wheel
 
 # Cleans up all build files
 clean-build:
 	$(call print_banner, Cleaning up build files)
-	rm -rf docs/build
 	rm -rf build
 	rm -rf dist
 	rm -rf *.egg-info
+	rm -rf .eggs
+	find . -type d -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
 
+# Publishes package to TestPyPI
+publish-test: clean build docs
+	$(call print_banner, Test Publishing package to TestPyPI)
+	. ./venv/bin/activate && $(TWINE) upload --repository-url https://test.pypi.org/legacy/ dist/*
+	@echo "Test publish complete: The package has been uploaded to TestPyPI"
+
+# Installs package from TestPyPI
+publish-test-install: publish-test
+	$(call print_banner, Installing package from TestPyPI)
+	$(PIP) install --index-url https://test.pypi.org/simple/ $(PACKAGE_NAME)
+
 # Publishes package to PyPI
-publish: clean docs build
-	$(call print_banner, Publishing package)
-	$(TWINE) upload dist/*
-	@echo "  publish : Cleans, builds, and publishes the package to PyPI"
+publish: clean build docs
+	$(call print_banner, Publishing package to PyPI)
+	. ./venv/bin/activate && $(TWINE) upload --repository pypi dist/*
+	@echo "Publish complete: The package has been uploaded to PyPI"
+
+# Installs package from TestPyPI
+publish-install: publish
+	$(call print_banner, Installing package from PyPI)
+	$(PIP) install $(PACKAGE_NAME)
 

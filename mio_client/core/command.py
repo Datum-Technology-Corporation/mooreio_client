@@ -3,7 +3,7 @@
 #######################################################################################################################
 from abc import abstractmethod
 
-from phase import Phase
+from .phase import Phase
 from .model import Model
 
 

@@ -24,16 +24,8 @@ metrics_dsim_default_compilation_sv_arguments=[
 xilinx_vivado_default_compilation_sv_arguments=[
     "--incr"
 ]
-synopsys_vcs_default_compilation_sv_arguments=[]
-siemens_questa_default_compilation_sv_arguments=[]
-cadence_xcelium_default_compilation_sv_arguments=[]
-aldec_riviera_pro_default_compilation_sv_arguments=[]
 metrics_dsim_default_compilation_vhdl_arguments=[]
 xilinx_vivado_default_compilation_vhdl_arguments=[]
-synopsys_vcs_default_compilation_vhdl_arguments=[]
-siemens_questa_default_compilation_vhdl_arguments=[]
-cadence_xcelium_default_compilation_vhdl_arguments=[]
-aldec_riviera_pro_default_compilation_vhdl_arguments=[]
 metrics_dsim_default_elaboration_arguments=[
     "+acc+b",
     "-suppress DupModuleDefn"
@@ -44,31 +36,19 @@ xilinx_vivado_default_elaboration_arguments=[
     "--O0",
     "-dup_entity_as_module"
 ]
-synopsys_vcs_default_elaboration_arguments=[]
-siemens_questa_default_elaboration_arguments=[]
-cadence_xcelium_default_elaboration_arguments=[]
-aldec_riviera_pro_default_elaboration_arguments=[]
 metrics_dsim_default_compilation_and_elaboration_arguments=[
     "+acc+b",
     "-suppress MultiBlockWrite:ReadingOutputModport",
     "-warn UndefinedMacro:DupModuleDefn"
 ]
-synopsys_vcs_default_compilation_and_elaboration_arguments=[]
-siemens_questa_default_compilation_and_elaboration_arguments=[]
-cadence_xcelium_default_compilation_and_elaboration_arguments=[]
-aldec_riviera_pro_default_compilation_and_elaboration_arguments=[]
 metrics_dsim_default_simulation_arguments=[
 
 ]
 xilinx_vivado_default_simulation_arguments=[
     "--stats"
 ]
-synopsys_vcs_default_simulation_arguments=[]
-siemens_questa_default_simulation_arguments=[]
-cadence_xcelium_default_simulation_arguments=[]
-aldec_riviera_pro_default_simulation_arguments=[]
 
-[synthesis]
+[logic_synthesis]
 root_path="syn"
 
 [lint]

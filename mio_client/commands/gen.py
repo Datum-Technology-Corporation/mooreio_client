@@ -3,22 +3,19 @@
 #######################################################################################################################
 from pathlib import Path
 from typing import Dict, List
-from enum import Enum, auto
 
-from attr.converters import optional
-from semantic_version import Version
-
-from doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceConfiguration
-from init import InitServiceModes, InitServiceReport, InitService, InitProjectConfiguration, \
+from ..services.init import InitServiceModes, InitServiceReport, InitService, InitProjectConfiguration, \
     InitIpConfiguration
-from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
-from . import user, ip, sim
 from ..core.phase import Phase
 from ..core.command import Command
 from ..core.ip import Ip, IpPkgType, DutType
 
-INIT_HELP_TEXT = """Moore.io Init(ialization) Command
+
+#######################################################################################################################
+# Init Command
+#######################################################################################################################
+INIT_HELP_TEXT = """Moore.io Initialization Command
    Creates a new Project skeleton if not already within a Project.  If not, a new IP skeleton is created.
    This is the recommended method for importing code to the Moore.io ecosystem.
    

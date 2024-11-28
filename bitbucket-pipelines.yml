@@ -3,7 +3,7 @@
 #######################################################################################################################
 
 
-image: python:3.11
+image: python:3.12
 
 pipelines:
   default:
@@ -11,7 +11,7 @@ pipelines:
         caches:
           - pip
         script:
-          - make venv
           - make test
-          - make build
+          - make lint
           - make docs
+          - make build

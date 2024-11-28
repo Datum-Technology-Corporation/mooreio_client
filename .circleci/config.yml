@@ -8,26 +8,26 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/python:3.11
+      - image: circleci/python:3.12
 
     steps:
       - checkout
-
-      - run:
-          name: Setup Virtual Environment and Install Dependencies
-          command: make venv
 
       - run:
           name: Run tests
           command: make test
 
       - run:
-          name: Build package
-          command: make build
+          name: Run Lint
+          command: make lint
 
       - run:
           name: Build documentation
           command: make docs
+
+      - run:
+          name: Build package
+          command: make build
 
 workflows:
   version: 2

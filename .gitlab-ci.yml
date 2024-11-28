@@ -3,23 +3,23 @@
 #######################################################################################################################
 
 
-image: python:3.11
+image: python:3.12
 
 stages:
   - test
   - build
 
-before_script:
-  - make venv
+before_script: []
 
 test:
   stage: test
   script:
     - make test
+    - make lint
 
 docs:
   stage: build
   script:
-    - make build
     - make docs
+    - make build
 

@@ -46,10 +46,10 @@ other regards and can be used without authentication to build a Chip from start 
 
 ## Installation
 
-You can install `mio_client` via `pip`:
+You can install `mio` via `pip`:
 
 ```sh
-pip install mio_client
+pip install mooreio_client
 ```
 
 ## Usage

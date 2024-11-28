@@ -3,9 +3,8 @@
 #######################################################################################################################
 from typing import List, Optional
 
-import yaml
 from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat
-from model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
+from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
 from enum import Enum
 
@@ -44,9 +43,10 @@ class DSimCloudComputeSizes(Enum):
 class Project(Model):
     sync: bool
     sync_id: Optional[PositiveInt] = 0
+    local_mode: bool
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
-    local_mode: bool
+    description: Optional[str] = UNDEFINED_CONST
 
 
 class Authentication(Model):
@@ -76,43 +76,19 @@ class LogicSimulation(Model):
     metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_cloud_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    synopsys_vcs_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    siemens_questa_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    cadence_xcelium_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    aldec_riviera_pro_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_default_compilation_sv_arguments: List[str] = []
     xilinx_vivado_default_compilation_sv_arguments: List[str] = []
-    synopsys_vcs_default_compilation_sv_arguments: List[str] = []
-    siemens_questa_default_compilation_sv_arguments: List[str] = []
-    cadence_xcelium_default_compilation_sv_arguments: List[str] = []
-    aldec_riviera_pro_default_compilation_sv_arguments: List[str] = []
     metrics_dsim_default_compilation_vhdl_arguments: List[str] = []
     xilinx_vivado_default_compilation_vhdl_arguments: List[str] = []
-    synopsys_vcs_default_compilation_vhdl_arguments: List[str] = []
-    siemens_questa_default_compilation_vhdl_arguments: List[str] = []
-    cadence_xcelium_default_compilation_vhdl_arguments: List[str] = []
-    aldec_riviera_pro_default_compilation_vhdl_arguments: List[str] = []
     metrics_dsim_default_elaboration_arguments: List[str] = []
     xilinx_vivado_default_elaboration_arguments: List[str] = []
-    synopsys_vcs_default_elaboration_arguments: List[str] = []
-    siemens_questa_default_elaboration_arguments: List[str] = []
-    cadence_xcelium_default_elaboration_arguments: List[str] = []
-    aldec_riviera_pro_default_elaboration_arguments: List[str] = []
     metrics_dsim_default_compilation_and_elaboration_arguments: List[str] = []
-    synopsys_vcs_default_compilation_and_elaboration_arguments: List[str] = []
-    siemens_questa_default_compilation_and_elaboration_arguments: List[str] = []
-    cadence_xcelium_default_compilation_and_elaboration_arguments: List[str] = []
-    aldec_riviera_pro_default_compilation_and_elaboration_arguments: List[str] = []
     metrics_dsim_default_simulation_arguments: List[str] = []
     xilinx_vivado_default_simulation_arguments: List[str] = []
-    synopsys_vcs_default_simulation_arguments: List[str] = []
-    siemens_questa_default_simulation_arguments: List[str] = []
-    cadence_xcelium_default_simulation_arguments: List[str] = []
-    aldec_riviera_pro_default_simulation_arguments: List[str] = []
     default_simulator: Optional[LogicSimulators] = LogicSimulators.UNDEFINED
 
 
-class Synthesis(Model):
+class LogicSynthesis(Model):
     root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
 
 
@@ -134,10 +110,6 @@ class Encryption(Model):
     metrics_dsim_sv_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     metrics_dsim_vhdl_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
     xilinx_vivado_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    synopsys_vcs_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    siemens_questa_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    cadence_xcelium_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    aldec_riviera_pro_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
 
 
 class Configuration(Model):
@@ -146,7 +118,7 @@ class Configuration(Model):
     """
     project: Project
     logic_simulation: LogicSimulation
-    synthesis: Synthesis
+    logic_synthesis: LogicSynthesis
     lint: Linting
     ip: Ip
     docs: Docs

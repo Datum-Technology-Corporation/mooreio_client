@@ -5,10 +5,10 @@
 
 language: python
 python:
-  - "3.11"
-install:
-  - make venv
+  - "3.12"
+install: []
 script:
   - make test
-  - make build
+  - make lint
   - make docs
+  - make build

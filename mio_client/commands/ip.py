@@ -1,3 +1,7 @@
+# Copyright 2020-2024 Datum Technology Corporation
+# All rights reserved.
+#######################################################################################################################
+
 import warnings
 from enum import Enum
 from pathlib import Path
@@ -5,15 +9,28 @@ from typing import Dict
 
 from semantic_version import SimpleSpec
 
-from phase import Phase
-from scheduler import JobScheduler
-from service import ServiceType
+from ..core.phase import Phase
+from ..core.scheduler import JobScheduler
+from ..core.service import ServiceType
 from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration, \
     LogicSimulatorLibraryDeletionConfiguration, LogicSimulatorLibraryDeletionReport
 from ..core.command import Command
 from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
 
+
+
+#######################################################################################################################
+# API Entry Point
+#######################################################################################################################
+def get_commands():
+    return [List, PackageCommand, PublishCommand, InstallCommand, UninstallCommand, CleanCommand]
+
+
+
+#######################################################################################################################
+# List Command
+#######################################################################################################################
 LIST_HELP_TEXT = """Moore.io IP List Command
    Lists IPs available to the current project.
 
@@ -22,94 +39,6 @@ Usage:
 
 Examples:
    mio list"""
-
-
-PACKAGE_HELP_TEXT = """Moore.io IP Package Command
-   Command for encrypting/compressing entire IP on local disk.  To enable IP encryption, add an 'encrypted' entry to the
-   'hdl_src' section of your descriptor (ip.yml).  Moore.io will only attempt to encrypt using the simulators listed
-   under 'encrypted' of the 'ip' section.
-   
-Usage:
-   mio package IP DEST
-   
-Examples:
-   mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory."""
-
-
-PUBLISH_HELP_TEXT = """Moore.io IP Publish Command
-   Packages and publishes an IP to the Moore.io IP Marketplace (https://mooreio.com).
-   Currently only available to administrator accounts.
-
-Usage:
-   mio publish IP [OPTIONS]
-
-Options:
-   -c ORG, --customer ORG  # Specifies Customer Organization name.  Commercial IPs only.
-
-Examples:
-   mio publish uvma_my_ip          # Publish Public IP 'uvma_my_ip'.
-   mio publish uvma_my_ip -c acme  # Publish Commercial IP 'uvma_my_ip' for customer 'acme'."""
-
-
-INSTALL_HELP_TEXT = """Moore.io IP Install Command
-   Downloads IP(s) from Moore.io Server.  Can be used in 3 ways:
-     1) Without specifying an IP: install all missing dependencies for all IPs in the current Project
-     2) Specifying the name a local IP: install all missing dependencies for a specific IP in the current project
-     3) Specifying the name of an IP on the Moore.io Server: install remote IP and all its dependencies into the current Project
-   
-Usage:
-   mio install [IP] [OPTIONS]
-
-Options:
-   -v SPEC, --version SPEC  # Specifies IP version (only for remote IPs). Must specify IP when using this option.
-   
-Examples:
-   mio install                     # Install all dependencies for all IPs in the current Project
-   mio install my_ip               # Install all dependencies for a specific IP in the current Project
-   mio install acme/abc            # Install latest version of IP from Moore.io Server and its dependencies into current Project
-   mio install acme/abc -v "1.2.3" # Install specific version of IP from Moore.io Server and its dependencies into current Project"""
-
-
-UNINSTALL_HELP_TEXT = """Moore.io IP Uninstall Command
-   Removes IP(s) installed in current Project.  Can be used in 3 ways:
-     1) Without specifying an IP: delete all installed dependencies for all IPs in the current Project
-     2) Specifying the name a local IP: delete all installed dependencies for a specific local IP in the current project
-     3) Specifying the name of an installed IP: delete installed IP and all its installed dependencies from the current Project
-   
-Usage:
-   mio uninstall [IP]
-
-Examples:
-   mio uninstall           # Delete all installed IPs in current project
-   mio uninstall my_ip     # Delete all installed dependencies for a specific local IP in the current project
-   mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project"""
-
-
-CLEAN_HELP_TEXT = """Moore.io Clean Command
-   Deletes output artifacts from EDA tools and/or Moore.io Project directory contents (/.mio).
-   Only logic simulation artifacts are currently supported.
-   
-Usage:
-   mio clean [IP] [OPTIONS]
-   
-Options:
-   -d, --deep  # Removes Project Moore.io directory (/.mio)
-   
-Examples:
-   mio clean my_ip   # Delete compilation, elaboration and simulation artifacts for IP 'my_ip'
-   mio clean --deep  # Removes contents of Project Moore.io directory (/.mio)"""
-
-
-class InstallMode(Enum):
-    UNKNOWN = 0
-    ALL = 1
-    LOCAL = 2
-    REMOTE = 3
-
-
-def get_commands():
-    return [List, PackageCommand, PublishCommand, InstallCommand, UninstallCommand, CleanCommand]
-
 
 class List(Command):
     @staticmethod
@@ -136,6 +65,21 @@ class List(Command):
             print(ip_text)
         phase.end_process = True
 
+
+
+#######################################################################################################################
+# Package Command
+#######################################################################################################################
+PACKAGE_HELP_TEXT = """Moore.io IP Package Command
+   Command for encrypting/compressing entire IP on local disk.  To enable IP encryption, add an 'encrypted' entry to the
+   'hdl_src' section of your descriptor (ip.yml).  Moore.io will only attempt to encrypt using the simulators listed
+   under 'encrypted' of the 'ip' section.
+   
+Usage:
+   mio package IP DEST
+   
+Examples:
+   mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory."""
 
 class PackageCommand(Command):
     def __init__(self):
@@ -203,6 +147,23 @@ class PackageCommand(Command):
         print(f"Packaged IP '{self.ip}' successfully.")
 
 
+
+#######################################################################################################################
+# Publish Command
+#######################################################################################################################
+PUBLISH_HELP_TEXT = """Moore.io IP Publish Command
+   Packages and publishes an IP to the Moore.io IP Marketplace (https://mooreio.com).
+   Currently only available to administrator accounts.
+
+Usage:
+   mio publish IP [OPTIONS]
+
+Options:
+   -c ORG, --customer ORG  # Specifies Customer Organization name.  Commercial IPs only.
+
+Examples:
+   mio publish uvma_my_ip          # Publish Public IP 'uvma_my_ip'.
+   mio publish uvma_my_ip -c acme  # Publish Commercial IP 'uvma_my_ip' for customer 'acme'."""
 
 class PublishCommand(Command):
     def __init__(self):
@@ -288,6 +249,34 @@ class PublishCommand(Command):
         except Exception as e:
             warnings.warn(f"Failed to delete compressed tarball for IP '{self.ip}': {e}")
 
+
+
+#######################################################################################################################
+# Install Command
+#######################################################################################################################
+INSTALL_HELP_TEXT = """Moore.io IP Install Command
+   Downloads IP(s) from Moore.io Server.  Can be used in 3 ways:
+     1) Without specifying an IP: install all missing dependencies for all IPs in the current Project
+     2) Specifying the name a local IP: install all missing dependencies for a specific IP in the current project
+     3) Specifying the name of an IP on the Moore.io Server: install remote IP and all its dependencies into the current Project
+   
+Usage:
+   mio install [IP] [OPTIONS]
+
+Options:
+   -v SPEC, --version SPEC  # Specifies IP version (only for remote IPs). Must specify IP when using this option.
+   
+Examples:
+   mio install                     # Install all dependencies for all IPs in the current Project
+   mio install my_ip               # Install all dependencies for a specific IP in the current Project
+   mio install acme/abc            # Install latest version of IP from Moore.io Server and its dependencies into current Project
+   mio install acme/abc -v "1.2.3" # Install specific version of IP from Moore.io Server and its dependencies into current Project"""
+
+class InstallMode(Enum):
+    UNKNOWN = 0
+    ALL = 1
+    LOCAL = 2
+    REMOTE = 3
 
 class InstallCommand(Command):
     def __init__(self):
@@ -396,6 +385,23 @@ class InstallCommand(Command):
         pass
 
 
+#######################################################################################################################
+# Uninstall Command
+#######################################################################################################################
+UNINSTALL_HELP_TEXT = """Moore.io IP Uninstall Command
+   Removes IP(s) installed in current Project.  Can be used in 3 ways:
+     1) Without specifying an IP: delete all installed dependencies for all IPs in the current Project
+     2) Specifying the name a local IP: delete all installed dependencies for a specific local IP in the current project
+     3) Specifying the name of an installed IP: delete installed IP and all its installed dependencies from the current Project
+   
+Usage:
+   mio uninstall [IP]
+
+Examples:
+   mio uninstall           # Delete all installed IPs in current project
+   mio uninstall my_ip     # Delete all installed dependencies for a specific local IP in the current project
+   mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project"""
+
 class UninstallCommand(Command):
     def __init__(self):
         super().__init__()
@@ -459,6 +465,23 @@ class UninstallCommand(Command):
     def phase_cleanup(self, phase: Phase):
         pass
 
+
+#######################################################################################################################
+# Clean Command
+#######################################################################################################################
+CLEAN_HELP_TEXT = """Moore.io Clean Command
+   Deletes output artifacts from EDA tools and/or Moore.io Project directory contents (/.mio).
+   Only logic simulation artifacts are currently supported.
+   
+Usage:
+   mio clean [IP] [OPTIONS]
+   
+Options:
+   -d, --deep  # Removes Project Moore.io directory (/.mio)
+   
+Examples:
+   mio clean my_ip   # Delete compilation, elaboration and simulation artifacts for IP 'my_ip'
+   mio clean --deep  # Removes contents of Project Moore.io directory (/.mio)"""
 
 class CleanCommand(Command):
     def __init__(self):

@@ -15,17 +15,17 @@ jobs:
   steps:
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: '3.11'
+      versionSpec: '3.12'
       addToPath: true
-  - script: make venv
-    displayName: 'Setup Virtual Environment and install Dependencies'
   - script: |
       make test
     displayName: 'Run tests'
-  - script: |
-      make build
-    displayName: 'Build package'
+  - script: make lint
+    displayName: 'Run lint'
   - script: |
       make docs
     displayName: 'Build documentation'
+  - script: |
+      make build
+    displayName: 'Build package'
 

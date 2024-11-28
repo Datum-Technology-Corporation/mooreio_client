@@ -10,172 +10,15 @@ import pytest
 import shutil
 
 import mio_client.cli
-from .common import OutputCapture
+from .common import OutputCapture, TestBase
 
 
-class TestCliIp:
+class TestCliIp(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
         mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
         mio_client.cli.TEST_MODE = True
-
-    def remove_directory(self, path:Path):
-        try:
-            if not os.path.exists(path):
-                return
-            shutil.rmtree(path)
-        except OSError as e:
-            print(f"An error occurred while removing directory '{path}': {e}")
-
-    def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = mio_client.cli.main(args)
-        text = capsys.readouterr().out.rstrip()
-        return OutputCapture(return_code, text)
-
-    def login(self, capsys, username: str, password: str) -> OutputCapture:
-        os.environ['MIO_AUTHENTICATION_PASSWORD'] = password
-        result = self.run_cmd(capsys, ['login', f'-u {username}', f'--no-input'])
-        assert result.return_code == 0
-        assert "Logged in successfully" in result.text
-        assert mio_client.cli.root_manager.user.authenticated == True
-        return result
-
-    def logout(self, capsys) -> OutputCapture:
-        result = self.run_cmd(capsys, ['logout'])
-        assert result.return_code == 0
-        assert "Logged out successfully" in result.text
-        assert mio_client.cli.root_manager.user.authenticated == False
-        return result
-
-    def package_ip(self, capsys, project_path: Path, ip_name: str, destination:Path):
-        if destination.exists():
-            destination.unlink()
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'package', ip_name, str(destination)])
-        fucking_text = result.text
-        assert result.return_code == 0
-        assert "Packaged IP" in result.text
-        assert "successfully" in result.text
-        assert destination.exists()
-        assert destination.is_file()
-        assert destination.stat().st_size > 0, "Packaged IP file is empty"
-        with tarfile.open(destination, "r:gz") as tar:
-            assert tar.getmembers(), "Packaged IP file is not a valid compressed tarball or is empty"
-
-    def publish_ip(self, capsys, project_path: Path, ip_name: str, customer:str=""):
-        if customer!="":
-            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'publish', ip_name, f"-c {customer}"])
-        else:
-            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'publish', ip_name])
-        assert result.return_code == 0
-        assert "Published IP" in result.text
-        assert "successfully" in result.text
-
-    def install_ip(self, capsys, project_path:Path, ip_name:str=""):
-        if ip_name == "":
-            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'install'])
-        else:
-            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'install', ip_name])
-        assert result.return_code == 0
-        if ip_name == "":
-            assert "Installed all IPs successfully" in result.text
-        else:
-            assert "Installed IP" in result.text
-            assert "successfully" in result.text
-
-    def uninstall_ip(self, capsys, project_path:Path, ip_name:str=""):
-        if ip_name == "":
-            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'uninstall'])
-        else:
-            result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'uninstall', ip_name])
-        assert result.return_code == 0
-        if ip_name == "":
-            assert "Uninstalled all IPs successfully" in result.text
-        else:
-            assert "Uninstalled IP" in result.text
-            assert "successfully" in result.text
-
-    def cmp_ip(self, capsys, project_path:Path, ip_name:str):
-        if ip_name == "":
-            raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-C'])
-        assert result.return_code == 0
-
-    def elab_ip(self, capsys, project_path:Path, ip_name:str):
-        if ip_name == "":
-            raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-E'])
-        assert result.return_code == 0
-
-    def cmpelab_ip(self, capsys, project_path:Path, ip_name:str):
-        if ip_name == "":
-            raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-CE'])
-        assert result.return_code == 0
-
-    def sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
-               cov:bool=False, args_boolean:list[str]=[], args_value:dict[str,str]={}):
-        if ip_name == "":
-            raise Exception(f"IP name cannot be empty!")
-        optional_args = []
-        if waves:
-            optional_args.append('-w')
-        if cov:
-            optional_args.append('-c')
-        if len(args_boolean) > 0 or len(args_value) > 0:
-            plus_args = ["-+"]
-            for arg in args_boolean:
-                plus_args.append(f"+{arg}")
-            for arg in args_value:
-                plus_args.append(f"+{arg}={args_value[arg]}")
-        else:
-            plus_args = []
-        result = self.run_cmd(capsys, [
-            f'--wd={project_path}', '--dbg', 'sim', ip_name, '-S', f'-t {test_name}', f'-s {seed}'
-        ] + optional_args + plus_args)
-        assert result.return_code == 0
-
-    def one_shot_sim_ip(self, capsys, project_path:Path, ip_name:str, test_name:str, seed:int=1, waves:bool=False,
-                        cov:bool=False, defines_boolean:list[str]=[], defines_value:dict[str,str]={},
-                        args_boolean:list[str]=[], args_value:dict[str,str]={}) -> OutputCapture:
-        if ip_name == "":
-            raise Exception(f"IP name cannot be empty!")
-        optional_args = []
-        if waves:
-            optional_args.append('-w')
-        if cov:
-            optional_args.append('-c')
-        if len(defines_boolean) > 0 or len(defines_value) > 0 or len(args_boolean) > 0 or len(args_value) > 0:
-            plus_args = ["-+"]
-            for define in defines_boolean:
-                plus_args.append(f"+define+{define}")
-            for define in defines_value:
-                plus_args.append(f"+define+{define}={defines_value[define]}")
-            for arg in args_boolean:
-                plus_args.append(f"+{arg}")
-            for arg in args_value:
-                plus_args.append(f"+{arg}={args_value[arg]}")
-        else:
-            plus_args = []
-        result = self.run_cmd(capsys, [
-            f'--wd={project_path}', '--dbg', 'sim', ip_name, f'-t {test_name}', f'-s {seed}'
-        ] + optional_args + plus_args)
-        assert result.return_code == 0
-        return result
-    
-    def clean_ip(self, capsys, project_path: Path, ip_name: str):
-        if ip_name == "":
-            raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', ip_name])
-
-    def deep_clean(self, capsys, project_path: Path):
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'clean', '--deep'])
-        assert result.return_code == 0
-        assert not (project_path / ".mio").exists()
-    
-    def check_ip_database(self, exp_count:int):
-        if mio_client.cli.root_manager.ip_database.num_ips != exp_count:
-            raise Exception(f"Expected {exp_count} IPs in database, found {mio_client.cli.root_manager.ip_database.num_ips}")
 
     def reset_workspace(self):
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
@@ -206,9 +49,7 @@ class TestCliIp:
         wd_path = Path(os.path.join(os.path.dirname(__file__), "wd"))
         self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
 
-    #@pytest.mark.integration
-    @pytest.mark.single_process
-    def test_cli_publish_sim_ip(self, capsys):
+    def cli_publish_sim_ip(self, capsys, app: str):
         self.reset_workspace()
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
         p2_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p2"))
@@ -257,7 +98,7 @@ class TestCliIp:
         self.check_ip_database(7)
 
         # 11. Simulate P4
-        self.one_shot_sim_ip(capsys, p4_path, 'g_tb', 'smoke', 1)
+        self.one_shot_sim_ip(capsys, p4_path, app, 'g_tb', 'smoke', 1)
         self.check_ip_database(7)
 
         # 12. Uninstall E from P4
@@ -280,4 +121,13 @@ class TestCliIp:
         # 13. Logout from P1
         self.logout(capsys)
 
+    @pytest.mark.single_process
+    @pytest.mark.integration
+    def test_cli_publish_sim_ip_dsim(self, capsys):
+        self.cli_publish_sim_ip(capsys, 'dsim')
 
+    @pytest.mark.single_process
+    @pytest.mark.integration
+    @pytest.mark.skip(reason="Vivado licensing not available yet")
+    def test_cli_publish_sim_ip_vivado(self, capsys):
+        self.cli_publish_sim_ip(capsys, 'vivado')
