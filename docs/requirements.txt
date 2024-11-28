@@ -2,11 +2,8 @@
 # All rights reserved.
 #######################################################################################################################
 
-sphinx==4.1.2
-sphinx-autobuild==2024.10.3
-sphinx-rtd-theme
-sphinx.ext.viewcode
-sphinx.ext.napoleon
-sphinx.ext.autosectionlabel
-sphinx_autodoc_typehints
+sphinx>=4.1.2
+sphinx-autobuild>=2024.10.3
+sphinx_rtd_theme>=3.0.2
+sphinx_book_theme>=1.1.3
 

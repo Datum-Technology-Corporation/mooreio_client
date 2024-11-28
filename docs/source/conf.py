@@ -8,6 +8,7 @@ import os
 import sys
 from docutils import nodes
 from docutils.parsers.rst import Directive
+import sphinx_rtd_theme
 
 
 #######################################################################################################################
@@ -25,23 +26,34 @@ release = '2.0.4'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 #######################################################################################################################
 extensions = [
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.autosectionlabel',
-    "sphinx_autodoc_typehints"
+    'sphinx_book_theme',
+    #'sphinx.ext.viewcode',
+    #'sphinx.ext.napoleon',
+    #'sphinx.ext.autosectionlabel',
+    #"sphinx_autodoc_typehints"
 ]
 templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
 #######################################################################################################################
 # Options for HTML output
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 #######################################################################################################################
-#html_theme = 'furo'
-html_theme = 'alabaster'
+html_theme = 'sphinx_book_theme'
 html_logo = '_static/mio_logo.png'
+html_copy_source = True
+html_sourcelink_suffix = ""
 html_theme_options = {
+    "path_to_docs": "docs",
+    "repository_url": "https://github.com/Datum-Technology-Corporation/mooreio_client",
+    "use_edit_page_button": True,
+    "use_issues_button": True,
+    "use_repository_button": True,
+    "use_download_button": True,
+    "use_sidenotes": True,
+    "logo_only": True,
+    "show_toc_level": 2,
 }
 html_css_files = [
     '_static/custom.css',
