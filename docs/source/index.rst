@@ -2,8 +2,7 @@ Moore.io CLI Client User Manual
 ===============================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
 
    overview
    installation
@@ -13,11 +12,11 @@ Moore.io CLI Client User Manual
    configuration_space
 
 
+API Documentation
+=================
 
-Indices and tables
-==================
+.. toctree::
+   :maxdepth: 2
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   mio_client/mio_client
 

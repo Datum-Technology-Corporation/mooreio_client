@@ -29,6 +29,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
+    "sphinx_autodoc_typehints"
 ]
 templates_path = ['_templates']
 exclude_patterns = []
@@ -40,11 +41,11 @@ exclude_patterns = []
 #######################################################################################################################
 #html_theme = 'furo'
 html_theme = 'alabaster'
-html_logo = 'mio_logo.png'
+html_logo = '_static/mio_logo.png'
 html_theme_options = {
 }
 html_css_files = [
-    'custom.css',
+    '_static/custom.css',
 ]
 html_static_path = ['_static']
 

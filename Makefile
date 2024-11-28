@@ -128,8 +128,8 @@ lint: venv
 # Generates documentation
 docs: venv
 	$(call print_banner, Generating documentation)
-	$(SPHINX_API_DOC) -o docs/source/api .
-	$(SPHINX_BUILD) -b html docs/source docs/build
+	$(SPHINX_API_DOC) -o ./docs/source/mio_client ./mio_client/
+	$(SPHINX_BUILD) -b html ./docs/source docs/build
 
 # Builds package for PyPI
 build: venv

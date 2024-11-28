@@ -35,6 +35,14 @@ Sample Descriptor
 
 
 
+Configuration Space
+-------------------
+The Configuration space is loaded from multiple ``mio.toml`` files which are merged into a final configuration space.
+This information is then used in all further MIO operations.  The full Configuration Space is detailed in its own
+section.
+
+
+
 Directory Structure
 *******************
 Moore.io stores its internal files under ``.mio`` in the Project root directory.  These files are to be considered
@@ -216,15 +224,6 @@ License Types
 - Free & Open Source (FOS) - Free to list.  Source code and documentation stored on the Marketplace.
 - Commercial - IPs that use the Moore.io IP Licensing System to charge end-user for IP.
 - Private - Use Moore.io as your Private IP server; ideal for clean rooms and sites with restricted internet access.  Coming soon.
-
-
-
-
-Configuration Space
--------------------
-As mentioned in the high-level description, the Configuration space is loaded from multiple ``mio.toml`` files which are
-merged into a final configuration space. This information is then used in all further MIO operations.  The full
-Configuration Space is detailed in its own section.
 
 
 
