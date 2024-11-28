@@ -310,7 +310,7 @@ metrics_dsim_default_simulation_arguments
 Compilation arguments always passed to Metrics DSim during simulation.
 
 
- : :ref:`_metrics_dsim_license_path`
+.. _metrics_dsim_license_path:
 metrics_dsim_license_path
 ************************
 
@@ -320,7 +320,7 @@ metrics_dsim_license_path
 Path to Metrics DSim Desktop license key.
 
 
- : :ref:`_metrics_dsim_cloud_installation_path`
+.. _metrics_dsim_cloud_installation_path:
 metrics_dsim_cloud_installation_path
 ************************
 
@@ -330,7 +330,7 @@ metrics_dsim_cloud_installation_path
 Path to Metrics DSim Cloud simulator installation directory.
 
 
- : :ref:`_metrics_dsim_installation_path`
+.. _metrics_dsim_installation_path:
 metrics_dsim_installation_path
 ************************
 
@@ -411,6 +411,7 @@ uvm_version
 Specifies the version of UVM to be used during simulation.
 
 
+.. _vscode_installation_path:
 vscode_installation_path
 ************************
 
@@ -460,7 +461,7 @@ xilinx_vivado_default_simulation_arguments
 Compilation arguments always passed to Xilinx Vivado during simulation.
 
 
- : :ref:`_xilinx_vivado_installation_path`
+.. _xilinx_vivado_installation_path:
 xilinx_vivado_installation_path
 ************************
 

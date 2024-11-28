@@ -20,7 +20,7 @@ The Moore.io client currently supports the following tools, which must be instal
 
 To make these available, variables in the Configuration Space must be set:
 
-- Metrics DSim Desktop: :ref:`metrics_dsim_license_path` :ref:`metrics_dsim_installation_path`
+- Metrics DSim Desktop: :ref:`metrics_dsim_license_path` :ref:`metrics_dsim_installation_path` :ref:`vscode_installation_path`
 - Metrics DSim Cloud: :ref:`metrics_dsim_cloud_installation_path`
 - Xilinx Vivado: :ref:`xilinx_vivado_installation_path`
 - Doxygen: :ref:`doxygen_installation_path`
