@@ -49,10 +49,7 @@ class TestCliIp(TestBase):
         wd_path = Path(os.path.join(os.path.dirname(__file__), "wd"))
         self.package_ip(capsys, p1_path, "a_vlib", Path(wd_path / "a_vlib.tgz"))
 
-    #@pytest.mark.integration
-    @pytest.mark.single_process
-    @pytest.mark.integration
-    def test_cli_publish_sim_ip(self, capsys):
+    def cli_publish_sim_ip(self, capsys, app: str):
         self.reset_workspace()
         p1_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p1"))
         p2_path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "p2"))
@@ -101,7 +98,7 @@ class TestCliIp(TestBase):
         self.check_ip_database(7)
 
         # 11. Simulate P4
-        self.one_shot_sim_ip(capsys, p4_path, 'g_tb', 'smoke', 1)
+        self.one_shot_sim_ip(capsys, p4_path, app, 'g_tb', 'smoke', 1)
         self.check_ip_database(7)
 
         # 12. Uninstall E from P4
@@ -124,4 +121,13 @@ class TestCliIp(TestBase):
         # 13. Logout from P1
         self.logout(capsys)
 
+    @pytest.mark.single_process
+    @pytest.mark.integration
+    def test_cli_publish_sim_ip_dsim(self, capsys):
+        self.cli_publish_sim_ip(capsys, 'dsim')
 
+    @pytest.mark.single_process
+    @pytest.mark.integration
+    @pytest.mark.skip(reason="Vivado licensing not available yet")
+    def test_cli_publish_sim_ip_vivado(self, capsys):
+        self.cli_publish_sim_ip(capsys, 'vivado')

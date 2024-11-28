@@ -2093,6 +2093,9 @@ class SimulatorXilinxVivado(LogicSimulator):
                 f"--work {ip.lib_name}",
                 f"--log {vhdl_log_path}"
             ]
+            # Adding verbosity to Vivado for compilation causes it to hang! (Code below)
+            #if self.rmh.print_trace:
+            #    args.append(f"--verbose 2")
             job_cmp_vhdl = Job(self.rmh, report.work_directory, f"vivado_vhdl_compilation_{ip.lib_name}",
                                Path(os.path.join(self.installation_path, "bin", "xvhdl")), args)
             report.jobs.append(job_cmp_vhdl)
@@ -2121,8 +2124,9 @@ class SimulatorXilinxVivado(LogicSimulator):
                 f"--work {ip.lib_name}",
                 f"--log {sv_log_path}"
             ]
-            if self.rmh.print_trace:
-                args.append(f"--verbose 2")
+            # Adding verbosity to Vivado for compilation causes it to hang! (Code below)
+            #if self.rmh.print_trace:
+            #    args.append(f"--verbose 2")
             job_cmp_sv = Job(self.rmh, report.work_directory, f"vivado_sv_compilation_{ip.lib_name}",
                              Path(os.path.join(self.installation_path, "bin", "xvlog")), args)
             report.jobs.append(job_cmp_sv)
@@ -2181,7 +2185,7 @@ class SimulatorXilinxVivado(LogicSimulator):
                     scheduler_config: JobSchedulerConfiguration):
         args_str = ""
         for arg in report.args_boolean:
-            args_str += f" --testplusarg {arg}"
+            args_str += f" -testplusarg {arg}"
         for arg in report.args_value:
             args_str += f" -testplusarg {arg}={report.args_value[arg]}"
         if config.use_relative_paths:
