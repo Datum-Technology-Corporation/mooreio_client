@@ -1,5 +1,5 @@
 Overview
-============
+========
 
 The Moore.io Client is an open-source CLI tool designed to automate Electronic Design Automation (EDA) tasks encountered
 during the development of ASIC, FPGA and UVM IP. This tool also serves as a client for the Moore.io Web Site

@@ -16,7 +16,7 @@ object Build : BuildType({
     steps {
         script {
             scriptContent = """
-                make venv
+                make lint
                 make test
                 make build
                 make docs

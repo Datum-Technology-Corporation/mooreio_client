@@ -1,9 +1,7 @@
 Commands
 ========
 
-All commands can be prepended by ``--dbg`` to enable mio's debug printout.  If you encounter an issue, re-run the
-command with debug enabled and attach the printout to your ticket when you
-`file a bug <https://github.com/Datum-Technology-Corporation/mio_client/issues>`_.
+All commands can be prepended by ``--dbg`` to enable mio's debug printout.
 
 
 Credentials Management
@@ -14,7 +12,7 @@ login
 
 Description
 ^^^^^^^^^^^
-Authenticates session with the Moore.io IP Marketplace (https://mooreio.com).
+Authenticates session with Moore.io Server.
 
 Usage
 ^^^^^
@@ -22,17 +20,29 @@ Usage
 
 Options
 ^^^^^^^
-===============  =========
-``-u USERNAME``  ``--username USERNAME``  Specifies Moore.io username (must be combined with ``-p``)
-``-p PASSWORD``  ``--password PASSWORD``  Specifies Moore.io password (must be combined with ``-u``)
-===============  =========
+===============  =======================
+``-u USERNAME``  ``--username USERNAME``  Specifies Moore.io username
+``-n``           ``--no-input``           Specify credentials without a keyboard. Must be combined with `-u` and by setting the environment variable ``MIO_AUTHENTICATION_PASSWORD``
+===============  =======================
 
 Examples
 ^^^^^^^^
 =====================================  ========
-``mio login``                          Asks credentials only if expired (or never entered)
-``mio login -u jenkins -p )Kq3)fkqm``  Specify credentials inline
+``mio login``                          Log in with prompts for username and password
+``mio login -u user123``               Specify username inline and only get prompted for the password
+``mio login -u user123 --no-input``    Authenticate without a keyboard (especially handy for CI)
 =====================================  ========
+
+logout
+*****
+
+Description
+^^^^^^^^^^^
+De-authenticates session with Moore.io Server.
+
+Usage
+^^^^^
+``mio logout``
 
 
 
@@ -48,16 +58,14 @@ Generates reference documentation from IP HDL source code using Doxygen.
 
 Usage
 ^^^^^
-``mio dox IP [OPTIONS]``
+``mio dox [IP]``
 
-Options
-^^^^^^^
-None for the time being.
 
 Examples
 ^^^^^^^^
 =================  ===============
 ``mio dox my_ip``  Generates HTML documentation for IP ``my_ip``
+``mio dox``        Generates HTML all local Project IPs
 =================  ===============
 
 
@@ -66,20 +74,16 @@ help
 
 Description
 ^^^^^^^^^^^
-Displays documentation for a specific mio command.
+Prints out documentation on a specific command.
 
 Usage
 ^^^^^
 ``mio help CMD``
 
-Options
-^^^^^^^
-None
-
 Examples
 ^^^^^^^^
 ================  =====
-``mio help sim``  Prints documentation for the ``sim`` command.
+``mio help sim``  Prints out a summary on the Logic Simulation command and its options
 ================  =====
 
 
@@ -87,57 +91,31 @@ Examples
 EDA
 ---
 
-regr
-****
+
+clean
+*****
 
 Description
 ^^^^^^^^^^^
-Runs a regression (set of tests) against a specific IP.  Regressions are described in Test Suite files (``[<target>.]ts.yml``).
-
-An optional target may be specified for the IP. Ex: ``my_ip#target``.
+Deletes output artifacts from EDA tools and/or Moore.io Project directory contents ``.mio``.  Only logic simulation artifacts are currently supported.
 
 Usage
 ^^^^^
-``mio regr IP [TARGET.]REGRESSION [OPTIONS]``
-
-Options
-^^^^^^^
-======  =============  =============================================
-``-d``  ``--dry-run``  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
-======  =============  =============================================
-
-Examples
-^^^^^^^^
-===================================  =====================
-``mio regr my_ip sanity``            Run sanity regression for IP ``uvm_my_ip``, from test suite ``ts.yml``
-``mio regr my_ip apb_xc.sanity``     Run sanity regression for IP ``uvm_my_ip``, from test suite ``apb_xc.ts.yml``
-``mio regr my_ip axi_xc.sanity -d``  Dry-run sanity regression for IP ``uvm_my_ip``, from test suite ``axi_xc.ts.yml``
-===================================  =====================
-
-
-
-repeat
-******
-
-Description
-^^^^^^^^^^^
-Repeats last command ran by mio.  Currently only supports the `sim` command.
-
-Usage
-^^^^^
-``mio ! CMD [OPTIONS]``
+``mio clean [IP] [OPTIONS]``
 
 Options
 ^^^^^^^
 ================  =========================  ===========================
-``-b``            ``--bwrap``                Does not run command, only creates shell script to re-create the command without mio and creates a tarball of the project outside the project root directory.  Currently only supports `sim` command.
+``-d``            ``--deep``                 Removes Project Moore.io directory ``.mio``
 ================  =========================  ===========================
 
 Examples
 ^^^^^^^^
-==========================================================  =============
-``mio sim uvmt_example -t rand_stim -s 1 ; mio ! sim -b``   Run a simulation for `uvmt_example` and create a tarball that can be run by anyone using only bash.
-==========================================================  =============
+======================  ==============================
+``mio clean my_ip``     Delete compilation, elaboration and simulation artifacts for IP 'my_ip'
+``mio clean --deep``    Removes contents of Project Moore.io directory ``mio``
+======================  ==============================
+
 
 
 sim
@@ -149,10 +127,10 @@ Performs necessary steps to run simulation of an IP.  Only supports Digital Logi
 
 An optional target may be specified for the IP. Ex: ``my_ip#target``.
 
-While the controls for individual steps (FuseSoC processing, compilation, elaboration and simulation) are exposed, it
-is recommended to let ``mio sim`` manage this process as much as possible.  In the event of corrupt simulator
-artifacts, see ``mio clean``.  Combining any of the step-control arguments (``-F``, ``-C``, ``-E``, ``-S``) with missing steps can
-result in unpredictable behavior and is not recommended (ex: ``-FS`` is illegal).
+While the controls for individual steps (DUT setup, compilation, elaboration and simulation) are exposed, it is
+recommended to let `mio sim` manage this process as much as possible.  In the event of corrupt simulator artifacts,
+see `mio clean`.  Combining any of the step-control arguments (``-D``, ``-C``, ``-E``, ``-S``) with missing steps is illegal
+(ex: ``-DS``).
 
 Two types of arguments (``--args``) can be passed: compilation (``+define+NAME[=VALUE]``) and simulation (``+NAME[=VALUE]``).
 
@@ -160,7 +138,7 @@ For running multiple tests in parallel, see ``mio regr``.
 
 Usage
 ^^^^^
-``mio sim IP [OPTIONS] [--args ARG ...]``
+``mio sim IP[#TARGET] [OPTIONS] [--args ARG ...]``
 
 Options
 ^^^^^^^
@@ -170,7 +148,7 @@ Options
 ``-v VERBOSITY``  ``--verbosity VERBOSITY``  Specifies UVM logging verbosity: ``none``, ``low``, ``medium``, ``high``, ``debug``. [default: ``medium``]
 ``-+ ARGS``       ``--args      ARGS``       Specifies compilation-time (``+define+ARG[=VAL]``) or simulation-time (``+ARG[=VAL]``) arguments
 ``-e ERRORS``     ``--errors    ERRORS``     Specifies the number of errors at which compilation/elaboration/simulation is terminated.  [default: ``10``]
-``-a APP``        ``--app APP``              Specifies simulator application to use: ``viv``, ``mtr``, ``vcs``, ``xcl``, ``qst``, ``riv``. [default: ``viv``]
+``-a APP``        ``--app APP``              Specifies simulator application to use: ``dsim``, ``vivado``.
 ``-w``            ``--waves``                Enable wave capture to disk.
 ``-c``            ``--cov``                  Enable code & functional coverage capture.
 ``-g``            ``--gui``                  Invokes simulator in graphical or 'GUI' mode.
@@ -187,6 +165,35 @@ Examples
 ``mio sim my_ip -E``                              Only elaborate ``my_ip``.
 ``mio sim my_ip -CE``                             Compile and elaborate ``my_ip``.
 ================================================  =============
+
+
+regr
+****
+
+Description
+^^^^^^^^^^^
+Runs a regression (set of tests) against a specific IP.  Regressions are described in Test Suite files (``[<target>.]ts.yml``).
+
+An optional target may be specified for the IP. Ex: ``my_ip#target``.
+
+Usage
+^^^^^
+``mio regr IP[#TARGET] [TEST SUITE.]REGRESSION [OPTIONS]``
+
+Options
+^^^^^^^
+======  =============  =============================================
+``-d``  ``--dry-run``  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
+======  =============  =============================================
+
+Examples
+^^^^^^^^
+===================================  =====================
+``mio regr my_ip sanity``            Run sanity regression for IP ``uvm_my_ip``, from test suite ``ts.yml``
+``mio regr my_ip apb_xc.sanity``     Run sanity regression for IP ``uvm_my_ip``, from test suite ``apb_xc.ts.yml``
+``mio regr my_ip axi_xc.sanity -d``  Dry-run sanity regression for IP ``uvm_my_ip``, from test suite ``axi_xc.ts.yml``
+===================================  =====================
+
 
 
 Generators
@@ -206,46 +213,19 @@ Usage
 
 Options
 ^^^^^^^
-None for the time being.
+======  ================  =============================================
+``-i``  ``--input-file``  Specifies YAML input file path (instead of prompting user)
+======  ================  =============================================
 
 Examples
 ^^^^^^^^
-=========================  ===========
-``mio init``               Create a new empty Project/IP in this location.
-``mio -C ~/my_proj init``  Create a new empty Project at a specific location.
-=========================  ===========
+=============================  ===========
+``mio init``                   Create a new empty Project/IP in this location.
+``mio init -i ~/answers.yml``  Create a new empty Project/IP in this location with pre-filled data.
+``mio -C ~/my_proj init``      Create a new empty Project at a specific location.
+=============================  ===========
 
 
-gen
-***
-
-Description
-^^^^^^^^^^^
-Invokes the Datum UVMx Generator.
-
-Usage
-^^^^^
-``mio gen [OPTIONS] [SELECTOR]``
-
-Options
-^^^^^^^
-===============      ============
-``-a``  ``--agent``  Agents
-``-z``  ``--all``    All entities
-``-b``  ``--block``  Blocks
-``-c``  ``--chip``   Chips
-``-s``  ``--ss``     Sub-systems
-===============      ============
-
-Examples
-^^^^^^^^
-=============================  =======
-``mio gen --all *``            Generate all DV code
-``mio gen --all top abc xyz``  Generate DV code for specific entities
-``mio gen -r *``               Update all register models
-``mio gen -r top``             Update register model for a specific entity
-``mio gen -b block``           Update physical interface for a specific block
-=============================  =======
 
 
 IP Management
@@ -256,27 +236,54 @@ install
 
 Description
 ^^^^^^^^^^^
-Installs an IP and any IPs that it depends on from the Moore.io IP Marketplace (https://mooreio.com).  IPs can be
-installed either locally (``$PROJECT_ROOT/.mio/vendors``) or globally (``~/.mio/vendors``).
+Downloads IP(s) from Moore.io Server.  Can be used in 3 ways:
+
+1. Without specifying an IP: install all missing dependencies for all IPs in the current Project
+2. Specifying the name a local IP: install all missing dependencies for a specific IP in the current project
+3. Specifying the name of an IP on the Moore.io Server: install remote IP and all its dependencies into the current Project
+
 
 Usage
 ^^^^^
-``mio install IP [OPTIONS]``
+``mio install [IP] [OPTIONS]``
 
 Options
 ^^^^^^^
 ===============  =======================  ==============
-``-g``           ``--global``             Installs IP dependencies for all user projects
-``-u USERNAME``  ``--username USERNAME``  Specifies Moore.io username (must be combined with ``-p``)
-``-p PASSWORD``  ``--password PASSWORD``  Specifies Moore.io password (must be combined with ``-u``)
+``-v SPEC``      ``--version SPEC``       Specifies IP version (only for remote IPs). Must specify IP when using this option.
 ===============  =======================  ==============
 
 Examples
 ^^^^^^^^
 =============================================  ================
-``mio install my_ip``                          Install IP dependencies for ``my_ip`` locally.
-``mio install another_ip``                     Install IP dependencies for ``another_ip`` globally.
-``mio install my_ip -u jenkins -p )Kq3)fkqm``  Specify credentials for Jenkins job.
+``mio install``                                Install all dependencies for all IPs in the current Project
+``mio install my_ip``                          Install all dependencies for a specific IP in the current Project
+``mio install acme/abc``                       Install latest version of IP from Moore.io Server and its dependencies into current Project
+``mio install acme/abc -v "1.2.3"``            Install specific version of IP from Moore.io Server and its dependencies into current Project
+=============================================  ================
+
+uninstall
+*******
+
+Description
+^^^^^^^^^^^
+Removes IP(s) installed in current Project.  Can be used in 3 ways:
+
+1. Without specifying an IP: delete all installed dependencies for all IPs in the current Project
+2. Specifying the name a local IP: delete all installed dependencies for a specific local IP in the current project
+3. Specifying the name of an installed IP: delete installed IP and all its installed dependencies from the current Project
+
+
+Usage
+^^^^^
+``mio uninstall [IP]``
+
+Examples
+^^^^^^^^
+=============================================  ================
+``mio uninstall``                              Delete all installed IPs in current project
+``mio uninstall my_ip``                        Delete all installed dependencies for a specific local IP in the current project
+``mio install acme/abc``                       Delete specific installed IP and all its installed dependencies from current project
 =============================================  ================
 
 
@@ -285,100 +292,43 @@ package
 
 Description
 ^^^^^^^^^^^
-Command for encrypting/compressing entire IP on local disk.  To enable IP encryption, add an ``encrypted`` entry to the
-``hdl-src`` section of your descriptor (ip.yml).  Moore.io will only attempt to encrypt using the simulators listed
-under ``simulators-supported`` of the ``ip`` section.
-
-Vivado requires a key for encryption; please ensure that you have specified your key location either in the project
-or user Configuration file (mio.toml).  https://mooreio-client.readthedocs.io/en/latest/configuration.html#encryption
-for more on the subject.
+Command for encrypting/compressing entire IP on local disk.  To enable IP encryption, add an 'encrypted' entry to the
+``hdl_src`` section of your descriptor (ip.yml).  Moore.io will only attempt to encrypt using the simulators listed
+under 'encrypted' of the 'ip' section.
 
 Usage
 ^^^^^
-``mio package IP DEST [OPTIONS]``
-
-Options
-^^^^^^^
-======  ============  ======
-``-n``  ``--no-tgz``  Do not create compressed tarball
-======  ============  ======
+``mio package IP DEST``
 
 Examples
 ^^^^^^^^
 ==================================  ======
 ``mio package uvma_my_ip ~``        Create compressed archive of IP ``uvma_my_ip`` under user's home directory.
-``mio package uvma_my_ip ~/ip -n``  Process IP ``uvma_my_ip`` but do not create compressed archive.
 ==================================  ======
 
 
-Results Management
-------------------
 
-clean
-*****
-
-Description
-^^^^^^^^^^^
-Deletes output artifacts from EDA tools.  Only simulation is currently supported.
-
-Usage
-^^^^^
-``mio clean IP [OPTIONS]``
-
-Options
-^^^^^^^
-None for the time being.
-
-Examples
-^^^^^^^^
-======================  ==============================
-``mio clean my_ip``     Delete compilation, elaboration and simulation binaries for IP ``my_ip``
-======================  ==============================
-
-
-
-cov
-***
-
-Description
-^^^^^^^^^^^
-Merges code and functional coverage data into a single database from which report(s) are generated.  These reports
-are output into the simulation directory.
-
-Usage
-^^^^^
-``mio cov IP [OPTIONS]``
-
-Options
-^^^^^^^
-None for the time being.
-
-Examples
-^^^^^^^^
-=================  ======
-``mio cov my_ip``  Merge coverage data for ``my_ip`` and generate a report.
-=================  ======
-
-
-results
+publish
 *******
 
-
 Description
 ^^^^^^^^^^^
-Parses Simulaton results for a target IP and generates both HTML and Jenkins-compatible XML reports.  These reports
-are output into the simulation directory.
+Packages and publishes an IP to the Moore.io IP Marketplace (https://mooreio.com).  Currently only available to administrator accounts.
 
 Usage
 ^^^^^
-``mio results IP REPORT_NAME [OPTIONS]``
+``mio publish IP [OPTIONS]``
 
 Options
 ^^^^^^^
-None for the time being.
+===============  =======================  ==============
+``-c ORG``       ``--customer ORG``       Specifies Customer Organization name.  Commercial IPs only.
+===============  =======================  ==============
 
 Examples
 ^^^^^^^^
-=================================  =====
-``mio results my_ip sim_results``  Parse simulation results for ``my_ip`` and generate reports under ``sim_results`` filenames.
-=================================  =====
+==================================  ======
+``mio publish uvma_my_ip``          Publish Public IP 'uvma_my_ip'.
+``mio publish uvma_my_ip -c acme``  Publish Commercial IP 'uvma_my_ip' for customer 'acme'.
+==================================  ======
+

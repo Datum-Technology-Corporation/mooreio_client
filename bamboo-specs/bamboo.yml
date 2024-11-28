@@ -17,7 +17,7 @@ plan:
                 - script:
                     interpreter: SHELL
                     scripts:
-                      - make venv
+                      - make lint
                       - make test
                       - make build
                       - make docs

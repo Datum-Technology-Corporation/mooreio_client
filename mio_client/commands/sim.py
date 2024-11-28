@@ -34,7 +34,7 @@ SIM_HELP_TEXT = """Moore.io Logic Simulation Command
    For running multiple tests in parallel, see `mio regr`.
    
 Usage:
-   mio sim IP [OPTIONS] [--args ARG ...]
+   mio sim IP[#TARGET] [OPTIONS] [--args ARG ...]
    
 Options:
    -t TEST     , --test      TEST       Specify the UVM test to be run.
@@ -70,11 +70,10 @@ REGR_HELP_TEXT = """Moore.io Regression Command
    An optional target may be specified for the IP. Ex: my_ip#target.
    
 Usage:
-   mio regr IP [TEST SUITE.]REGRESSION [OPTIONS]
+   mio regr IP[#TARGET] [TEST SUITE.]REGRESSION [OPTIONS]
    
 Options:
    -d, --dry-run  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
-                  For DSim, only the Job YAML file is printed.
    
 Examples:
    mio regr my_ip sanity            # Run sanity regression for IP 'uvm_my_ip', from test suite 'ts.yml'

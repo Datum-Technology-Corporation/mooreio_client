@@ -1,8 +1,8 @@
 Installation
 ============
 
-The Moore.io client is installed using 'pip3':
+The Moore.io client is installed using 'pip' (version >=3):
 
-``pip3 install mio-cli``
+``pip install mooreio_client``
 
-To install/publish IP, generate code as well as access other features, you must first create a Moore.io User Account: https://www.mooreio.com/register
+To install/publish IP, generate UVM code as well as other features, a Moore.io User Account is required: https://www.mooreio.com/register

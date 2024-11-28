@@ -63,7 +63,7 @@ class TestConfiguration:
         assert hasattr(config_instance.logic_simulation, 'metrics_dsim_license_path')
         assert hasattr(config_instance.logic_simulation, 'metrics_dsim_installation_path')
         assert hasattr(config_instance, 'synthesis')
-        assert hasattr(config_instance.synthesis, 'root_path')
+        assert hasattr(config_instance.logic_synthesis, 'root_path')
         assert hasattr(config_instance, 'lint')
         assert hasattr(config_instance.lint, 'root_path')
         assert hasattr(config_instance, 'ip')

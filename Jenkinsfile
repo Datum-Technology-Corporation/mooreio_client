@@ -8,11 +8,6 @@ pipeline {
     }
 
     stages {
-        stage('Setup Virtual Environment') {
-            steps {
-                sh 'make venv'
-            }
-        }
         stage('Lint') {
             steps {
                 sh 'make lint'
@@ -35,13 +30,13 @@ pipeline {
         }
         stage('Archive Docs') {
             steps {
-                archiveArtifacts artifacts: 'docs/_build/html/**/*', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'docs/build/**/*', allowEmptyArchive: true
             }
         }
     }
     post {
         always {
-            junit 'reports/*.xml'
+            junit 'reports/report.xml'
             cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'reports/coverage.xml'
         }
     }

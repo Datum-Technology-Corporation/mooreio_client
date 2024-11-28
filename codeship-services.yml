@@ -4,6 +4,6 @@
 
 
 app:
-  image: python:3.11
+  image: python:3.12
   environment:
     - PIP_ENV=production

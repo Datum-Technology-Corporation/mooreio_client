@@ -27,12 +27,10 @@ Examples:
    mio help sim  # Prints out a summary on the Logic Simulation command and its options"""
 
 DOX_HELP_TEXT = """Moore.io Dox(ygen) Invokation Command
-   Generates reference documentation from IP source code.
+   Generates reference documentation from IP HDL source code using Doxygen.
    
 Usage:
-   mio dox [IP] [OPTIONS]
-   
-Options:
+   mio dox [IP]
    
 Examples:
    mio dox my_ip  # Generates HTML documentation for IP 'my_ip'
