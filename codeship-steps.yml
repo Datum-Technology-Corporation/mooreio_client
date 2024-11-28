@@ -5,15 +5,15 @@
 
 - type: parallel
   steps:
-    - name: lint
-      service: app
-      command: make lint
     - name: test
       service: app
       command: make test
-    - name: build
+    - name: lint
       service: app
-      command: make build
+      command: make lint
     - name: docs
       service: app
       command: make docs
+    - name: build
+      service: app
+      command: make build

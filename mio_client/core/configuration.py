@@ -3,9 +3,8 @@
 #######################################################################################################################
 from typing import List, Optional
 
-import yaml
 from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat
-from model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
+from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
 from enum import Enum
 

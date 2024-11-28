@@ -11,13 +11,11 @@ import yaml
 
 from semantic_version import Version
 
-from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
-from mio_client.core.service import Service, ServiceType
-from mio_client.core.ip import Ip, DutType, IpPkgType
-from mio_client.core.model import Model, VALID_NAME_REGEX
-from phase import Phase
-from regression import TestSuite
-from scheduler import JobResults
+from ..core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
+from ..core.service import Service, ServiceType
+from ..core.ip import Ip, DutType, IpPkgType
+from ..core.model import Model, VALID_NAME_REGEX
+from .regression import TestSuite
 
 
 #######################################################################################################################

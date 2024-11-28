@@ -7,6 +7,8 @@ from typing import Dict
 import pytest
 import toml
 
+from .common import TestBase
+import mio_client.cli
 from mio_client.core.configuration import Configuration
 
 
@@ -24,30 +26,35 @@ def valid_sync_1_data():
     return get_fixture_data("valid_sync_1")
 
 
-class TestConfiguration:
+class TestConfiguration(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self, valid_local_1_data, valid_sync_1_data):
+        mio_client.cli.TEST_MODE = True
         self.valid_local_1_data = valid_local_1_data
         self.valid_sync_1_data = valid_sync_1_data
 
+    @pytest.mark.core
     def test_configuration_instance_creation(self):
-        config_instance = Configuration(**self.valid_local_1_data)
+        config_instance = self.model_creation(Configuration, self.valid_local_1_data)
         assert isinstance(config_instance, Configuration)
 
+    @pytest.mark.core
     def test_configuration_instance_required_fields(self):
-        config_instance = Configuration(**self.valid_sync_1_data)
+        config_instance = self.model_creation(Configuration, self.valid_sync_1_data)
         assert hasattr(config_instance, 'project')
         assert hasattr(config_instance, 'logic_simulation')
-        assert hasattr(config_instance, 'synthesis')
+        assert hasattr(config_instance, 'logic_synthesis')
         assert hasattr(config_instance, 'lint')
         assert hasattr(config_instance, 'ip')
         assert hasattr(config_instance, 'docs')
         assert hasattr(config_instance, 'encryption')
         assert hasattr(config_instance, 'authentication')
+        assert hasattr(config_instance, 'applications')
         assert hasattr(config_instance.authentication, 'offline')
 
+    @pytest.mark.core
     def test_configuration_instance_has_all_fields(self):
-        config_instance = Configuration(**self.valid_local_1_data)
+        config_instance = self.model_creation(Configuration, self.valid_local_1_data)
         assert hasattr(config_instance, 'project')
         assert hasattr(config_instance.project, 'sync')
         assert hasattr(config_instance.project, 'name')
@@ -62,7 +69,7 @@ class TestConfiguration:
         assert hasattr(config_instance.logic_simulation, 'timescale')
         assert hasattr(config_instance.logic_simulation, 'metrics_dsim_license_path')
         assert hasattr(config_instance.logic_simulation, 'metrics_dsim_installation_path')
-        assert hasattr(config_instance, 'synthesis')
+        assert hasattr(config_instance, 'logic_synthesis')
         assert hasattr(config_instance.logic_synthesis, 'root_path')
         assert hasattr(config_instance, 'lint')
         assert hasattr(config_instance.lint, 'root_path')
@@ -75,4 +82,5 @@ class TestConfiguration:
         assert hasattr(config_instance.encryption, 'metrics_dsim_sv_key_path')
         assert hasattr(config_instance.encryption, 'metrics_dsim_vhdl_key_path')
         assert hasattr(config_instance, 'authentication')
+        assert hasattr(config_instance, 'applications')
         assert hasattr(config_instance.authentication, 'offline')

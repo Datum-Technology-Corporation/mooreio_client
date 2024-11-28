@@ -11,8 +11,8 @@ import pytest
 import yaml
 
 import mio_client.cli
-from init import InitProjectConfiguration, InitIpConfiguration
-from .common import OutputCapture
+from mio_client.services.init import InitProjectConfiguration, InitIpConfiguration
+from .common import OutputCapture, TestBase
 
 
 def get_fixture_data(file: Path) -> Dict:
@@ -35,7 +35,7 @@ def uninit_local_simplest_def_ss_tb_answers_data():
     return get_fixture_data(file_path)
 
 
-class TestInit:
+class TestInit(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self, uninit_local_simplest_project_answers_data, uninit_local_simplest_def_ss_answers_data, uninit_local_simplest_def_ss_tb_answers_data):
         self.uninit_local_simplest_project_answers_data = uninit_local_simplest_project_answers_data
@@ -50,11 +50,14 @@ class TestInit:
         init_ip_configuration = InitIpConfiguration(**data)
         assert isinstance(init_ip_configuration, InitIpConfiguration)
 
+    @pytest.mark.core
     def test_init_project_configuration_creation(self):
         self.init_project_configuration_creation(self.uninit_local_simplest_project_answers_data)
 
+    @pytest.mark.core
     def test_init_ip_configuration_creation_def_ss(self):
         self.init_ip_configuration_creation(self.uninit_local_simplest_def_ss_answers_data)
 
+    @pytest.mark.core
     def test_init_ip_configuration_creation_def_ss_tb(self):
         self.init_ip_configuration_creation(self.uninit_local_simplest_def_ss_tb_answers_data)

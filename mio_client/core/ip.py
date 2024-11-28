@@ -12,24 +12,23 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, List, Union, Any, Dict, Literal
 
-import jinja2
 import yaml
 from pydantic import constr, PositiveInt, ValidationError
-from pydantic.main import IncEx
 from semantic_version import SimpleSpec
 
 from .model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
     VALID_POSIX_PATH_REGEX, UNDEFINED_CONST
-#from mio_client.core.root import RootManager
 
 from enum import Enum
 
-#from mio_client.core.root import RootManager
 from .version import SemanticVersion, SemanticVersionSpec
 from .configuration import Ip
 from .service import ServiceType
 
 
+#######################################################################################################################
+# Support Types
+#######################################################################################################################
 MAX_DEPTH_DEPENDENCY_INSTALLATION = 50
 
 class IpPkgType(Enum):
@@ -63,8 +62,11 @@ class IpLicenseType(Enum):
     PUBLIC_OPEN_SOURCE = "public_open_source"
     COMMERCIAL = "commercial"
     PRIVATE = "private"
-        
 
+
+#######################################################################################################################
+# Server communication models
+#######################################################################################################################
 class IpPublishingConfirmation(Model):
     success: bool
     certificator: str
@@ -109,6 +111,9 @@ class IpGetResults(Model):
     payload: Optional[str] = ""
 
 
+#######################################################################################################################
+# IP Classes
+#######################################################################################################################
 class IpDefinition:
     vendor_name_is_specified: bool = False
     vendor_name: str = ""
@@ -191,8 +196,8 @@ class HdlSource(Model):
 class DesignUnderTest(Model):
     type: DutType
     name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = UNDEFINED_CONST
-    version: SemanticVersionSpec
-    target: constr(pattern=VALID_NAME_REGEX)
+    version: Optional[SemanticVersionSpec] = SemanticVersionSpec()
+    target: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
 
     def model_dump(self, **kwargs):
         return_dict = {
@@ -233,7 +238,7 @@ class Target(Model):
 
 class About(Model):
     sync: bool
-    vendor: str
+    vendor: constr(pattern=VALID_NAME_REGEX)
     name: constr(pattern=VALID_NAME_REGEX)
     full_name: str
     version: SemanticVersion
@@ -260,6 +265,7 @@ class About(Model):
         if self.mlicensed:
             return_dict['mlicensed'] = self.mlicensed
         return return_dict
+
 
 class Ip(Model):
     ip: About
@@ -844,6 +850,9 @@ class Ip(Model):
         return defines
 
 
+#######################################################################################################################
+# IP Database Service
+#######################################################################################################################
 class IpDataBase():
     def __init__(self, rmh: 'RootManager'):
         self._ip_list: list[Ip] = []

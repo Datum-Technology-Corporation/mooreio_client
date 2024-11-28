@@ -6,6 +6,9 @@ from typing import Dict
 
 import pytest
 import yaml
+
+import mio_client.cli
+from .common import TestBase
 from mio_client.core.user import User
 
 
@@ -24,22 +27,26 @@ def valid_authenticated_1():
     return get_fixture_data("valid_authenticated_1")
 
 
-class TestUser:
+class TestUser(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self, valid_local_1_data, valid_authenticated_1):
+        mio_client.cli.TEST_MODE = True
         self.valid_local_1_data = valid_local_1_data
         self.valid_authenticated_1 = valid_authenticated_1
 
+    @pytest.mark.core
     def test_user_instance_creation(self):
-        config_instance = User(**self.valid_local_1_data)
+        config_instance = self.model_creation(User, self.valid_local_1_data)
         assert isinstance(config_instance, User)
 
+    @pytest.mark.core
     def test_user_instance_required_fields(self):
-        config_instance = User(**self.valid_local_1_data)
+        config_instance = self.model_creation(User, self.valid_local_1_data)
         assert hasattr(config_instance, 'authenticated')
 
+    @pytest.mark.core
     def test_user_instance_has_all_fields(self):
-        config_instance = User(**self.valid_authenticated_1)
+        config_instance = self.model_creation(User, self.valid_authenticated_1)
         assert hasattr(config_instance, 'authenticated')
         assert hasattr(config_instance, 'username')
         assert hasattr(config_instance, 'access_token')

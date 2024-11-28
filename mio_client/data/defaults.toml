@@ -48,7 +48,7 @@ xilinx_vivado_default_simulation_arguments=[
     "--stats"
 ]
 
-[synthesis]
+[logic_synthesis]
 root_path="syn"
 
 [lint]

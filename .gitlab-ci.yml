@@ -14,12 +14,12 @@ before_script: []
 test:
   stage: test
   script:
-    - make lint
     - make test
+    - make lint
 
 docs:
   stage: build
   script:
-    - make build
     - make docs
+    - make build
 

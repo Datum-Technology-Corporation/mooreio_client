@@ -14,20 +14,20 @@ jobs:
       - checkout
 
       - run:
-          name: Run Lint
-          command: make lint
-
-      - run:
           name: Run tests
           command: make test
 
       - run:
-          name: Build package
-          command: make build
+          name: Run Lint
+          command: make lint
 
       - run:
           name: Build documentation
           command: make docs
+
+      - run:
+          name: Build package
+          command: make build
 
 workflows:
   version: 2

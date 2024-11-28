@@ -1,5 +1,5 @@
 [project]
-offline=false
+local_mode=false
 sync=true
 sync_id=123123
 
@@ -15,36 +15,20 @@ metrics_dsim_license_path="~/dsim/license.json"
 metrics_dsim_installation_path="~/dsim/"
 metrics_dsim_default_compilation_sv_arguments=[]
 xilinx_vivado_default_compilation_sv_arguments=[]
-synopsys_vcs_default_compilation_sv_arguments=[]
-siemens_questa_default_compilation_sv_arguments=[]
-cadence_xcelium_default_compilation_sv_arguments=[]
-aldec_riviera_pro_default_compilation_sv_arguments=[]
 metrics_dsim_default_compilation_vhdl_arguments=[]
 xilinx_vivado_default_compilation_vhdl_arguments=[]
-synopsys_vcs_default_compilation_vhdl_arguments=[]
-siemens_questa_default_compilation_vhdl_arguments=[]
-cadence_xcelium_default_compilation_vhdl_arguments=[]
-aldec_riviera_pro_default_compilation_vhdl_arguments=[]
 metrics_dsim_default_elaboration_arguments=[]
 xilinx_vivado_default_elaboration_arguments=[]
-synopsys_vcs_default_elaboration_arguments=[]
-siemens_questa_default_elaboration_arguments=[]
-cadence_xcelium_default_elaboration_arguments=[]
-aldec_riviera_pro_default_elaboration_arguments=[]
 metrics_dsim_default_compilation_and_elaboration_arguments=[]
 xilinx_vivado_default_compilation_and_elaboration_arguments=[]
-synopsys_vcs_default_compilation_and_elaboration_arguments=[]
-siemens_questa_default_compilation_and_elaboration_arguments=[]
-cadence_xcelium_default_compilation_and_elaboration_arguments=[]
-aldec_riviera_pro_default_compilation_and_elaboration_arguments=[]
 metrics_dsim_default_simulation_arguments=[]
 xilinx_vivado_default_simulation_arguments=[]
-synopsys_vcs_default_simulation_arguments=[]
-siemens_questa_default_simulation_arguments=[]
-cadence_xcelium_default_simulation_arguments=[]
-aldec_riviera_pro_default_simulation_arguments=[]
+compilation_timeout=1.0
+compilation_and_elaboration_timeout=1.0
+elaboration_timeout=1.0
+simulation_timeout=1.0
 
-[synthesis]
+[logic_synthesis]
 root_path="jobs/syn/"
 
 [lint]
@@ -63,3 +47,7 @@ metrics_dsim_vhdl_key_path="/tools/dsim/key.data"
 
 [authentication]
 offline=false
+
+[applications]
+editor="gvim"
+web_browser="firefox"

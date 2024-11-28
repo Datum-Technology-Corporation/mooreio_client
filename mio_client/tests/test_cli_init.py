@@ -10,10 +10,10 @@ from unittest import SkipTest
 import pytest
 
 import mio_client.cli
-from .common import OutputCapture
+from .common import OutputCapture, TestBase
 
 
-class TestCliInit:
+class TestCliInit(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
@@ -29,36 +29,12 @@ class TestCliInit:
         self.assert_file_exists(self.uninit_local_simplest_def_ss_answers_path)
         self.assert_file_exists(self.uninit_local_simplest_def_ss_tb_answers_path)
 
-    def remove_directory(self, path: Path):
-        try:
-            if not os.path.exists(path):
-                return
-            shutil.rmtree(path)
-        except Exception as e:
-            print(f"An error occurred while removing directory '{path}': {e}")
-
-    def remove_file(self, path: Path):
-        try:
-            if not os.path.exists(path):
-                return
-            os.remove(path)
-        except Exception as e:
-            print(f"An error occurred while removing file '{path}': {e}")
-
-    def assert_file_exists(self, path: Path):
-        assert os.path.isfile(path)
-
     def reset_workspace(self):
         self.remove_directory(self.uninit_local_simplest_path / ".mio")
         self.remove_file(self.uninit_local_simplest_path / "mio.toml")
         self.remove_file(self.uninit_local_simplest_def_ss_path / "ip.yml")
         self.remove_file(self.uninit_local_simplest_def_ss_tb_path / "ip.yml")
         self.remove_file(self.uninit_local_simplest_def_ss_tb_path / "ts.yml")
-
-    def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = mio_client.cli.main(args)
-        text = capsys.readouterr().out.rstrip()
-        return OutputCapture(return_code, text)
 
     def init(self, capsys, project_path: Path, input_file: Path) -> OutputCapture:
         result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'init', f'-i {input_file}'])
@@ -94,11 +70,13 @@ class TestCliInit:
         return result
 
     @pytest.mark.single_process
+    @pytest.mark.core
     def test_cli_init_project(self, capsys):
         self.reset_workspace()
         result = self.init(capsys, self.uninit_local_simplest_path, self.uninit_local_simplest_project_answers_path)
 
     @pytest.mark.single_process
+    @pytest.mark.core
     def test_cli_init_project_ip(self, capsys):
         self.reset_workspace()
         result = self.init(capsys, self.uninit_local_simplest_path, self.uninit_local_simplest_project_answers_path)
@@ -113,9 +91,11 @@ class TestCliInit:
         result = self.sim_ip(capsys, self.uninit_local_simplest_path, app, "def_ss_tb", "smoke", 1)
 
     @pytest.mark.single_process
+    @pytest.mark.dsim
     def test_cli_init_project_ip_sim_dsim(self, capsys):
         self.cli_init_project_ip_sim(capsys, 'dsim')
     @pytest.mark.single_process
+    @pytest.mark.vivado
     def test_cli_init_project_ip_sim_vivado(self, capsys):
         self.cli_init_project_ip_sim(capsys, 'vivado')
 

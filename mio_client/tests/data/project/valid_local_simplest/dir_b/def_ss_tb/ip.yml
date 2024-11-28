@@ -9,7 +9,7 @@ ip:
 dut:
   type: ip
   name: "def_ss"
-  version: "*"
+  version: ">1.0"
 
 structure:
   hdl_src_path: "src"

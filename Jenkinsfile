@@ -8,19 +8,14 @@ pipeline {
     }
 
     stages {
-        stage('Lint') {
-            steps {
-                sh 'make lint'
-            }
-        }
         stage('Run Tests') {
             steps {
                 sh 'make test'
             }
         }
-        stage('Build Package') {
+        stage('Lint') {
             steps {
-                sh 'make build'
+                sh 'make lint'
             }
         }
         stage('Build Documentation') {
@@ -31,6 +26,11 @@ pipeline {
         stage('Archive Docs') {
             steps {
                 archiveArtifacts artifacts: 'docs/build/**/*', allowEmptyArchive: true
+            }
+        }
+        stage('Build Package') {
+            steps {
+                sh 'make build'
             }
         }
     }

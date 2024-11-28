@@ -16,10 +16,10 @@ object Build : BuildType({
     steps {
         script {
             scriptContent = """
-                make lint
                 make test
-                make build
+                make lint
                 make docs
+                make build
             """.trimIndent()
         }
     }

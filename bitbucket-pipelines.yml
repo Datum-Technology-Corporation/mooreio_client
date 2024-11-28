@@ -11,7 +11,7 @@ pipelines:
         caches:
           - pip
         script:
-          - make lint
           - make test
-          - make build
+          - make lint
           - make docs
+          - make build

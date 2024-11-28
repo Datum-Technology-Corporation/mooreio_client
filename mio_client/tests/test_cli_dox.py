@@ -9,10 +9,10 @@ from unittest import SkipTest
 import pytest
 
 import mio_client.cli
-from .common import OutputCapture
+from .common import OutputCapture, TestBase
 
 
-class TestCliDox:
+class TestCliDox(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
@@ -21,22 +21,9 @@ class TestCliDox:
         self.valid_local_simplest_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.valid_local_simplest_doxygen_output_path: Path = Path(os.path.join(self.valid_local_simplest_path, "docs", "doxygen_output"))
 
-    def remove_directory(self, path:Path):
-        try:
-            if not os.path.exists(path):
-                return
-            shutil.rmtree(path)
-        except OSError as e:
-            print(f"An error occurred while removing directory '{path}': {e}")
-
     def reset_workspace(self):
         self.remove_directory(self.valid_local_simplest_path / ".mio")
         self.remove_directory(self.valid_local_simplest_doxygen_output_path)
-
-    def run_cmd(self, capsys, args: [str]) -> OutputCapture:
-        return_code = mio_client.cli.main(args)
-        text = capsys.readouterr().out.rstrip()
-        return OutputCapture(return_code, text)
 
     def doxygen_ip(self, capsys, project_path: Path, ip: str) -> OutputCapture:
         result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'dox', ip])
@@ -51,11 +38,13 @@ class TestCliDox:
         return result
 
     @pytest.mark.single_process
+    @pytest.mark.core
     def test_cli_dox_ip(self, capsys):
         self.reset_workspace()
         result = self.doxygen_ip(capsys, self.valid_local_simplest_path,'def_ss_tb')
 
     @pytest.mark.single_process
+    @pytest.mark.core
     def test_cli_dox_all_ip(self, capsys):
         self.reset_workspace()
         result = self.doxygen_all_ip(capsys, self.valid_local_simplest_path)

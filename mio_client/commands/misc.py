@@ -3,7 +3,7 @@
 #######################################################################################################################
 from typing import Dict, List
 
-from doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceConfiguration
+from ..services.doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceConfiguration
 from ..core.ip import IpLocationType, Ip
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
@@ -12,10 +12,17 @@ from ..core.phase import Phase
 from ..core.command import Command
 
 
-ALL_COMMANDS = [
-    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox", "init"
-]
 
+#######################################################################################################################
+# API Entry Point
+#######################################################################################################################
+def get_commands():
+    return [HelpCommand, DoxygenCommand]
+
+
+#######################################################################################################################
+# Help Command
+#######################################################################################################################
 HELP_TEXT = """Moore.io Help Command
    Prints out documentation on a specific command.  This is meant for quick lookups and is only a subset of the
    documentation found in the User Manual (https://mio-client.readthedocs.io/).
@@ -26,20 +33,9 @@ Usage:
 Examples:
    mio help sim  # Prints out a summary on the Logic Simulation command and its options"""
 
-DOX_HELP_TEXT = """Moore.io Dox(ygen) Invokation Command
-   Generates reference documentation from IP HDL source code using Doxygen.
-   
-Usage:
-   mio dox [IP]
-   
-Examples:
-   mio dox my_ip  # Generates HTML documentation for IP 'my_ip'
-   mio dox        # Generates HTML all local Project IPs"""
-
-
-def get_commands():
-    return [HelpCommand, DoxygenCommand]
-
+ALL_COMMANDS = [
+    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox", "init"
+]
 
 class HelpCommand(Command):
     @staticmethod
@@ -86,6 +82,19 @@ class HelpCommand(Command):
     def needs_authentication(self) -> bool:
         return False
 
+
+#######################################################################################################################
+# Dox Command
+#######################################################################################################################
+DOX_HELP_TEXT = """Moore.io Doxygen Command
+   Generates reference documentation from IP HDL source code using Doxygen.
+   
+Usage:
+   mio dox [IP]
+   
+Examples:
+   mio dox my_ip  # Generates HTML documentation for IP 'my_ip'
+   mio dox        # Generates HTML all local Project IPs"""
 
 class DoxygenCommand(Command):
     def __init__(self):

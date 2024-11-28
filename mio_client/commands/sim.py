@@ -4,9 +4,8 @@
 import re
 from typing import List, Dict
 
-import regression
-from configuration import LogicSimulators
-from regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner
+from ..core.configuration import LogicSimulators
+from ..services.regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner, Regression
 from ..core.ip import Ip, IpDefinition, IpPkgType
 from ..core.command import Command
 from ..core.phase import Phase
@@ -19,6 +18,17 @@ from ..services.simulation import LogicSimulator, LogicSimulatorCompilationConfi
 from ..services.simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
+
+#######################################################################################################################
+# API Entry Point
+#######################################################################################################################
+def get_commands():
+    return [SimulateCommand, RegressionCommand]
+
+
+#######################################################################################################################
+# Sim Command
+#######################################################################################################################
 SIM_HELP_TEXT = """Moore.io Logic Simulation Command
    Performs necessary steps to run simulation of an IP.  Only supports Digital Logic Simulation for the time being.
    
@@ -62,32 +72,8 @@ Examples:
    mio sim my_ip#dw64b -C                        # Only compile 'my_ip' target 'dw64b'.
    mio sim my_ip -E                              # Only elaborate 'my_ip'.
    mio sim my_ip -CE                             # Compile and elaborate 'my_ip'."""
-
-
-REGR_HELP_TEXT = """Moore.io Regression Command
-   Runs a set of tests against a specific IP.  Regressions are described in Test Suite files (`[<target>.]ts.yml`).
-   
-   An optional target may be specified for the IP. Ex: my_ip#target.
-   
-Usage:
-   mio regr IP[#TARGET] [TEST SUITE.]REGRESSION [OPTIONS]
-   
-Options:
-   -d, --dry-run  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
-   
-Examples:
-   mio regr my_ip sanity            # Run sanity regression for IP 'uvm_my_ip', from test suite 'ts.yml'
-   mio regr my_ip apb_xc.sanity     # Run sanity regression for IP 'uvm_my_ip', from test suite 'apb_xc.ts.yml'
-   mio regr my_ip axi_xc.sanity -d  # Dry-run sanity regression for IP 'uvm_my_ip', from test suite 'axi_xc.ts.yml"""
-
-
 VERBOSITY_LEVELS = ["none", "low", "medium", "high", "full", "debug"]
 LOGIC_SIMULATORS = ["dsim", "vivado"]
-
-
-def get_commands():
-    return [SimulateCommand, RegressionCommand]
-
 
 class SimulateCommand(Command):
     @staticmethod
@@ -97,20 +83,38 @@ class SimulateCommand(Command):
     @staticmethod
     def add_to_subparsers(subparsers):
         parser_sim = subparsers.add_parser('sim', help=SIM_HELP_TEXT, add_help=False)
-        parser_sim.add_argument('ip'               , help='Target IP'                                                                                                                               )
-        parser_sim.add_argument('-t', "--test"     , help='Delete compiled IP dependencies.'                                                                                        , required=False)
-        parser_sim.add_argument('-s', "--seed"     , help='Specify the seed for constrained-random testing.  If none is provided, a random one will be picked.', type=int           , required=False)
-        parser_sim.add_argument('-v', "--verbosity", help='Specify the UVM verbosity level for logging: none, low, medium, high or debug.  Default: medium'    , choices=VERBOSITY_LEVELS , required=False)
-        parser_sim.add_argument('-e', "--errors"   , help='Specifies the number of errors at which compilation/elaboration/simulation is terminated.'          , type=int           , required=False)
-        parser_sim.add_argument('-a', "--app"      , help='Specifies which simulator to use: dsim only one supported for now.'                                 , choices=LOGIC_SIMULATORS )
-        parser_sim.add_argument('-w', "--waves"    , help='Enable wave capture to disk.'                                                                       , action="store_true", required=False)
-        parser_sim.add_argument('-c', "--cov"      , help='Enable code & functional coverage capture.'                                                         , action="store_true", required=False)
-        parser_sim.add_argument('-g', "--gui"      , help="Invoke the simulator's Graphical User Interface."                                                   , action="store_true", required=False)
-        parser_sim.add_argument('-S'               , help='Force mio to simulate target IP.  Can be combined with -D, -C and/or -E.'                           , action="store_true", required=False)
-        parser_sim.add_argument('-E'               , help='Force mio to elaborate target IP.  Can be combined with -D, -C and/or -S.'                          , action="store_true", required=False)
-        parser_sim.add_argument('-C'               , help='Force mio to compile target IP.  Can be combined with -D, -E and/or -S.'                            , action="store_true", required=False)
-        parser_sim.add_argument('-D'               , help='Force mio to prepare Device-Under-Test (DUT).  Can be combined with -C, -E and/or -S.'              , action="store_true", required=False)
-        parser_sim.add_argument('-+', "--args"     , help='Add arguments for compilation (+define+NAME[=VALUE]) or simulation (+NAME[=VALUE])).', nargs='+'    , dest='add_args'    , required=False)
+        parser_sim.add_argument('ip', help='Target IP')
+        parser_sim.add_argument('-t', "--test", help='Delete compiled IP dependencies.', required=False)
+        parser_sim.add_argument('-s', "--seed",
+                                help='Specify the seed for constrained-random testing.  If none is provided, a random one will be picked.',
+                                type=int, required=False)
+        parser_sim.add_argument('-v', "--verbosity",
+                                help='Specify the UVM verbosity level for logging: none, low, medium, high or debug.  Default: medium',
+                                choices=VERBOSITY_LEVELS, required=False)
+        parser_sim.add_argument('-e', "--errors",
+                                help='Specifies the number of errors at which compilation/elaboration/simulation is terminated.',
+                                type=int, required=False)
+        parser_sim.add_argument('-a', "--app",
+                                help='Specifies which simulator to use: dsim only one supported for now.',
+                                choices=LOGIC_SIMULATORS)
+        parser_sim.add_argument('-w', "--waves", help='Enable wave capture to disk.', action="store_true",
+                                required=False)
+        parser_sim.add_argument('-c', "--cov", help='Enable code & functional coverage capture.', action="store_true",
+                                required=False)
+        parser_sim.add_argument('-g', "--gui", help="Invoke the simulator's Graphical User Interface.",
+                                action="store_true", required=False)
+        parser_sim.add_argument('-S', help='Force mio to simulate target IP.  Can be combined with -D, -C and/or -E.',
+                                action="store_true", required=False)
+        parser_sim.add_argument('-E', help='Force mio to elaborate target IP.  Can be combined with -D, -C and/or -S.',
+                                action="store_true", required=False)
+        parser_sim.add_argument('-C', help='Force mio to compile target IP.  Can be combined with -D, -E and/or -S.',
+                                action="store_true", required=False)
+        parser_sim.add_argument('-D',
+                                help='Force mio to prepare Device-Under-Test (DUT).  Can be combined with -C, -E and/or -S.',
+                                action="store_true", required=False)
+        parser_sim.add_argument('-+', "--args",
+                                help='Add arguments for compilation (+define+NAME[=VALUE]) or simulation (+NAME[=VALUE])).',
+                                nargs='+', dest='add_args', required=False)
 
     def __init__(self):
         super().__init__()
@@ -151,15 +155,19 @@ class SimulateCommand(Command):
     @property
     def do_prepare_dut(self) -> bool:
         return self._do_prepare_dut
+
     @property
     def do_compile(self) -> bool:
         return self._do_compile
+
     @property
     def do_elaborate(self) -> bool:
         return self._do_elaborate
+
     @property
     def do_compile_and_elaborate(self) -> bool:
         return self._do_compile_and_elaborate
+
     @property
     def do_simulate(self) -> bool:
         return self._do_simulate
@@ -290,7 +298,8 @@ class SimulateCommand(Command):
     def phase_post_validate_configuration_space(self, phase: Phase):
         if self.app == LogicSimulators.UNDEFINED:
             if not self.rmh.configuration.logic_simulation.default_simulator:
-                phase.error = Exception(f"No simulator specified (-a/--app) and no default simulator in the Configuration")
+                phase.error = Exception(
+                    f"No simulator specified (-a/--app) and no default simulator in the Configuration")
                 return
             else:
                 self._app = self.rmh.configuration.logic_simulation.default_simulator.value
@@ -335,7 +344,7 @@ class SimulateCommand(Command):
                         self._do_compile = True
                         self._do_elaborate = True
                         self._do_compile_and_elaborate = False
-    
+
     def phase_main(self, phase: Phase):
         if self.do_prepare_dut:
             self.prepare_dut(phase)
@@ -386,7 +395,9 @@ class SimulateCommand(Command):
         self.compilation_and_elaboration_configuration.defines_boolean = self.defines_boolean
         self.compilation_and_elaboration_configuration.defines_value = self.defines_value
         self.compilation_and_elaboration_configuration.target = self.ip_definition.target
-        self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
+        self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip,
+                                                                                        self.compilation_and_elaboration_configuration,
+                                                                                        self.scheduler)
 
     def simulate(self, phase: Phase):
         self._simulation_configuration = LogicSimulatorSimulationConfiguration()
@@ -409,7 +420,8 @@ class SimulateCommand(Command):
             self.coverage_merge_configuration.html_report_path = self.simulation_report.coverage_directory
             self.coverage_merge_configuration.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
             self.coverage_merge_configuration.input_simulation_reports.append(self.simulation_report)
-            self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_configuration, self.scheduler)
+            self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_configuration,
+                                                                        self.scheduler)
 
     def phase_report(self, phase: Phase):
         self._success = True
@@ -466,7 +478,7 @@ class SimulateCommand(Command):
                 print(f"\033[31m{error}\033[0m")
             for fatal in self.compilation_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
-    
+
     def print_elaboration_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_warnings}W\033[0m" if self.elaboration_report.num_warnings > 0 else "0W"
@@ -479,13 +491,14 @@ class SimulateCommand(Command):
                 print(f"\033[31m{error}\033[0m")
             for fatal in self.elaboration_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
-    
+
     def print_compilation_and_elaboration_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_warnings}W\033[0m" if self.compilation_and_elaboration_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
         print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
-        print(f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
+        print(
+            f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
         if not self.compilation_and_elaboration_report.success:
             print('*' * 119)
             for error in self.compilation_and_elaboration_report.errors:
@@ -500,10 +513,12 @@ class SimulateCommand(Command):
         print(f" Simulation results - {errors_str} {warnings_str}{fatal_str}:")
         print(f"  * Log: {self.rmh.configuration.applications.editor} {self.simulation_report.log_path}")
         if self.simulation_configuration.enable_waveform_capture:
-            view_waves_command: str = self.simulator.get_view_waves_command(self.simulation_configuration, self.simulation_report)
+            view_waves_command: str = self.simulator.get_view_waves_command(self.simulation_configuration,
+                                                                            self.simulation_report)
             print(f"  * Waves: {view_waves_command} &")
         if self.simulation_configuration.enable_coverage:
-            print(f"  * Coverage: {self.rmh.configuration.applications.web_browser} {self.coverage_merge_report.html_report_index_path} &")
+            print(
+                f"  * Coverage: {self.rmh.configuration.applications.web_browser} {self.coverage_merge_report.html_report_index_path} &")
         if not self.simulation_report.success:
             print('*' * 119)
             for error in self.simulation_report.errors:
@@ -511,6 +526,26 @@ class SimulateCommand(Command):
             for fatal in self.simulation_report.fatals:
                 print(f"\033[31m{fatal}\033[0m")
 
+
+
+#######################################################################################################################
+# Regression Command
+#######################################################################################################################
+REGR_HELP_TEXT = """Moore.io Regression Command
+   Runs a set of tests against a specific IP.  Regressions are described in Test Suite files (`[<target>.]ts.yml`).
+   
+   An optional target may be specified for the IP. Ex: my_ip#target.
+   
+Usage:
+   mio regr IP[#TARGET] [TEST SUITE.]REGRESSION [OPTIONS]
+   
+Options:
+   -d, --dry-run  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
+   
+Examples:
+   mio regr my_ip sanity            # Run sanity regression for IP 'uvm_my_ip', from test suite 'ts.yml'
+   mio regr my_ip apb_xc.sanity     # Run sanity regression for IP 'uvm_my_ip', from test suite 'apb_xc.ts.yml'
+   mio regr my_ip axi_xc.sanity -d  # Dry-run sanity regression for IP 'uvm_my_ip', from test suite 'axi_xc.ts.yml"""
 
 class RegressionCommand(Command):
     @staticmethod
@@ -531,7 +566,7 @@ class RegressionCommand(Command):
         self._ip: Ip = None
         self._test_suite_name: str = ""
         self._test_suite_name_is_specified: bool=False
-        self._regression: regression.Regression = None
+        self._regression: Regression = None
         self._regression_name: str = ""
         self._dry_mode: bool = False
         self._app: LogicSimulators = LogicSimulators.UNDEFINED
@@ -573,7 +608,7 @@ class RegressionCommand(Command):
         return self._test_suite_name_is_specified
 
     @property
-    def regression(self) -> regression.Regression:
+    def regression(self) -> Regression:
         return self._regression
 
     @property

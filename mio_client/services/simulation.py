@@ -15,13 +15,13 @@ import yaml
 from jinja2 import Template
 from semantic_version import Version
 
-from configuration import DSimCloudComputeSizes
-from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration, JobResults
-from mio_client.core.service import Service, ServiceType
-from mio_client.core.ip import Ip, IpLocationType
+from ..core.configuration import DSimCloudComputeSizes
+from ..core.scheduler import JobScheduler, Job, JobSchedulerConfiguration, JobResults
+from ..core.service import Service, ServiceType
+from ..core.ip import Ip, IpLocationType
 from abc import ABC, abstractmethod
 
-from mio_client.core.model import Model, UNDEFINED_CONST
+from ..core.model import Model, UNDEFINED_CONST
 import atexit
 import signal
 
