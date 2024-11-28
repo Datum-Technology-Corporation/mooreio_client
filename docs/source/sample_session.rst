@@ -4,6 +4,13 @@ Sample Session
 This section outlines a command listing that should enable you to get an overview of the ``mio`` workflow and its
 essential features.  This example assumes you are familiar with CLI basics.
 
+0. Clone the sample session repository
+--------------------------------------
+1. The repository is available from GitHub: https://github.com/Datum-Technology-Corporation/mooreio_client_sample_session
+
+  ``git clone https://github.com/Datum-Technology-Corporation/mooreio_client_sample_session.git mio_sample_session``
+
+
 1. Check installation and view Documentation
 --------------------------------------------
 
@@ -18,15 +25,11 @@ essential features.  This example assumes you are familiar with CLI basics.
 
 2. Initialize a new Project
 ---------------------------
-1. Create Project Root Directory.  Skip if importing existing codebase:
+1. Move into Project root directory:
 
-  ``mkdir test_chip``
+  ``cd mio_sample_session``
 
-2. Move into Project root directory:
-
-  ``cd test_chip``
-
-3. Initialize a new Project.  Creates ``mio.toml`` Project descriptor file and directory structure if not present:
+2. Initialize a new Project.  Creates ``mio.toml`` Project descriptor file and directory structure (if not present):
 
   ``mio init``
 
@@ -68,10 +71,10 @@ essential features.  This example assumes you are familiar with CLI basics.
 
 1. Run a test for a UVM test bench IP we initialized.
 
-  ``mio sim uvmt_example -t rand_stim -s 1 -w -c -a dsim``
+  ``mio sim uvmt_example -t smoke -s 1 -w -c -a dsim``
 
-  - IP: ``uvm_example_tb``
-  - Test Name: ``rand_stim``
+  - IP: ``uvmt_example``
+  - Test Name: ``smoke``
   - Seed: ``1``
   - Waveform capture: ``Enabled``
   - Coverage sampling: ``Enabled``

@@ -49,6 +49,7 @@ Prohibits ``mio`` from attempting to authenticate with the Moore.io Server.
 docs
 ----
 
+.. _doxygen_installation_path:
 doxygen_installation_path
 *****************
 
@@ -309,6 +310,7 @@ metrics_dsim_default_simulation_arguments
 Compilation arguments always passed to Metrics DSim during simulation.
 
 
+.. _metrics_dsim_license_path:
 metrics_dsim_license_path
 ************************
 
@@ -318,6 +320,7 @@ metrics_dsim_license_path
 Path to Metrics DSim Desktop license key.
 
 
+.. _metrics_dsim_cloud_installation_path:
 metrics_dsim_cloud_installation_path
 ************************
 
@@ -327,6 +330,7 @@ metrics_dsim_cloud_installation_path
 Path to Metrics DSim Cloud simulator installation directory.
 
 
+.. _metrics_dsim_installation_path:
 metrics_dsim_installation_path
 ************************
 
@@ -407,6 +411,7 @@ uvm_version
 Specifies the version of UVM to be used during simulation.
 
 
+.. _vscode_installation_path:
 vscode_installation_path
 ************************
 
@@ -456,6 +461,7 @@ xilinx_vivado_default_simulation_arguments
 Compilation arguments always passed to Xilinx Vivado during simulation.
 
 
+.. _xilinx_vivado_installation_path:
 xilinx_vivado_installation_path
 ************************
 

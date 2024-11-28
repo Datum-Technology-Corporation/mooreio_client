@@ -52,7 +52,6 @@ html_theme_options = {
     "use_repository_button": True,
     "use_download_button": True,
     "use_sidenotes": True,
-    "logo_only": True,
     "show_toc_level": 2,
 }
 html_css_files = [
