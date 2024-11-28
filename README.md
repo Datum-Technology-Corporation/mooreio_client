@@ -109,35 +109,44 @@ Errors are handled via the `raise` of Python Exceptions. The RM catches these an
 
 ### Setup
 
+0. Print Makefile User Manual:
+    ```sh
+    make help
+    ```
+
 1. Clone the repository:
     ```sh
     git clone https://github.com/Datum-Technology-Corporation/mooreio_client.git
     cd mooreio_client
     ```
-
-2. Set up Virtual Environment and install Dependencies:
+   
+2. Run 'core' tests (do not require external software):
     ```sh
-    make venv
+    make test-core
+    ```
+   Test reports, including code coverage, are output under ``./reports``
+
+3. (Optional) Run tests that require simulator license(s):
+    ```sh
+    make test-dsim
+    make test-vivado
     ```
 
-3. Run tests:
+4. Lint codebase:
     ```sh
-    make test
+    make lint
     ```
+   Linting reports are output under ``./reports``
 
-4. Build documentation:
+5. Build documentation:
     ```sh
     make docs
     ```
+   The HTML is output under ``./docs/build``
 
-5. Build package:
+6. Build package:
     ```sh
     make build
-    ```
-
-6. Print Makefile User Manual:
-    ```sh
-    make help
     ```
 
 ## Continuous Integration
