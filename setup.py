@@ -11,8 +11,8 @@ def parse_requirements(filename):
         return [line.strip() for line in file if line.strip() and not line.startswith('#')]
 
 setup(
-    name="mio_client",
-    version="2.0.0",
+    name="mooreio_client",
+    version="2.0.4",
     description="CLI tool to automate EDA tasks for ASICs, FPGAs, and UVM IP.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -20,6 +20,9 @@ setup(
     author="Datum Technology Corporation",
     author_email="info@datumtc.ca",
     license="MIT",
+    project_urls={
+        'Documentation': 'http://mooreio-client.rtfd.io/',
+    },
     packages=find_packages(),
     install_requires=parse_requirements('requirements.txt'),
     extras_require={
@@ -32,7 +35,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "mio_client=mio_client.cli:main",
+            "mio=mio_client.cli:main",
         ],
     },
     python_requires='>=3.12',

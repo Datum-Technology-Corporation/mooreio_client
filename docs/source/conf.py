@@ -17,7 +17,7 @@ from docutils.parsers.rst import Directive
 project = 'Moore.io CLI Client'
 copyright = '2024, Datum Technology Corporation'
 author = 'Datum Technology Corporation'
-release = '2.0.0'
+release = '2.0.4'
 
 
 #######################################################################################################################
@@ -25,7 +25,6 @@ release = '2.0.0'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 #######################################################################################################################
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',

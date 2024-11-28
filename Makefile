@@ -14,15 +14,22 @@ help:
 	@echo "Usage: make [target]"
 	@echo
 	@echo "Targets:"
-	@echo "  venv       : Sets up a virtual environment and installs dependencies"
-	@echo "  test       : Runs all pytest test suites"
-	@echo "  test-core  : Runs tests which do not require licenses"
-	@echo "  test-dsim  : Runs tests which require Metrics DSim"
-	@echo "  test-vivado: Runs tests which require Xilinx Vivado"
-	@echo "  lint       : Lints codebase with flake8"
-	@echo "  docs       : Generates Sphinx documentation"
-	@echo "  build      : Builds package for PyPI"
-	@echo "  clean      : Deletes venv, cleans up build artifacts and caches"
+	@echo "  venv                 : Sets up a virtual environment and installs dependencies"
+	@echo "  test                 : Runs all pytest test suites"
+	@echo "  test-core            : Runs tests which do not require licenses"
+	@echo "  test-dsim            : Runs tests which require Metrics DSim"
+	@echo "  test-vivado          : Runs tests which require Xilinx Vivado"
+	@echo "  lint                 : Lints codebase with flake8"
+	@echo "  docs                 : Generates Sphinx documentation"
+	@echo "  build                : Builds package for PyPI"
+	@echo "  publish              : Publishes package to PyPI"
+	@echo "  publish-install      : Publishes package to PyPI and installs it"
+	@echo "  publish-test         : Publishes package to TestPyPI"
+	@echo "  publish-test-install : Publishes package to TestPyPI and installs it"
+	@echo "  clean                : Calls all clean targets"
+	@echo "  clean-venv           : Deletes venv"
+	@echo "  clean-build          : Deletes build artifacts and caches"
+	@echo "  clean-docs           : Deletes sphinx document outputs"
 
 
 #######################################################################################################################
@@ -178,13 +185,13 @@ clean-build:
 	find . -name '__pycache__' -exec rm -rf {} +
 
 # Publishes package to TestPyPI
-publish-test: clean build docs
+publish-test: clean-build build docs
 	$(call print_banner, Test Publishing package to TestPyPI)
 	. ./venv/bin/activate && $(TWINE) upload --repository-url https://test.pypi.org/legacy/ dist/*
 	@echo "Test publish complete: The package has been uploaded to TestPyPI"
 
 # Installs package from TestPyPI
-publish-test-install: publish-test
+publish-test-install:
 	$(call print_banner, Installing package from TestPyPI)
 	$(PIP) install --index-url https://test.pypi.org/simple/ $(PACKAGE_NAME)
 

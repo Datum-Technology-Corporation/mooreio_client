@@ -1,4 +1,6 @@
-![Moore.io Client Logo](docs/source/_static/mio_logo.png)
+![Moore.io Client Logo](https://mooreio.com/dab41100c71545e7520e.png)
+
+[![Documentation Status](https://readthedocs.org/projects/mooreio-client/badge/?version=latest)](https://mooreio-client.readthedocs.io/en/latest/?badge=latest)
 
 # Moore.io Client
 
@@ -73,7 +75,7 @@ mio help <command>
 
 ## Documentation
 
-Comprehensive documentation is available on [Read the Docs](https://readthedocs.org/projects/mooreio_client).
+Comprehensive documentation is available on [Read the Docs](http://mooreio-client.rtfd.io/).
 
 ## Development
 
