@@ -20,8 +20,12 @@ setup(
     author="Datum Technology Corporation",
     author_email="info@datumtc.ca",
     license="MIT",
+    keywords="SystemVerilog, UVM, DV, verilog, VHDL, hdl, rtl, synthesis, FPGA, simulation, Xilinx, Vivado, Altera, Metrics, DSim",
     project_urls={
+        'Web Site': 'https://www.mooreio.com/',
+        'Author': 'https://www.datumtc.ca/',
         'Documentation': 'http://mooreio-client.rtfd.io/',
+        'Bug Tracker': 'https://github.com/Datum-Technology-Corporation/mooreio_client/issues',
     },
     packages=find_packages(),
     install_requires=parse_requirements('requirements.txt'),
