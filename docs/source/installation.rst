@@ -1,7 +1,7 @@
 Installation
 ============
 
-The Moore.io client is installed using 'pip' (version >=3):
+The Moore.io client is installed using ``pip`` (version ``>=3``):
 
 ``pip install mooreio_client``
 
