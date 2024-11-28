@@ -71,7 +71,7 @@ essential features.  This example assumes you are familiar with CLI basics.
 
 1. Run a test for a UVM test bench IP we initialized.
 
-  ``mio sim uvmt_example -t rand_stim -s 1 -w -c -a dsim``
+  ``mio sim uvmt_example -t smoke -s 1 -w -c -a dsim``
 
   - IP: ``uvmt_example``
   - Test Name: ``smoke``
