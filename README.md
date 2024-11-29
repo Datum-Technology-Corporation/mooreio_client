@@ -1,5 +1,7 @@
 ![Moore.io Client Logo](https://mooreio.com/dab41100c71545e7520e.png)
 
+![PyPI](https://img.shields.io/pypi/v/mooreio_client?label=pypi%20package)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/mooreio_client)
 [![Documentation Status](https://readthedocs.org/projects/mooreio-client/badge/?version=latest)](https://mooreio-client.readthedocs.io/en/latest/?badge=latest)
 
 # Moore.io Client
