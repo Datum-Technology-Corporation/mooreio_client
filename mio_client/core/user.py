@@ -18,8 +18,7 @@ class User(Model):
         self._pre_set_password = ""
     authenticated: bool = False
     username: Optional[constr(pattern=VALID_NAME_REGEX)] = "__ANONYMOUS__"
-    access_token: Optional[str] = ""
-    refresh_token: Optional[str] = ""
+    session_data: Optional[dict] = {}
 
     @classmethod
     def new(cls):

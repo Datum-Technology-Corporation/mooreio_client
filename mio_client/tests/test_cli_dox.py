@@ -16,7 +16,6 @@ class TestCliDox(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self):
         mio_client.cli.URL_BASE = "http://localhost:8000"
-        mio_client.cli.URL_AUTHENTICATION = f'{mio_client.cli.URL_BASE}/auth/token'
         mio_client.cli.TEST_MODE = True
         self.valid_local_simplest_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
         self.valid_local_simplest_doxygen_output_path: Path = Path(os.path.join(self.valid_local_simplest_path, "docs", "doxygen_output"))

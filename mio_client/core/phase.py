@@ -1,7 +1,7 @@
 # Copyright 2020-2024 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 
@@ -86,7 +86,15 @@ class Phase:
         :rtype: datetime
         """
         return self._end_timestamp
-    
+
+    @property
+    def duration(self) -> timedelta:
+        """
+        :return: The duration between start_timestamp and end_timestamp.
+        :rtype: timedelta
+        """
+        return self._end_timestamp - self._start_timestamp
+
     @property
     def error(self) -> Exception:
         """

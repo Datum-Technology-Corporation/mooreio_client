@@ -59,7 +59,6 @@ Full Command List (`mio help CMD` for help on a specific command):
 # Main
 #######################################################################################################################
 URL_BASE = 'https://mooreio.com'
-URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
 TEST_MODE = False
 USER_HOME_PATH = pathlib.Path(os.path.expanduser("~/.mio"))
 root_manager: RootManager
@@ -113,7 +112,7 @@ def main(args=None) -> int:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
 
-    root_manager = RootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION, TEST_MODE, USER_HOME_PATH)
+    root_manager = RootManager("Moore.io Client Root Manager", wd, URL_BASE, TEST_MODE, USER_HOME_PATH)
     command.parsed_cli_arguments = args
 
     if args.dbg:

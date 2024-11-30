@@ -49,6 +49,5 @@ class TestUser(TestBase):
         config_instance = self.model_creation(User, self.valid_authenticated_1)
         assert hasattr(config_instance, 'authenticated')
         assert hasattr(config_instance, 'username')
-        assert hasattr(config_instance, 'access_token')
-        assert hasattr(config_instance, 'refresh_token')
+        assert hasattr(config_instance, 'session_data')
 

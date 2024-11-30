@@ -19,7 +19,6 @@ from .common import OutputCapture, TestBase
 # Test (ie mock) classes
 #######################################################################################################################
 URL_BASE = "http://localhost:8000"
-URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
 TEST_COMMAND_HELP_TEXT = """Moore.io Test Command"""
 class TestCommand(Command):
     def __init__(self):
@@ -231,7 +230,7 @@ class TestCore(TestBase):
         pass
 
     def create_root_manager(self, work_directory: Path, user_directory: Path):
-        self.rmh: RootManager = RootManager("Test Root Manager", work_directory, URL_BASE, URL_AUTHENTICATION, True, user_directory)
+        self.rmh: RootManager = RootManager("Test Root Manager", work_directory, URL_BASE, True, user_directory)
 
     def run_command(self, command_type, work_directory: Path, user_directory: Path):
         self.create_root_manager(work_directory, user_directory)

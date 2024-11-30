@@ -45,7 +45,7 @@ class RootManager:
     """
     Component which performs all vital tasks and executes phases.
     """
-    def __init__(self, name: str, wd: Path, url_base: str, url_authentication: str, test_mode: bool = False, user_home_path:Path=os.path.expanduser("~/.mio")):
+    def __init__(self, name: str, wd: Path, url_base: str, test_mode: bool = False, user_home_path:Path=os.path.expanduser("~/.mio")):
         """
         Initialize an instance of the Root Manager.
 
@@ -63,7 +63,6 @@ class RootManager:
         self._locally_installed_ip_dir: Path = self.md / "installed_ip"
         self._global_ip_local_copy_dir: Path = self.md / "global_ip"
         self._url_base: str = url_base
-        self._url_authentication: str = url_authentication
         self._url_api: str = f"{self._url_base}/api"
         self._print_trace: bool = False
         self._command: Command = None
@@ -138,13 +137,6 @@ class RootManager:
         :return: Moore.io Web Server URL.
         """
         return self._url_base
-
-    @property
-    def url_authentication(self) -> str:
-        """
-        :return: Moore.io Web Server Authentication URL.
-        """
-        return self._url_authentication
 
     @property
     def url_api(self) -> str:
@@ -373,7 +365,7 @@ class RootManager:
         :return: A `Phase` object representing the newly created phase.
         """
         self._current_phase = Phase(self, name)
-        self.debug(f"Starting phase '{name}'")
+        self.debug(f"Starting phase '{name}': {self._current_phase.init_timestamp}")
         return self._current_phase
     
     def check_phase_finished(self, phase: Phase):
@@ -388,7 +380,7 @@ class RootManager:
             else:
                 raise RuntimeError(f"Phase '{phase}' has not finished properly")
         else:
-            self.debug(f"Finished phase '{phase}'")
+            self.debug(f"Finished phase '{phase}': {phase.duration.total_seconds()} seconds")
         if phase.end_process:
             raise PhaseEndProcessException(phase.end_process_message)
     
@@ -1014,48 +1006,46 @@ class RootManager:
                     'username': self.user.username,
                     'password': password,
                 }
+                final_url: str = f"{self.url_api}/auth/login/"
                 try:
-                    response = requests.post(f"{self.url_authentication}/login/", json=credentials)
+                    session = requests.Session()
+                    response = session.post(final_url, data=credentials)
                     response.raise_for_status()  # Raise an error for bad status codes
-                    data = response.json()
-                    self.user.access_token = data['access']
-                    self.user.refresh_token = data['refresh']
-                except requests.RequestException as e:
-                    phase.error = Exception(f"An error occurred during authentication: {e}")
+                    self.user.session_data = {cookie.name: cookie.value for cookie in session.cookies}
+                except Exception as e:
+                    phase.error = Exception(f"An error occurred during authentication with '{final_url}': {e}")
                 else:
                     self.user.authenticated = True
 
     def deauthenticate(self, phase: Phase):
-        headers = {
-            'Authorization': f"Bearer {self.user.access_token}",
-            'Content-Type': 'application/json',
-        }
-        data = {
-            'refresh_token': self.user.refresh_token,
-        }
+        final_url: str = f"{self.url_api}/auth/logout/"
         try:
-            response = requests.post(f"{self.url_authentication}/logout/", headers=headers, json=data)
+            session = requests.Session()
+            for cookie_name, cookie_value in self.user.session_data.items():
+                session.cookies.set(cookie_name, cookie_value)
+            response = session.get(final_url)
             response.raise_for_status()  # Raise an error for bad status codes
+            session.cookies.clear()
         except requests.RequestException as e:
-            Exception(f"Error during logout: {e}")
+            Exception(f"Error during de-authentication with '{final_url}': {e}")
 
     def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
         response = {}
         if not self.user.authenticated:
             raise Exception(f"Error during Web API call: user not authenticated")
         else:
-            headers = {
-                'Authorization': f"Bearer {self.user.access_token}",
-                'Content-Type': 'application/json',
-            }
+            final_url: str = f"{self.url_api}/{path}"
             try:
+                session = requests.Session()
+                for cookie_name, cookie_value in self.user.session_data.items():
+                    session.cookies.set(cookie_name, cookie_value)
                 if method == HTTPMethod.POST:
-                    response = requests.post(f"{self.url_api}/{path}", headers=headers, json=data)
+                    response = session.post(final_url, data=data)
                     response.raise_for_status()  # Raise an error for bad status codes
                 else:
                     raise Exception(f"Method {method} is not supported")
             except requests.RequestException as e:
-                raise Exception(f"Error during Web API call: {method} to '{path}': {e}")
+                raise Exception(f"Error during Web API {method} to '{final_url}': {e}")
         return response
 
     def phase_save_user_data(self, phase: Phase):
