@@ -144,7 +144,7 @@ class SiArxService(Service):
             data = {
                 'project_id': configuration.project_id,
             }
-            raw_response = self.rmh.web_api_call(HTTPMethod.POST, 'siarx-gen/project', data)
+            raw_response = self.rmh.web_api_call(HTTPMethod.POST, 'siarx/gen', data)
             response = SiArxResponse.model_validate(raw_response.json())
         except Exception as e:
             report.success = False

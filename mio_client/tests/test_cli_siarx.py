@@ -28,18 +28,20 @@ class TestCliSiArx(TestBase):
         self.remove_file(self.mapu_path / "mio.toml")
 
     def siarx(self, capsys, project_path: Path, project_id: str) -> OutputCapture:
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'x', f'--project-id {project_id}'])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'x', f'--project-id={project_id}'])
         assert result.return_code == 0
         return result
 
     @pytest.mark.single_process
-    @pytest.mark.integration
+    #@pytest.mark.integration
     def test_cli_siarx_project(self, capsys):
         self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.mapu_path, '2')
 
     def cli_siarx_gen_project_sim_dsim(self, capsys, app: str):
         self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.mapu_path, '2')
         result = self.one_shot_sim_ip(capsys, self.mapu_path, app, "uvmt_mapu", "fix_stim", 1)
 

@@ -67,6 +67,7 @@ class TestBase:
 
     def logout(self, capsys) -> OutputCapture:
         result = self.run_cmd(capsys, ['--dbg', 'logout'])
+        assert result.return_code == 0
         assert "Logged out successfully" in result.text
         assert mio_client.cli.root_manager.user.authenticated == False
         return result
