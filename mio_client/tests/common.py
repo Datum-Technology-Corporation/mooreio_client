@@ -49,6 +49,9 @@ class TestBase:
     def assert_file_exists(self, path: Path):
         assert os.path.isfile(path)
 
+    def assert_directory_exists(self, path: Path):
+        assert os.path.isdir(path)
+
     def run_cmd(self, capsys, args: [str]) -> OutputCapture:
         return_code = mio_client.cli.main(args)
         text = capsys.readouterr().out.rstrip()

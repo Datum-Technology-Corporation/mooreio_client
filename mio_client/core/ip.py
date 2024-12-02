@@ -913,6 +913,13 @@ class IpDataBase():
         if raise_exception_if_not_found:
             raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version_spec}' not found.")
 
+    def find_ip_by_sync_id(self, sync_id: str, raise_exception_if_not_found: bool=True) -> Ip:
+        for ip in self._ip_list:
+            if ip.ip.sync and (ip.ip.sync_id == sync_id):
+                return ip
+        if raise_exception_if_not_found:
+            raise ValueError(f"IP with sync_id '{sync_id}' not found.")
+
     def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed: bool=False, error_on_nothing_found: bool=False) -> List[Ip]:
         ip_list: List[Ip] = []
         ip_files: List[str] = []

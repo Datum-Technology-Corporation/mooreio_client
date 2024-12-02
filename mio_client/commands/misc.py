@@ -34,7 +34,8 @@ Examples:
    mio help sim  # Prints out a summary on the Logic Simulation command and its options"""
 
 ALL_COMMANDS = [
-    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox", "init"
+    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox",
+    "init", "x"
 ]
 
 class HelpCommand(Command):
@@ -78,6 +79,8 @@ class HelpCommand(Command):
             self.print_text_and_exit(phase, DOX_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "init":
             self.print_text_and_exit(phase, gen.INIT_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "x":
+            self.print_text_and_exit(phase, gen.SIARX_HELP_TEXT)
 
     def needs_authentication(self) -> bool:
         return False

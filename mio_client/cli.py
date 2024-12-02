@@ -41,6 +41,7 @@ Full Command List (`mio help CMD` for help on a specific command):
       
    Project and Code Management
       init           Creates essential files necessary for new Projects/IPs
+      x              Generates IP HDL code using Datum SiArx (requires license)
 
    IP and Credentials Management
       install        Installs all IP dependencies from IP Marketplace

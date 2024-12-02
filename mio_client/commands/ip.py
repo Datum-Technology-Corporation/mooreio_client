@@ -54,7 +54,7 @@ class List(Command):
 
     def phase_post_ip_discovery(self, phase):
         all_ip_unsorted = self.rmh.ip_database.get_all_ip()
-        print(f"Found {len(all_ip_unsorted)} IP(s):")
+        self.rmh.info(f"Found {len(all_ip_unsorted)} IP(s):")
         sorted_ip = sorted(all_ip_unsorted, key=lambda current_ip: (current_ip.has_owner, current_ip.ip.vendor if current_ip.has_owner else '', current_ip.ip.name))
         for ip in sorted_ip:
             if ip.has_owner:
@@ -144,7 +144,7 @@ class PackageCommand(Command):
             phase.error = Exception(f"Failed to package IP '{self.ip}': {e}")
 
     def phase_report(self, phase):
-        print(f"Packaged IP '{self.ip}' successfully.")
+        self.rmh.info(f"Packaged IP '{self.ip}' successfully.")
 
 
 
@@ -247,7 +247,7 @@ class PublishCommand(Command):
             #self.rmh.remove_file(self.self._publishing_certificate._tgz_path)
             pass
         except Exception as e:
-            warnings.warn(f"Failed to delete compressed tarball for IP '{self.ip}': {e}")
+            self.rmh.warning(f"Failed to delete compressed tarball for IP '{self.ip}': {e}")
 
 
 
@@ -377,12 +377,9 @@ class InstallCommand(Command):
 
     def phase_report(self, phase: Phase):
         if self.mode == InstallMode.ALL:
-            print(f"Installed all IPs successfully.")
+            self.rmh.info(f"Installed all IPs successfully.")
         else:
-            print(f"Installed IP '{self.ip}' successfully.")
-
-    def phase_cleanup(self, phase: Phase):
-        pass
+            self.rmh.info(f"Installed IP '{self.ip}' successfully.")
 
 
 #######################################################################################################################
@@ -458,12 +455,9 @@ class UninstallCommand(Command):
 
     def phase_report(self, phase: Phase):
         if self.uninstall_all:
-            print(f"Uninstalled all IPs successfully.")
+            self.rmh.info(f"Uninstalled all IPs successfully.")
         else:
-            print(f"Uninstalled IP '{self.ip}' successfully.")
-
-    def phase_cleanup(self, phase: Phase):
-        pass
+            self.rmh.info(f"Uninstalled IP '{self.ip}' successfully.")
 
 
 #######################################################################################################################

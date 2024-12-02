@@ -462,15 +462,15 @@ class SimulateCommand(Command):
         warnings_str = f"\033[33m\033[1m{self.compilation_report.num_errors}W\033[0m" if self.compilation_report.num_errors > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
         if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
-            print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+            self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
             print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
             print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
         else:
             if self.compilation_report.has_sv_files_to_compile:
-                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
             elif self.compilation_report.has_vhdl_files_to_compile:
-                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
         if not self.compilation_report.success:
             print('*' * 119)
@@ -483,7 +483,7 @@ class SimulateCommand(Command):
         errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_warnings}W\033[0m" if self.elaboration_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
-        print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+        self.rmh.info(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
         print(f"  * Log: {self.rmh.configuration.applications.editor} {self.elaboration_report.log_path}")
         if not self.elaboration_report.success:
             print('*' * 119)
@@ -496,7 +496,7 @@ class SimulateCommand(Command):
         errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_warnings}W\033[0m" if self.compilation_and_elaboration_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
-        print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+        self.rmh.info(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
         print(
             f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
         if not self.compilation_and_elaboration_report.success:
@@ -510,7 +510,7 @@ class SimulateCommand(Command):
         errors_str = f"\033[31m\033[1m{self.simulation_report.num_errors}E\033[0m" if self.simulation_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.simulation_report.num_warnings}W\033[0m" if self.simulation_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.simulation_report.num_fatals > 0 else ""
-        print(f" Simulation results - {errors_str} {warnings_str}{fatal_str}:")
+        self.rmh.info(f" Simulation results - {errors_str} {warnings_str}{fatal_str}:")
         print(f"  * Log: {self.rmh.configuration.applications.editor} {self.simulation_report.log_path}")
         if self.simulation_configuration.enable_waveform_capture:
             view_waves_command: str = self.simulator.get_view_waves_command(self.simulation_configuration,
@@ -859,15 +859,15 @@ class RegressionCommand(Command):
             warnings_str = f"\033[33m\033[1m{self.compilation_report.num_warnings}W\033[0m" if self.compilation_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
             if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
-                print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
             else:
                 if self.compilation_report.has_sv_files_to_compile:
-                    print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                    self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                     print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
                 if self.compilation_report.has_vhdl_files_to_compile:
-                    print(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                    self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                     print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
             if not self.compilation_report.success:
                 print('*' * 119)
@@ -881,7 +881,7 @@ class RegressionCommand(Command):
             errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
             warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_warnings}W\033[0m" if self.elaboration_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
-            print(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+            self.rmh.info(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
             print(f"  * Log: {self.rmh.configuration.applications.editor} {self.elaboration_report.log_path}")
             if not self.elaboration_report.success:
                 print('*' * 119)
@@ -895,7 +895,7 @@ class RegressionCommand(Command):
             errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
             warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_warnings}W\033[0m" if self.compilation_and_elaboration_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
-            print(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+            self.rmh.info(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
             print(f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
             if not self.compilation_and_elaboration_report.success:
                 print('*' * 119)
@@ -906,19 +906,19 @@ class RegressionCommand(Command):
 
     def print_regression_report(self, phase: Phase):
         if self.dry_mode:
-            print(f" Regression Dry Mode - {len(self.regression_configuration.simulation_configs)} tests would have been run:")
+            self.rmh.info(f" Regression Dry Mode - {len(self.regression_configuration.simulation_configs)} tests would have been run:")
             for seed in self.regression_configuration.simulation_configs:
                 simulation_config = self.regression_configuration.simulation_configs[seed]
                 print(f" * {simulation_config.summary_str()}")
             if self.parsed_cli_arguments.app == "dsim":
-                print(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
+                self.rmh.info(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
         else:
             self.regression_report.generate_junit_xml_report()
             self.regression_report.generate_html_report()
             if self.regression_report.success:
-                print(f" Regression passed: {len(self.regression_report.simulation_reports)} tests")
+                self.rmh.info(f" Regression passed: {len(self.regression_report.simulation_reports)} tests")
             else:
-                print(f"{len(self.regression_report.failing_tests)} tests failed:")
+                self.rmh.info(f"{len(self.regression_report.failing_tests)} tests failed:")
                 for failed_test in self.regression_report.failing_tests:
                     args_str: str = ""
                     for arg in failed_test.sim_report.user_args_boolean:
@@ -926,7 +926,7 @@ class RegressionCommand(Command):
                     for arg in failed_test.sim_report.user_args_value:
                         args_str += f" +{arg}={failed_test.sim_report.user_args_value[arg]}"
                     print(f" * {failed_test.sim_report.test_name} - {failed_test.sim_report.seed}{args_str}")
-            print(f"T est Report: '{self.regression_report.html_report_file_name}'")
+            self.rmh.info(f"Test Report: '{self.regression_report.html_report_file_name}'")
             if self.regression_report.cov_enabled:
-                print(f" Coverage Report: '{self.regression_report.coverage_report_file_name}'")
-            print(f" JUnit XML Report: '{self.regression_report.junit_xml_report_file_name}'")
+                self.rmh.info(f" Coverage Report: '{self.regression_report.coverage_report_file_name}'")
+            self.rmh.info(f" JUnit XML Report: '{self.regression_report.junit_xml_report_file_name}'")
