@@ -6,7 +6,7 @@ import pathlib
 import sys
 import os
 
-from mio_client.commands import sim, ip, misc, project, team, user, web, gen
+from mio_client.commands import sim, ip, misc, user, gen
 from mio_client.core.root_manager import RootManager
 
 #######################################################################################################################
@@ -147,10 +147,7 @@ def register_all_commands(subparsers):
     register_commands(commands, sim.get_commands())
     register_commands(commands, ip.get_commands())
     register_commands(commands, misc.get_commands())
-    register_commands(commands, project.get_commands())
-    register_commands(commands, team.get_commands())
     register_commands(commands, user.get_commands())
-    register_commands(commands, web.get_commands())
     register_commands(commands, gen.get_commands())
     for command in commands:
         command.add_to_subparsers(subparsers)

@@ -121,7 +121,7 @@ class SiArxResponse(Model):
 #######################################################################################################################
 class SiArxService(Service):
     def __init__(self, rmh: 'RootManager'):
-        super().__init__(rmh, 'datum', 'siarx', 'Silicon Architech')
+        super().__init__(rmh, 'datum', 'siarx', 'SiArx')
         self._type = ServiceType.CODE_GENERATION
 
     def is_available(self) -> bool:

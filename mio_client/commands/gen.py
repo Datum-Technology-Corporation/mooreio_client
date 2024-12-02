@@ -33,7 +33,7 @@ Usage:
    mio init [OPTIONS]
 
 Options:
-   -i, --input-file  # Specifies YAML input file path (instead of prompting user)
+   -i FILE, --input-file=FILE  # Specifies YAML input file path (instead of prompting user)
 
 Examples:
    mio init                   # Create a new empty Project/IP in this location.
@@ -286,7 +286,7 @@ Usage:
    mio x [OPTIONS]
 
 Options:
-   -p ID, --project-id ID   # Specifies Project ID when initializing a new project
+   -p ID, --project-id=ID   # Specifies Project ID when initializing a new project
    -f   , --force           # Overwrites user changes
    
 Examples:
@@ -363,12 +363,12 @@ class SiArxCommand(Command):
     def phase_pre_locate_project_file(self, phase: Phase):
         project_path: Path = self.rmh.locate_project_file()
         if not project_path:
-            self._mode = SiArxMode.NEW_PROJECT
-            self._input_path = self.rmh.wd
             if not self.parsed_cli_arguments.project_id:
                 phase.error = Exception("Project ID must be specified when initializing a new project.")
                 self._success = False
             else:
+                self._mode = SiArxMode.NEW_PROJECT
+                self._input_path = self.rmh.wd
                 self._project_id = self.parsed_cli_arguments.project_id
                 try:
                     self._siarx_service: SiArxService = SiArxService(self.rmh)
