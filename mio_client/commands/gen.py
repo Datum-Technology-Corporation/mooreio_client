@@ -276,7 +276,7 @@ class InitCommand(Command):
 
 
 #######################################################################################################################
-# UVMx Command
+# SiArx Command
 #######################################################################################################################
 SIARX_HELP_TEXT = """Moore.io SiArx Command
    Generates IP HDL code using Datum SiArx (requires license).  If not within an initialized Project, the ID must be
