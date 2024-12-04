@@ -68,7 +68,7 @@ class SiArxResponseIp(Model):
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
     errors: Optional[List[str]] = []
-    packages: Optional[List[SiArxResponsePackage]] = {}
+    packages: Optional[List[SiArxResponsePackage]] = []
 
     def info_report(self) -> List[str]:
         all_infos: List[str] = []
@@ -94,7 +94,7 @@ class SiArxResponse(Model):
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
     errors: Optional[List[str]] = []
-    ips: Optional[List[SiArxResponseIp]] = {}
+    ips: Optional[List[SiArxResponseIp]] = []
     project_files_payload: Optional[str] = ""
 
     def info_report(self) -> List[str]:
@@ -162,14 +162,14 @@ class SiArxService(Service):
                 try:
                     tgz_data = base64.b64decode(response.project_files_payload)
                     with tarfile.open(fileobj=BytesIO(tgz_data), mode='r:gz') as tar:
-                        tar.extractall(path=self.rmh.project_root_path)
+                        tar.extractall(path=configuration.input_path)
                 except Exception as e:
                     report.success = False
-                    report.errors.append(f"Failed to unpack Project files at path '{self.rmh.project_root_path}': {e}")
+                    report.errors.append(f"Failed to unpack Project files at path '{configuration.input_path}': {e}")
                 else:
                     for ip in response.ips:
                         for package in ip.packages:
-                            extraction_path: Path = self.rmh.project_root_path / package.path
+                            extraction_path: Path = configuration.input_path / package.path
                             try:
                                 tgz_data = base64.b64decode(package.payload)
                                 with tarfile.open(fileobj=BytesIO(tgz_data), mode='r:gz') as tar:

@@ -73,7 +73,8 @@ class LoginCommand(Command):
     def phase_post_load_user_data(self, phase: Phase):
         if self.parsed_cli_arguments.no_input and self.parsed_cli_arguments.username:
             self.rmh.user.authenticated = False
-            self.rmh.user.session_data = {}
+            self.rmh.user.session_cookies = {}
+            self.rmh.user.session_headers = {}
             self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.strip().lower()
             password = os.getenv(f"{PASSWORD_ENV_VAR_NAME}")
             if not password:
@@ -118,7 +119,8 @@ class LogoutCommand(Command):
                 phase.error = e
             else:
                 self.rmh.user.authenticated = False
-                self.rmh.user.session_data = {}
+                self.rmh.user.session_cookies = {}
+                self.rmh.user.session_headers = {}
         else:
             phase.end_process = True
             phase.end_process_message = "Not authenticated: no action taken"

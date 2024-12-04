@@ -24,6 +24,7 @@ class TestCliSiArx(TestBase):
     def reset_workspace(self):
         self.remove_directory(self.mapu_path / ".mio")
         self.remove_directory(self.mapu_path / "sim")
+        self.remove_directory(self.mapu_path / "docs")
         self.remove_directory(self.mapu_path / "dv")
         self.remove_file(self.mapu_path / "mio.toml")
 

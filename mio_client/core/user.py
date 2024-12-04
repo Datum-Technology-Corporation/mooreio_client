@@ -18,7 +18,8 @@ class User(Model):
         self._pre_set_password = ""
     authenticated: bool = False
     username: Optional[constr(pattern=VALID_NAME_REGEX)] = "__ANONYMOUS__"
-    session_data: Optional[dict] = {}
+    session_cookies: Optional[dict] = {}
+    session_headers: Optional[dict] = {}
 
     @classmethod
     def new(cls):

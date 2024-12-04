@@ -1011,7 +1011,8 @@ class RootManager:
                     session = requests.Session()
                     response = session.post(final_url, data=credentials)
                     response.raise_for_status()  # Raise an error for bad status codes
-                    self.user.session_data = {cookie.name: cookie.value for cookie in session.cookies}
+                    self.user.session_cookies = requests.utils.dict_from_cookiejar(session.cookies)
+                    self.user.session_headers = dict(session.headers)
                 except Exception as e:
                     phase.error = Exception(f"An error occurred during authentication with '{final_url}': {e}")
                 else:
@@ -1021,9 +1022,10 @@ class RootManager:
         final_url: str = f"{self.url_api}/auth/logout/"
         try:
             session = requests.Session()
-            for cookie_name, cookie_value in self.user.session_data.items():
-                session.cookies.set(cookie_name, cookie_value)
-            response = session.get(final_url)
+            session.cookies = requests.utils.cookiejar_from_dict(self.user.session_cookies)
+            session.headers.update(self.user.session_headers)
+            session.headers['X-CSRFToken'] = session.cookies.get('csrftoken')
+            response = session.post(final_url)
             response.raise_for_status()  # Raise an error for bad status codes
             session.cookies.clear()
         except requests.RequestException as e:
@@ -1037,8 +1039,9 @@ class RootManager:
             final_url: str = f"{self.url_api}/{path}"
             try:
                 session = requests.Session()
-                for cookie_name, cookie_value in self.user.session_data.items():
-                    session.cookies.set(cookie_name, cookie_value)
+                session.cookies = requests.utils.cookiejar_from_dict(self.user.session_cookies)
+                session.headers.update(self.user.session_headers)
+                session.headers['X-CSRFToken'] = session.cookies.get('csrftoken')
                 if method == HTTPMethod.POST:
                     response = session.post(final_url, data=data)
                     response.raise_for_status()  # Raise an error for bad status codes
