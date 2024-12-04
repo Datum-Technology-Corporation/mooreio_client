@@ -400,7 +400,7 @@ class SiArxCommand(Command):
                 self.print_infos()
             self.print_warnings()
             if self.mode == SiArxMode.NEW_PROJECT:
-                self.rmh.info(f"Initialized Project '{self.rmh.project.name}' with Datum SiArx successfully.")
+                self.rmh.info(f"Initialized Project '{self.rmh.configuration.project.full_name}' with Datum SiArx successfully.")
             elif self.mode == SiArxMode.UPDATE_PROJECT:
                 self.rmh.info(f"Updated Project with Datum SiArx successfully.")
             print(banner)
