@@ -65,6 +65,7 @@ class SiArxResponsePackage(Model):
 
 class SiArxResponseIp(Model):
     sync_id: str
+    name: str
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
     errors: Optional[List[str]] = []
@@ -169,6 +170,7 @@ class SiArxService(Service):
                 else:
                     for ip in response.ips:
                         for package in ip.packages:
+                            self.rmh.info(f"Processing IP {ip.name}/{package.name} ...")
                             extraction_path: Path = configuration.input_path / package.path
                             try:
                                 tgz_data = base64.b64decode(package.payload)
@@ -176,7 +178,7 @@ class SiArxService(Service):
                                     tar.extractall(path=extraction_path)
                             except Exception as e:
                                 report.success = False
-                                report.errors.append(f"Failed to unpack IP '{package.name}' at path '{extraction_path}': {e}")
+                                report.errors.append(f"Failed to unpack IP {ip.name}/{package.name} at path '{extraction_path}': {e}")
             return report
 
 

@@ -505,7 +505,7 @@ class LogicSimulator(Service, ABC):
         else:
             final_args_value["__MIO_SIM_RESULTS_PATH__"] = str(self.simulation_results_path)
         if self.rmh.user.authenticated:
-            final_args_value["__MIO_USER_TOKEN__"] = self.rmh.user.access_token
+            #final_args_value["__MIO_USER_TOKEN__"] = self.rmh.user.access_token
         # Add TB/DUT Args
         if ip.has_dut:
             dut_target_name = ip.get_target_dut_target(config.target)

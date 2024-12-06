@@ -638,20 +638,6 @@ class Ip(Model):
                     if simulator not in self.resolved_encrypted_top_vhdl_files:
                         self._resolved_encrypted_top_vhdl_files[simulator] = []
                     self.resolved_encrypted_top_vhdl_files[simulator].append(full_path)
-        for shared_object in self.hdl_src.so_libs:
-            if simulator == "":
-                full_path = path / f"{shared_object}.so"
-            else:
-                full_path = path / f"{shared_object}.{simulator}.so"
-            if not self.rmh.file_exists(full_path):
-                raise Exception(f"IP '{self}' src shared object file path '{full_path}' does not exist")
-            else:
-                if simulator == "":
-                    self.resolved_shared_objects.append(full_path)
-                else:
-                    if simulator not in self.resolved_encrypted_shared_objects:
-                        self._resolved_encrypted_shared_objects[simulator] = []
-                    self.resolved_encrypted_shared_objects[simulator].append(full_path)
 
     def add_resolved_dependency(self, ip_definition: IpDefinition, ip: Ip):
         num_dependencies = len(self.dependencies)
