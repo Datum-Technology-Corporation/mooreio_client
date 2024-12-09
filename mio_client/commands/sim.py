@@ -72,7 +72,6 @@ Examples:
    mio sim my_ip#dw64b -C                        # Only compile 'my_ip' target 'dw64b'.
    mio sim my_ip -E                              # Only elaborate 'my_ip'.
    mio sim my_ip -CE                             # Compile and elaborate 'my_ip'."""
-VERBOSITY_LEVELS = ["none", "low", "medium", "high", "full", "debug"]
 LOGIC_SIMULATORS = ["dsim", "vivado"]
 
 class SimulateCommand(Command):
@@ -84,13 +83,13 @@ class SimulateCommand(Command):
     def add_to_subparsers(subparsers):
         parser_sim = subparsers.add_parser('sim', help=SIM_HELP_TEXT, add_help=False)
         parser_sim.add_argument('ip', help='Target IP')
-        parser_sim.add_argument('-t', "--test", help='Delete compiled IP dependencies.', required=False)
+        parser_sim.add_argument('-t', "--test", help='Specify the UVM test to be run.', required=False)
         parser_sim.add_argument('-s', "--seed",
                                 help='Specify the seed for constrained-random testing.  If none is provided, a random one will be picked.',
                                 type=int, required=False)
         parser_sim.add_argument('-v', "--verbosity",
-                                help='Specify the UVM verbosity level for logging: none, low, medium, high or debug.  Default: medium',
-                                choices=VERBOSITY_LEVELS, required=False)
+                                help='Specify the UVM verbosity level for logging: none, low, medium, high, full or debug.  Default: medium',
+                                choices=list(UvmVerbosity), type=UvmVerbosity, required=False)
         parser_sim.add_argument('-e', "--errors",
                                 help='Specifies the number of errors at which compilation/elaboration/simulation is terminated.',
                                 type=int, required=False)
@@ -292,8 +291,12 @@ class SimulateCommand(Command):
                         match_found = True
                         break
                 if not match_found:
-                    raise Exception(f"Argument '{arg}' does not match any of the expected patterns.")
+                    phase.error = Exception(f"Argument '{arg}' does not match any of the expected patterns (+define+ARG[=VAL], +ARG[=VAL]).")
+                    return
         self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
+        if self._do_simulate and not self.parsed_cli_arguments.test:
+            phase.error = Exception(f"Must specify test name when simulating")
+            return
 
     def phase_post_validate_configuration_space(self, phase: Phase):
         if self.app == LogicSimulators.UNDEFINED:

@@ -190,7 +190,7 @@ class TestBase:
         else:
             plus_args = []
         result = self.run_cmd(capsys, [
-            f'--wd={project_path}', '--dbg', 'sim', ip_name, f'-t {test_name}', f'-s {seed}', '-a', app
+            f'--wd={project_path}', '--dbg', 'sim', ip_name, f'-t {test_name}', f'-s {seed}', '-v', 'debug', '-a', app
         ] + optional_args + plus_args)
         assert result.return_code == 0
         if cov:

@@ -55,6 +55,11 @@ class SiArxReport(Model):
     def error_report(self) -> List[str]:
         return {}
 
+class SiArxResponseFile(Model):
+    name: str
+    path: str
+    replace_user_file: bool
+
 class SiArxResponsePackage(Model):
     name: str
     infos: Optional[List[str]] = []
@@ -62,6 +67,7 @@ class SiArxResponsePackage(Model):
     errors: Optional[List[str]] = []
     payload: Optional[str] = ""
     path: Optional[Path] = Path()
+    files: Optional[List[SiArxResponseFile]] = []
 
 class SiArxResponseIp(Model):
     sync_id: str
@@ -91,12 +97,14 @@ class SiArxResponseIp(Model):
 
 class SiArxResponse(Model):
     success: bool
+    job_id: Optional[str] = ""
     project_id: Optional[str] = ""
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
     errors: Optional[List[str]] = []
     ips: Optional[List[SiArxResponseIp]] = []
     project_files_payload: Optional[str] = ""
+    files: Optional[List[SiArxResponseFile]] = []
 
     def info_report(self) -> List[str]:
         all_infos: List[str] = []
@@ -156,9 +164,6 @@ class SiArxService(Service):
             report.warnings = response.warning_report()
             report.errors = response.error_report()
             report.success = response.success
-            # TODO Clone IP directories to temp path as backup and restore these if anything goes wrong below (ensures transactionality)
-            # TODO Add storage of successful gen to user data to compare against later
-            # TODO Add comparisons against last successful gen to guard against accidental user edits outside pragmas
             if response.success:
                 try:
                     tgz_data = base64.b64decode(response.project_files_payload)

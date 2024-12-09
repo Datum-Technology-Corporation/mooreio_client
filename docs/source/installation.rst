@@ -34,14 +34,14 @@ Save the following to ``~/.mio/mio.toml``:
 
   [logic_simulation]
   default_simulator="dsim"
-  metrics_dsim_license_path="~/metrics-ca/dsim/license.json"
+  metrics_dsim_license_path="~/metrics-ca/dsim-license.json"
   metrics_dsim_installation_path="~/metrics-ca/dsim/20240422.9.0"
   metrics_dsim_cloud_installation_path="/usr/local/bin"
   xilinx_vivado_installation_path="/tools/vivado/2024.2/Vivado/2024.2"
-  compilation_timeout=1.0
-  compilation_and_elaboration_timeout=1.0
-  elaboration_timeout=1.0
-  simulation_timeout=1.0
+  compilation_timeout=60.0
+  compilation_and_elaboration_timeout=60.0
+  elaboration_timeout=60.0
+  simulation_timeout=60.0
 
   [applications]
   editor="emacs"

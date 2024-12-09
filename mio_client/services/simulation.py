@@ -505,6 +505,7 @@ class LogicSimulator(Service, ABC):
         else:
             final_args_value["__MIO_SIM_RESULTS_PATH__"] = str(self.simulation_results_path)
         if self.rmh.user.authenticated:
+            pass
             #final_args_value["__MIO_USER_TOKEN__"] = self.rmh.user.access_token
         # Add TB/DUT Args
         if ip.has_dut:
@@ -852,10 +853,10 @@ class LogicSimulator(Service, ABC):
     def get_all_shared_objects(self, ip:Ip, config: LogicSimulatorConfiguration, ordered_dependencies:List[Ip]=None) -> List[Path]:
         needs_license_so = False
         shared_objects: List[Path] = []
-        if ip.ip.mlicensed and ip.location_type == IpLocationType.PROJECT_INSTALLED:
-            needs_license_so = True
-            if self.name in ip.resolved_encrypted_shared_objects:
-                shared_objects = ip.resolved_encrypted_shared_objects[self.name]
+        try:
+            ip.resolve_shared_objects(self.name)
+        except Exception as e:
+            raise Exception(f"Failed to resolve shared objects for IP '{ip}': {e}")
         else:
             shared_objects = ip.resolved_shared_objects
         if not ordered_dependencies:
@@ -863,12 +864,13 @@ class LogicSimulator(Service, ABC):
         else:
             dependencies = ordered_dependencies
         for dep in dependencies:
-            if dep.ip.mlicensed and dep.location_type == IpLocationType.PROJECT_INSTALLED:
-                needs_license_so = True
-                if self.name in dep.resolved_encrypted_shared_objects:
-                    shared_objects += dep.resolved_encrypted_shared_objects[self.name]
+            try:
+                dep.resolve_shared_objects(self.name)
+            except Exception as e:
+                raise Exception(f"Failed to resolve shared objects for IP '{dep}': {e}")
             else:
                 shared_objects += dep.resolved_shared_objects
+        shared_objects = list(set(shared_objects))
         if config.use_relative_paths:
             relative_shared_objects: List[Path] = []
             for so in shared_objects:
@@ -1351,7 +1353,7 @@ class SimulatorMetricsDSim(LogicSimulator):
     def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         top_str = ""
         for top in ip.hdl_src.top:
-            top_str = f"{top_str} -top {ip.lib_name}.{top}"
+            top_str = f"{top_str} -top {top}"
         if config.use_relative_paths:
             log_path = os.path.relpath(report.log_path, config.start_path)
         else:
@@ -1388,7 +1390,7 @@ class SimulatorMetricsDSim(LogicSimulator):
                 defines_str += f" +define+{define}={report.user_defines_value[define]}"
             top_str = ""
             for top in ip.hdl_src.top:
-                top_str = f"{top_str} -top {ip.lib_name}.{top}"
+                top_str = f"{top_str} -top {top}"
             so_str = ""
             if os.name == 'nt':  # DSim for Windows requires SOs at compile time
                 for so in report.shared_objects:

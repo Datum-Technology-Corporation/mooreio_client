@@ -22,7 +22,7 @@ from .model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSO
 from enum import Enum
 
 from .version import SemanticVersion, SemanticVersionSpec
-from .configuration import Ip
+from .configuration import Ip, LogicSimulators
 from .service import ServiceType
 
 
@@ -296,7 +296,6 @@ class Ip(Model):
         self._resolved_top_sv_files: List[Path] = []
         self._resolved_top_vhdl_files: List[Path] = []
         self._resolved_encrypted_hdl_directories: dict[str, List[Path]] = {}
-        self._resolved_encrypted_shared_objects: dict[str, List[Path]] = {}
         self._resolved_encrypted_top_sv_files: dict[str, List[Path]] = {}
         self._resolved_encrypted_top_vhdl_files: dict[str, List[Path]] = {}
         self._resolved_top: List[str] = []
@@ -503,10 +502,6 @@ class Ip(Model):
         return self._resolved_encrypted_hdl_directories
 
     @property
-    def resolved_encrypted_shared_objects(self) -> dict[str, List[Path]]:
-        return self._resolved_encrypted_shared_objects
-
-    @property
     def resolved_encrypted_top_sv_files(self) -> dict[str, List[Path]]:
         return self._resolved_encrypted_top_sv_files
 
@@ -551,6 +546,14 @@ class Ip(Model):
     @property
     def uninstalled(self) -> bool:
         return self._uninstalled
+
+    def resolve_shared_objects(self, simulator:str):
+        for so in self.hdl_src.so_libs:
+            so_path: Path = self.resolved_scripts_path / f"{so}.{simulator}.so"
+            if self.rmh.file_exists(so_path):
+                self._resolved_shared_objects.append(so_path)
+            else:
+                raise Exception(f"Shared object '{so}' for simulator '{simulator}' cannot be found at '{so_path}'")
 
     def check(self):
         # If configured to local_mode, global IPs must 'relocate' to the project's mio work directory
