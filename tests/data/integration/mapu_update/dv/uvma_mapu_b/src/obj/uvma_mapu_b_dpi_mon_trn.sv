@@ -1,0 +1,80 @@
+// Copyright 2024 Datron Limited Partnership
+// SPDX-License-Identifier: MIT
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+`ifndef __UVMA_MAPU_B_DPI_MON_TRN_SV__
+`define __UVMA_MAPU_B_DPI_MON_TRN_SV__
+
+
+/**
+ * Data Plane Input monitor transaction sampled by uvma_mapu_b_dpi_mon_c.
+ * @ingroup uvma_mapu_b_obj
+ */
+class uvma_mapu_b_dpi_mon_trn_c extends uvmx_mon_trn_c #(
+   .T_CFG  (uvma_mapu_b_cfg_c  ),
+   .T_CNTXT(uvma_mapu_b_cntxt_c)
+);
+
+   /// @name Data
+   /// @{
+   uvma_mapu_b_i_vld_l_t  i_vld; ///< Input Valid
+   uvma_mapu_b_o_rdy_l_t  o_rdy; ///< Input data Ready
+   uvma_mapu_b_i_r0_l_t  i_r0; ///< Input Data Row 0
+   uvma_mapu_b_i_r1_l_t  i_r1; ///< Input Data Row 1
+   uvma_mapu_b_i_r2_l_t  i_r2; ///< Input Data Row 2
+   uvma_mapu_b_i_r3_l_t  i_r3; ///< Input Data Row 3
+   /// @}
+
+   // pragma uvmx dpi_mon_trn_fields begin
+   // pragma uvmx dpi_mon_trn_fields end
+
+
+   `uvm_object_utils_begin(uvma_mapu_b_dpi_mon_trn_c)
+      // pragma uvmx dpi_mon_trn_uvm_field_macros begin
+      // pragma uvmx dpi_mon_trn_uvm_field_macros end
+   `uvm_object_utils_end
+
+
+   /**
+    * Default constructor.
+    */
+   function new(string name="uvma_mapu_b_dpi_mon_trn");
+      super.new(name);
+      // pragma uvmx dpi_mon_trn_uvm_field_macros begin
+      // pragma uvmx dpi_mon_trn_uvm_field_macros end
+   endfunction
+
+   /**
+    * Describes transaction for logger.
+    */
+   virtual function uvmx_metadata_t get_metadata();
+      // pragma uvmx dpi_mon_trn_get_metadata begin
+      string i_vld_str;
+      string o_rdy_str;
+      string i_r0_str;
+      string i_r1_str;
+      string i_r2_str;
+      string i_r3_str;
+      i_vld_str = $sformatf("%h", i_vld);
+      o_rdy_str = $sformatf("%h", o_rdy);
+      i_r0_str = $sformatf("%h", i_r0);
+      i_r1_str = $sformatf("%h", i_r1);
+      i_r2_str = $sformatf("%h", i_r2);
+      i_r3_str = $sformatf("%h", i_r3);
+      `uvmx_metadata_field("i_vld", i_vld_str)
+      `uvmx_metadata_field("o_rdy", o_rdy_str)
+      `uvmx_metadata_field("i_r0", i_r0_str)
+      `uvmx_metadata_field("i_r1", i_r1_str)
+      `uvmx_metadata_field("i_r2", i_r2_str)
+      `uvmx_metadata_field("i_r3", i_r3_str)
+      // pragma uvmx dpi_mon_trn_get_metadata end
+   endfunction
+
+  // pragma uvmx custom dpi_mon_trn_methods begin
+  // pragma uvmx custom dpi_mon_trn_methods end
+
+endclass
+
+
+`endif // __UVMA_MAPU_B_DPI_MON_TRN_SV__

@@ -388,7 +388,7 @@ class SiArxCommand(Command):
                 phase.error = e
                 self._success = False
             else:
-                self._project_id = self.rmh.configuration.project.sync_id
+                self._project_id = str(self.rmh.configuration.project.sync_id)
                 self._input_path = self.rmh.project_root_path
                 self.perform_siarx_gen(phase)
     

@@ -1,0 +1,21 @@
+ip:
+  sync: true
+  sync_id: 7
+  pkg_type: dv_env
+  vendor: "datron"
+  name: "uvme_mapu_b"
+  full_name: "Matrix APU Block UVM Environment"
+  version: "1.0.0"
+
+dependencies:
+  "datum/uvmx": ">=1.0"
+  "datron/uvma_mapu_b": "*"
+
+structure:
+  docs_path    : "docs"
+  examples_path: "examples"
+  hdl_src_path : "src"
+
+hdl_src:
+  directories: [".", "comps", "obj", "seq"]
+  top_sv_files: ["uvme_mapu_b_pkg.sv"]
