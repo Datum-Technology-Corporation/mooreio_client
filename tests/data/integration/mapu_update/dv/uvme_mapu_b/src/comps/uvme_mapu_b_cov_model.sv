@@ -57,8 +57,12 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_cfg_cg;
       // pragma uvmx cov_model_cfg_cg begin
-      // TODO Implement mapu_b_cfg_cg
-      //      Ex: abc_cp : coverpoint cfg.abc;
+      data_width_cp : coverpoint cfg.data_width {
+         bins valid[] = {32,64};
+      }
+      out_drv_ton_pct_cp : coverpoint cfg.agent_cfg.out_drv_ton_pct {
+         bins valid[] = {[1:100]};
+      }
       // pragma uvmx cov_model_cfg_cg end
    endgroup
 
@@ -67,8 +71,9 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_cntxt_cg;
       // pragma uvmx cov_model_cntxt_cg begin
-      // TODO Implement mapu_b_cntxt_cg
-      //      Ex: abc_cp : coverpoint cntxt.abc;
+      prd_overflow_count_cp : coverpoint cntxt.prd_overflow_count {
+         bins at_least_one[] = {[1:$]};
+      }
       // pragma uvmx cov_model_cntxt_cg end
    endgroup
 
@@ -77,8 +82,10 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_seq_item_cg;
       // pragma uvmx cov_model_seq_item_cg begin
-      // TODO Implement mapu_b_seq_item_cg
-      //      Ex: abc_cp : coverpoint seq_item.abc;
+      op_cp : coverpoint seq_item.op;
+      coverpoint seq_item.ton_pct {
+         bins valid[] = {[1:100]};
+      }
       // pragma uvmx cov_model_seq_item_cg end
    endgroup
 
@@ -87,8 +94,6 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_in_mon_trn_cg;
       // pragma uvmx cov_model_in_mon_trn_cg begin
-      // TODO Implement mapu_b_in_mon_trn_cg
-      //      Ex: abc_cp : coverpoint in_mon_trn.abc;
       // pragma uvmx cov_model_in_mon_trn_cg end
    endgroup
 
@@ -97,8 +102,7 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_out_mon_trn_cg;
       // pragma uvmx cov_model_out_mon_trn_cg begin
-      // TODO Implement mapu_b_out_mon_trn_cg
-      //      Ex: abc_cp : coverpoint out_mon_trn.abc;
+      overflow_cp : coverpoint out_mon_trn.overflow;
       // pragma uvmx cov_model_out_mon_trn_cg end
    endgroup
 
@@ -107,8 +111,6 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_dpi_seq_item_cg;
       // pragma uvmx cov_model_dpi_seq_item_cg begin
-      // TODO Implement mapu_b_dpi_seq_item_cg
-      //      Ex: abc_cp : coverpoint dpi_seq_item.abc;
       // pragma uvmx cov_model_dpi_seq_item_cg end
    endgroup
    /**
@@ -116,8 +118,6 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_dpo_seq_item_cg;
       // pragma uvmx cov_model_dpo_seq_item_cg begin
-      // TODO Implement mapu_b_dpo_seq_item_cg
-      //      Ex: abc_cp : coverpoint dpo_seq_item.abc;
       // pragma uvmx cov_model_dpo_seq_item_cg end
    endgroup
    /**
@@ -125,8 +125,7 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_cp_seq_item_cg;
       // pragma uvmx cov_model_cp_seq_item_cg begin
-      // TODO Implement mapu_b_cp_seq_item_cg
-      //      Ex: abc_cp : coverpoint cp_seq_item.abc;
+      i_op_cp : coverpoint cp_seq_item.i_op;
       // pragma uvmx cov_model_cp_seq_item_cg end
    endgroup
 
@@ -135,8 +134,6 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_dpi_mon_trn_cg;
       // pragma uvmx cov_model_dpi_mon_trn_cg begin
-      // TODO Implement mapu_b_dpi_mon_trn_cg
-      //      Ex: abc_cp : coverpoint dpi_mon_trn.abc;
       // pragma uvmx cov_model_dpi_mon_trn_cg end
    endgroup
    /**
@@ -144,8 +141,6 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_dpo_mon_trn_cg;
       // pragma uvmx cov_model_dpo_mon_trn_cg begin
-      // TODO Implement mapu_b_dpo_mon_trn_cg
-      //      Ex: abc_cp : coverpoint dpo_mon_trn.abc;
       // pragma uvmx cov_model_dpo_mon_trn_cg end
    endgroup
    /**
@@ -153,8 +148,7 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     */
    covergroup mapu_b_cp_mon_trn_cg;
       // pragma uvmx cov_model_cp_mon_trn_cg begin
-      // TODO Implement mapu_b_cp_mon_trn_cg
-      //      Ex: abc_cp : coverpoint cp_mon_trn.abc;
+      o_of_cp : coverpoint cp_mon_trn.o_of;
       // pragma uvmx cov_model_cp_mon_trn_cg end
    endgroup
 

@@ -87,9 +87,7 @@ class uvme_mapu_b_rand_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
             `uvm_info("MAPU_B_RAND_ILL_STIM_SEQ", $sformatf("Waiting %0d gap cycle(s) before ILLEGAL item #%0d/%0d (#%0d/%0d total items)", gap_size, (error_count+1), num_errors, (ii+1), num_items), UVM_NONE)
             clk(gap_size);
             `uvm_info("MAPU_B_RAND_ILL_STIM_SEQ", $sformatf("Starting ILLEGAL item #%0d/%0d (#%0d/%0d total items) with gap size %0d", (error_count+1), num_errors, (ii+1), num_items, gap_size), UVM_NONE)
-            `uvmx_do_on_with(seq_item, agent_sequencer, {
-               // TODO Implement illegal stimulus sequence item constraint for uvme_mapu_b_rand_ill_stim_seq_c
-            })
+            illegal_item();
             error_count++;
             `uvm_info("MAPU_B_RAND_ILL_STIM_SEQ", $sformatf("Finished ILLEGAL item #%0d/%0d (#%0d/%0d total items) with gap size %0d", error_count, num_errors, (ii+1), num_items, gap_size), UVM_NONE)
          end
@@ -97,7 +95,7 @@ class uvme_mapu_b_rand_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
             `uvm_info("MAPU_B_RAND_ILL_STIM_SEQ", $sformatf("Waiting %0d gap cycle(s) before item #%0d/%0d - ", gap_size, (ii+1), num_items), UVM_HIGH)
             clk(gap_size);
             `uvm_info("MAPU_B_RAND_ILL_STIM_SEQ", $sformatf("Starting item #%0d/%0d with gap size %0d", (ii+1), num_items, gap_size), UVM_MEDIUM)
-            `uvmx_do_on(seq_item, agent_sequencer)
+            legal_item();
             `uvm_info("MAPU_B_RAND_ILL_STIM_SEQ", $sformatf("Finished item #%0d/%0d with gap size %0d", (ii+1), num_items, gap_size), UVM_HIGH)
          end
       end

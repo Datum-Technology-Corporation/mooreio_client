@@ -41,12 +41,51 @@ class uvme_mapu_b_fix_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
     */
    virtual task body();
       // pragma uvmx fix_ill_stim_seq_body begin
-      uvma_mapu_b_seq_item_c  seq_item;
-      // TODO Implement uvme_mapu_b_fix_ill_stim_seq_c::body()
-      //      Ex: `uvmx_create_on(seq_item, agent_sequencer)
-      //          `uvmx_rand_send_with(seq_item, {
-      //             abc == 123;
-      //          })
+      uvma_mapu_seq_item_c  seq_item;
+      `uvmx_create_on(seq_item, agent_vsequencer)
+      seq_item.ton_pct = 100;
+      seq_item.op  = UVMA_MAPU_B_OP_ADD;
+      seq_item.ma.load('{
+         '{1,0,2},
+         '{3,2,1},
+         '{2,1,0}
+      });
+      seq_item.mb.load('{
+         '{1,0,2},
+         '{3,2,1},
+         '{2,1,0}
+      });
+      `uvmx_send(seq_item)
+
+      `uvmx_create_on(seq_item, agent_sequencer)
+      seq_item.ton_pct = 100;
+      seq_item.op  = UVMA_MAPU_B_OP_MULT;
+      seq_item.ma.load('{
+         '{1_000_000_000,0_000_000_000,2_000_000_000},
+         '{3_000_000_000,2_000_000_000,1_000_000_000},
+         '{2_000_000_000,1_000_000_000,0_000_000_000}
+      });
+      seq_item.mb.load('{
+         '{1_000_000_000,0_000_000_000,2_000_000_000},
+         '{3_000_000_000,2_000_000_000,1_000_000_000},
+         '{2_000_000_000,1_000_000_000,0_000_000_000}
+      });
+      `uvmx_send(seq_item)
+
+      `uvmx_create_on(seq_item, agent_sequencer)
+      seq_item.ton_pct = 100;
+      seq_item.op  = UVMA_MAPU_B_OP_ADD;
+      seq_item.ma.load('{
+         '{2,1,0},
+         '{1,0,2},
+         '{2,1,0}
+      });
+      seq_item.mb.load('{
+         '{2,1,0},
+         '{1,0,2},
+         '{2,1,0}
+      });
+      `uvmx_send(seq_item)
       // pragma uvmx fix_ill_stim_seq_body end
    endtask
 

@@ -22,6 +22,7 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
    /// @}
 
    // pragma uvmx cntxt_fields begin
+   int unsigned  prd_overflow_count; ///< Count of out trn with overflow=1 predicted.
    // pragma uvmx cntxt_fields end
 
 
@@ -60,6 +61,7 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
    virtual function void do_reset(uvme_mapu_b_cfg_c cfg);
       // pragma uvmx cntxt_build begin
       agent_cntxt.reset();
+      prd_overflow_count = 0;
       // pragma uvmx cntxt_build end
    endfunction
 

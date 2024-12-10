@@ -41,6 +41,49 @@ class uvme_mapu_b_base_seq_c extends uvmx_block_sb_env_seq_c #(
    endfunction
 
    // pragma uvmx base_seq_methods begin
+   task legal_item();
+      if (cfg.data_width == 32) begin
+         add_max_val  = 1_000_000_000;
+         mult_max_val = 1_000;
+      end
+      else if (cfg.data_width == 64) begin
+         add_max_val  = 1_000_000_000_000_000;
+         mult_max_val = 1_000_000_000;
+      end
+      `uvmx_do_on_with(seq_item, agent_sequencer, {
+         if (op == UVMA_MAPU_B_OP_ADD) {
+            ma.max_val == add_max_val;
+            mb.max_val == add_max_val;
+         }
+         else if (op == UVMA_MAPU_B_OP_MULT) {
+            ma.max_val == mult_max_val;
+            mb.max_val == mult_max_val;
+         }
+      })
+   endtask
+
+   task illegal_item();
+      uvma_mapu_b_seq_item_c  seq_item;
+      int unsigned add_max_val, mult_max_val;
+      if (cfg.data_width == 32) begin
+         add_max_val  = 1_000_000_000;
+         mult_max_val = 1_000;
+      end
+      else if (cfg.data_width == 64) begin
+         add_max_val  = 1_000_000_000_000_000;
+         mult_max_val = 1_000_000_000;
+      end
+      `uvmx_do_on_with(seq_item, agent_sequencer, {
+         if (op == UVMA_MAPU_B_OP_ADD) {
+            ma.max_val == add_max_val;
+            mb.max_val == add_max_val;
+         }
+         else if (op == UVMA_MAPU_B_OP_MULT) {
+            ma.max_val == mult_max_val;
+            mb.max_val == mult_max_val;
+         }
+      })
+   endtask
    // pragma uvmx base_seq_methods end
 
 endclass

@@ -68,14 +68,49 @@ class uvme_mapu_b_prd_c extends uvmx_block_sb_prd_c #(
     */
    virtual task predict();
       // pragma uvmx prd_predict begin
-      uvma_mapu_b_mon_trn_c  in_trn, out_trn;
-      `uvmx_prd_get(fifo, in_trn)
-      out_trn.from(in_trn);
-      // TODO Implement uvme_mapu_b_prd_c::predict()
-      //      Ex: out_trn = uvma_mapu_b_mon_trn_c::type_id::create("out_trn");
-      //          out_trn.dir_in = 0;
-      //          out_trn.abc = in_trn.abc*2;
-      `uvmx_prd_send(ap, out_trn)
+      uvma_mapu_b_mon_trn_c  in_a_trn, in_b_trn, out_trn;
+      bit overflow = 0;
+      // 1.
+      `uvmx_prd_get(fifo, in_a_trn)
+      `uvmx_prd_get(fifo, in_b_trn)
+      out_trn = uvma_mapu_b_mon_trn_c::type_id::create("out_trn");
+      out_trn.from(in_a_trn);
+      out_trn.from(in_b_trn);
+      // 2.
+      out_trn.op = in_b_trn.op;
+      case (in_b_trn.op)
+         UVMA_MAPU_B_OP_ADD : out_trn.matrix = in_a_trn.matrix.add     (in_b_trn.matrix);
+         UVMA_MAPU_B_OP_MULT: out_trn.matrix = in_a_trn.matrix.multiply(in_b_trn.matrix);
+         default: begin
+            `uvm_error("MAPU_B_PRD", $sformatf("Invalid op '%s'. Dropping:\n%s", in_b_trn.op.name(), in_b_trn.sprint()))
+            out_trn.set_may_drop(1);
+         end
+      endcase
+      // 3.
+      if (!out_trn.get_may_drop()) begin
+         foreach (out_trn.matrix.mi[ii]) begin
+            foreach (out_trn.matrix.mi[ii][jj]) begin
+               if (cfg.data_width == 32) begin
+                  if (out_trn.matrix.mi[ii][jj] > 32'h7FFF_FFFF) begin
+                     overflow = 1;
+                  end
+               end
+               else if (cfg.data_width == 64) begin
+                  if (out_trn.matrix.mi[ii][jj] < 0) begin
+                     overflow = 1;
+                  end
+               end
+               if (overflow) begin
+                  out_trn.overflow = 1;
+                  out_trn.set_error(1);
+                  cntxt.prd_overflow_count++;
+                  break;
+               end
+            end
+         end
+         // 4.
+         `uvmx_prd_send(ap, out_trn);
+      end
       // pragma uvmx prd_predict end
    endtask
 

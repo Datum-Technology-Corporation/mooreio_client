@@ -100,15 +100,20 @@ class uvme_mapu_b_cfg_c extends uvmx_block_sb_env_cfg_c;
     */
    virtual function void cfg_sb_logs();
       // pragma uvmx cfg_cfg_sb_logs begin
+      sb_cfg.add_to_log("of"     );
+      sb_cfg.add_to_log("m[0][0]");
+      sb_cfg.add_to_log("m[0][1]");
+      sb_cfg.add_to_log("m[0][2]");
+      sb_cfg.add_to_log("m[1][0]");
+      sb_cfg.add_to_log("m[1][1]");
+      sb_cfg.add_to_log("m[1][2]");
+      sb_cfg.add_to_log("m[2][0]");
+      sb_cfg.add_to_log("m[2][1]");
+      sb_cfg.add_to_log("m[2][2]");
       // pragma uvmx cfg_cfg_sb_logs end
    endfunction
 
    // pragma uvmx cfg_post_randomize_work begin
-   /**
-    * TODO Implement uvme_mapu_b_cfg_c::post_randomize() or remove altogether
-    */
-   virtual function void post_randomize_work();
-   endfunction
    // pragma uvmx cfg_post_randomize_work end
    
 endclass
