@@ -27,7 +27,6 @@ class uvma_mapu_b_dpo_seq_item_c extends uvmx_seq_item_c #(
    uvma_mapu_b_o_r0_l_t  o_r0; ///< Output Data Row 0
    uvma_mapu_b_o_r1_l_t  o_r1; ///< Output Data Row 1
    uvma_mapu_b_o_r2_l_t  o_r2; ///< Output Data Row 2
-   uvma_mapu_b_o_r3_l_t  o_r3; ///< Output Data Row 3
    /// @}
 
    // pragma uvmx dpo_seq_item_fields begin
@@ -41,7 +40,6 @@ class uvma_mapu_b_dpo_seq_item_c extends uvmx_seq_item_c #(
       `uvm_field_int(o_r0, UVM_DEFAULT)
       `uvm_field_int(o_r1, UVM_DEFAULT)
       `uvm_field_int(o_r2, UVM_DEFAULT)
-      `uvm_field_int(o_r3, UVM_DEFAULT)
       // pragma uvmx dpo_seq_item_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -69,21 +67,21 @@ class uvma_mapu_b_dpo_seq_item_c extends uvmx_seq_item_c #(
       string o_r0_str;
       string o_r1_str;
       string o_r2_str;
-      string o_r3_str;
       o_vld_str = $sformatf("%h", o_vld);
       i_rdy_str = $sformatf("%h", i_rdy);
       o_r0_str = $sformatf("%h", o_r0);
       o_r1_str = $sformatf("%h", o_r1);
       o_r2_str = $sformatf("%h", o_r2);
-      o_r3_str = $sformatf("%h", o_r3);
       `uvmx_metadata_field("o_vld", o_vld_str)
       `uvmx_metadata_field("i_rdy", i_rdy_str)
       `uvmx_metadata_field("o_r0", o_r0_str)
       `uvmx_metadata_field("o_r1", o_r1_str)
       `uvmx_metadata_field("o_r2", o_r2_str)
-      `uvmx_metadata_field("o_r3", o_r3_str)
       // pragma uvmx seq_item_get_metadata end
    endfunction
+
+   // pragma uvmx seq_item_methods begin
+   // pragma uvmx seq_item_methods end
 
 endclass
 

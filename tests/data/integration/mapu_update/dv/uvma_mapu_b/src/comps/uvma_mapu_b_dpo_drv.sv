@@ -55,7 +55,6 @@ class uvma_mapu_b_dpo_drv_c extends uvmx_mp_drv_c #(
       `uvmx_mp_mon_signal(item, o_r0)
       `uvmx_mp_mon_signal(item, o_r1)
       `uvmx_mp_mon_signal(item, o_r2)
-      `uvmx_mp_mon_signal(item, o_r3)
       // pragma uvmx dpo_drv_sample_post_clk begin
       // pragma uvmx dpo_drv_sample_post_clk end
    endtask

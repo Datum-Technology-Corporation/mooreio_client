@@ -26,6 +26,7 @@ class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
    /// @}
 
    // pragma uvmx cfg_fields begin
+   rand int unsigned  out_drv_ton_pct; ///< Percentage of active clock cycles for out_drv_seq_type.
    // pragma uvmx cfg_fields end
 
 
@@ -38,6 +39,7 @@ class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
       `uvm_field_int(drv_idle_random, UVM_DEFAULT)
       `uvm_field_enum(uvm_sequencer_arb_mode, sqr_arb_mode, UVM_DEFAULT)
       `uvm_field_int(data_width, UVM_DEFAULT + UVM_DEC)
+      `uvm_field_int(out_drv_ton_pct, UVM_DEFAULT + UVM_DEC)
       // pragma uvmx cfg_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -57,6 +59,12 @@ class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
    }
 
    // pragma uvmx cfg_constraints begin
+   /**
+    * Sets bounds for out_drv_ton_pct.
+    */
+   constraint custom_cons {
+      out_drv_ton_pct inside {[1:100]};
+   }
    // pragma uvmx cfg_constraints end
 
 
@@ -82,11 +90,6 @@ class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
    endfunction
 
    // pragma uvmx cfg_post_randomize_work begin
-   /**
-    * TODO Implement or remove uvma_mapu_b_cfg_c::post_randomize()
-    */
-   virtual function void post_randomize_work();
-   endfunction
    // pragma uvmx cfg_post_randomize_work end
 
    // pragma uvmx cfg_methods begin

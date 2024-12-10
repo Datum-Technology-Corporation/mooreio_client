@@ -24,12 +24,16 @@ class uvma_mapu_b_cntxt_c extends uvmx_block_sb_agent_cntxt_c #(
    /// @}
 
    // pragma uvmx cntxt_fields begin
+   bit           mon_overflow      ; ///< Current out trn has been flagged as overflowed.
+   int unsigned  mon_overflow_count; ///< Count of out trn monitored with overflow=1.
    // pragma uvmx cntxt_fields end
 
 
    `uvm_object_utils_begin(uvma_mapu_b_cntxt_c)
       // pragma uvmx cntxt_uvm_field_macros begin
       `uvm_field_enum(uvmx_reset_state_enum, reset_state, UVM_DEFAULT)
+      `uvm_field_int(mon_overflow, UVM_DEFAULT)
+      `uvm_field_int(mon_overflow_count, UVM_DEFAULT + UVM_DEC)
       // pragma uvmx cntxt_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -48,6 +52,8 @@ class uvma_mapu_b_cntxt_c extends uvmx_block_sb_agent_cntxt_c #(
     */
    virtual function void do_reset(uvma_mapu_b_cfg_c cfg);
       // pragma uvmx cntxt_do_reset begin
+      mon_overflow       = 0;
+      mon_overflow_count = 0;
       // pragma uvmx cntxt_do_reset end
    endfunction
 

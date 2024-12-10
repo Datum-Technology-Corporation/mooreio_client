@@ -26,7 +26,6 @@ interface uvma_mapu_b_if #(
    wire [(DATA_WIDTH-1):0]  i_r0; ///< Input Data Row 0: Input data row 0
    wire [(DATA_WIDTH-1):0]  i_r1; ///< Input Data Row 1: Input data row 1
    wire [(DATA_WIDTH-1):0]  i_r2; ///< Input Data Row 2: Input data row 2
-   wire [(DATA_WIDTH-1):0]  i_r3; ///< Input Data Row 3: Input data row 3
    /// @}
    /// @name Data Plane Output signals
    /// @{
@@ -35,7 +34,6 @@ interface uvma_mapu_b_if #(
    wire [(DATA_WIDTH-1):0]  o_r0; ///< Output Data Row 0: Output data row 0
    wire [(DATA_WIDTH-1):0]  o_r1; ///< Output Data Row 1: Output data row 1
    wire [(DATA_WIDTH-1):0]  o_r2; ///< Output Data Row 2: Output data row 2
-   wire [(DATA_WIDTH-1):0]  o_r3; ///< Output Data Row 3: Output data row 3
    /// @}
    /// @name Control Plane signals
    /// @{
@@ -48,7 +46,7 @@ interface uvma_mapu_b_if #(
    /// @name Used by uvma_mapu_b_dpi_mon_c
    /// @{
    clocking dpi_mon_cb @(posedge clk);
-      input i_vld, o_rdy, i_r0, i_r1, i_r2, i_r3;
+      input i_vld, o_rdy, i_r0, i_r1, i_r2;
    endclocking
    modport dpi_mon_mp (clocking dpi_mon_cb);
    /// @}
@@ -56,7 +54,7 @@ interface uvma_mapu_b_if #(
    /// @name Used by uvma_mapu_b_dpi_drv_c
    /// @{
    clocking dpi_drv_cb @(posedge clk);
-      output i_vld, i_r0, i_r1, i_r2, i_r3;
+      output i_vld, i_r0, i_r1, i_r2;
       input o_rdy;
    endclocking
    modport dpi_drv_mp (clocking dpi_drv_cb);
@@ -64,7 +62,7 @@ interface uvma_mapu_b_if #(
    /// @name Used by uvma_mapu_b_dpo_mon_c
    /// @{
    clocking dpo_mon_cb @(posedge clk);
-      input o_vld, i_rdy, o_r0, o_r1, o_r2, o_r3;
+      input o_vld, i_rdy, o_r0, o_r1, o_r2;
    endclocking
    modport dpo_mon_mp (clocking dpo_mon_cb);
    /// @}
@@ -73,7 +71,7 @@ interface uvma_mapu_b_if #(
    /// @{
    clocking dpo_drv_cb @(posedge clk);
       output i_rdy;
-      input o_vld, o_r0, o_r1, o_r2, o_r3;
+      input o_vld, o_r0, o_r1, o_r2;
    endclocking
    modport dpo_drv_mp (clocking dpo_drv_cb);
    /// @}
@@ -108,7 +106,6 @@ interface uvma_mapu_b_if #(
    `uvmx_if_signal_out(i_r0,  [(DATA_WIDTH-1):0], dpi_mon_mp.dpi_mon_cb, dpi_drv_mp.dpi_drv_cb)
    `uvmx_if_signal_out(i_r1,  [(DATA_WIDTH-1):0], dpi_mon_mp.dpi_mon_cb, dpi_drv_mp.dpi_drv_cb)
    `uvmx_if_signal_out(i_r2,  [(DATA_WIDTH-1):0], dpi_mon_mp.dpi_mon_cb, dpi_drv_mp.dpi_drv_cb)
-   `uvmx_if_signal_out(i_r3,  [(DATA_WIDTH-1):0], dpi_mon_mp.dpi_mon_cb, dpi_drv_mp.dpi_drv_cb)
    `uvmx_if_signal_out(i_rdy, , dpo_mon_mp.dpo_mon_cb, dpo_drv_mp.dpo_drv_cb)
    `uvmx_if_signal_out(i_en, , cp_mon_mp.cp_mon_cb, cp_drv_mp.cp_drv_cb)
    `uvmx_if_signal_out(i_op, , cp_mon_mp.cp_mon_cb, cp_drv_mp.cp_drv_cb)
@@ -117,7 +114,6 @@ interface uvma_mapu_b_if #(
    `uvmx_if_signal_in(o_r0,  [(DATA_WIDTH-1):0], dpo_mon_mp.dpo_mon_cb)
    `uvmx_if_signal_in(o_r1,  [(DATA_WIDTH-1):0], dpo_mon_mp.dpo_mon_cb)
    `uvmx_if_signal_in(o_r2,  [(DATA_WIDTH-1):0], dpo_mon_mp.dpo_mon_cb)
-   `uvmx_if_signal_in(o_r3,  [(DATA_WIDTH-1):0], dpo_mon_mp.dpo_mon_cb)
    `uvmx_if_signal_in(o_of, , cp_mon_mp.cp_mon_cb)
    /// @}
 

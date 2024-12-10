@@ -496,14 +496,19 @@ class LogicSimulator(Service, ABC):
         final_args_value["UVM_VERBOSITY"] = f"UVM_{config.verbosity.value.upper()}"
         final_args_value["UVM_MAX_QUIT_COUNT"] = str(config.max_errors)
         # Add MIO Args
+        self.rmh.create_directory(report.test_results_path / "uvmx")
         if config.use_relative_paths:
             final_args_value["__MIO_TEST_RESULTS_PATH__"] = str(os.path.relpath(report.test_results_path, config.start_path))
+            final_args_value["__MIO_SIM_PATH__"] = str(os.path.relpath(self.simulation_root_path, config.start_path))
+            final_args_value["__MIO_SIM_RESULTS_PATH__"] = str(os.path.relpath(self.simulation_results_path, config.start_path))
+            final_args_value["__MIO_SIM_TB_PATH__"] = str(os.path.relpath(ip.resolved_src_path, config.start_path))
+            final_args_value["__MIO_SIM_TESTS_PATH__"] = str(os.path.relpath(ip.resolved_tests_path, config.start_path))
         else:
             final_args_value["__MIO_TEST_RESULTS_PATH__"] = str(report.test_results_path)
-        if config.use_relative_paths:
-            final_args_value["__MIO_SIM_RESULTS_PATH__"] = str(os.path.relpath(self.simulation_results_path, config.start_path))
-        else:
+            final_args_value["__MIO_SIM_PATH__"] = str(self.simulation_root_path)
             final_args_value["__MIO_SIM_RESULTS_PATH__"] = str(self.simulation_results_path)
+            final_args_value["__MIO_SIM_TB_PATH__"] = str(ip.resolved_src_path)
+            final_args_value["__MIO_SIM_TESTS_PATH__"] = str(ip.resolved_tests_path)
         if self.rmh.user.authenticated:
             pass
             #final_args_value["__MIO_USER_TOKEN__"] = self.rmh.user.access_token

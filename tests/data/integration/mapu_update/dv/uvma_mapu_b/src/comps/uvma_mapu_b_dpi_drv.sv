@@ -46,7 +46,6 @@ class uvma_mapu_b_dpi_drv_c extends uvmx_mp_drv_c #(
       `uvmx_mp_drv_signal(item, i_r0)
       `uvmx_mp_drv_signal(item, i_r1)
       `uvmx_mp_drv_signal(item, i_r2)
-      `uvmx_mp_drv_signal(item, i_r3)
       // pragma uvmx dpi_drv_drive_item begin
       // pragma uvmx dpi_drv_drive_item end
    endtask

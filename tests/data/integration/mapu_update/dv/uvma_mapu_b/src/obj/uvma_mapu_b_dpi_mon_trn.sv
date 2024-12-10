@@ -23,7 +23,6 @@ class uvma_mapu_b_dpi_mon_trn_c extends uvmx_mon_trn_c #(
    uvma_mapu_b_i_r0_l_t  i_r0; ///< Input Data Row 0
    uvma_mapu_b_i_r1_l_t  i_r1; ///< Input Data Row 1
    uvma_mapu_b_i_r2_l_t  i_r2; ///< Input Data Row 2
-   uvma_mapu_b_i_r3_l_t  i_r3; ///< Input Data Row 3
    /// @}
 
    // pragma uvmx dpi_mon_trn_fields begin
@@ -32,6 +31,11 @@ class uvma_mapu_b_dpi_mon_trn_c extends uvmx_mon_trn_c #(
 
    `uvm_object_utils_begin(uvma_mapu_b_dpi_mon_trn_c)
       // pragma uvmx dpi_mon_trn_uvm_field_macros begin
+      `uvm_field_int(i_vld, UVM_DEFAULT)
+      `uvm_field_int(i_r0, UVM_DEFAULT)
+      `uvm_field_int(i_r1, UVM_DEFAULT)
+      `uvm_field_int(i_r2, UVM_DEFAULT)
+      `uvm_field_int(o_rdy, UVM_DEFAULT)
       // pragma uvmx dpi_mon_trn_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -41,8 +45,8 @@ class uvma_mapu_b_dpi_mon_trn_c extends uvmx_mon_trn_c #(
     */
    function new(string name="uvma_mapu_b_dpi_mon_trn");
       super.new(name);
-      // pragma uvmx dpi_mon_trn_uvm_field_macros begin
-      // pragma uvmx dpi_mon_trn_uvm_field_macros end
+      // pragma uvmx dpi_mon_trn_constructor begin
+      // pragma uvmx dpi_mon_trn_constructor end
    endfunction
 
    /**
@@ -50,24 +54,20 @@ class uvma_mapu_b_dpi_mon_trn_c extends uvmx_mon_trn_c #(
     */
    virtual function uvmx_metadata_t get_metadata();
       // pragma uvmx dpi_mon_trn_get_metadata begin
-      string i_vld_str;
       string o_rdy_str;
       string i_r0_str;
       string i_r1_str;
       string i_r2_str;
-      string i_r3_str;
-      i_vld_str = $sformatf("%h", i_vld);
-      o_rdy_str = $sformatf("%h", o_rdy);
-      i_r0_str = $sformatf("%h", i_r0);
-      i_r1_str = $sformatf("%h", i_r1);
-      i_r2_str = $sformatf("%h", i_r2);
-      i_r3_str = $sformatf("%h", i_r3);
-      `uvmx_metadata_field("i_vld", i_vld_str)
-      `uvmx_metadata_field("o_rdy", o_rdy_str)
-      `uvmx_metadata_field("i_r0", i_r0_str)
-      `uvmx_metadata_field("i_r1", i_r1_str)
-      `uvmx_metadata_field("i_r2", i_r2_str)
-      `uvmx_metadata_field("i_r3", i_r3_str)
+      if (i_vld === 1) begin
+         o_rdy_str = $sformatf("%h", o_rdy);
+         i_r0_str = $sformatf("%h", i_r0);
+         i_r1_str = $sformatf("%h", i_r1);
+         i_r2_str = $sformatf("%h", i_r2);
+         `uvmx_metadata_field("o_rdy", o_rdy_str)
+         `uvmx_metadata_field("i_r0", i_r0_str)
+         `uvmx_metadata_field("i_r1", i_r1_str)
+         `uvmx_metadata_field("i_r2", i_r2_str)
+      end
       // pragma uvmx dpi_mon_trn_get_metadata end
    endfunction
 

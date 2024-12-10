@@ -22,12 +22,18 @@ class uvma_mapu_b_mon_trn_c extends uvmx_block_sb_mon_trn_c #(
    /// @}
 
    // pragma uvmx mon_trn_fields begin
+   uvma_mapu_b_op_enum  op; ///< Operation to be performed (only valid for dir_in=1)
+   uvml_math_mtx_c  matrix; ///< Matrix observed.
+   bit  overflow; ///< '1' when matrix has values outside the configured bit width.
    // pragma uvmx mon_trn_fields end
 
 
    `uvm_object_utils_begin(uvma_mapu_b_mon_trn_c)
       // pragma uvmx mon_trn_uvm_field_macros begin
       `uvm_field_enum(uvmx_block_mon_direction_enum, direction, UVM_DEFAULT)
+      `uvm_field_object(matrix, UVM_DEFAULT + UVM_NOCOMPARE)
+      `uvm_field_int(overflow, UVM_DEFAULT)
+      `uvm_field_enum(uvma_mapu_b_op_enum, op, UVM_DEFAULT + UVM_NOCOMPARE)
       // pragma uvmx mon_trn_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -39,6 +45,16 @@ class uvma_mapu_b_mon_trn_c extends uvmx_block_sb_mon_trn_c #(
       super.new(name);
       // pragma uvmx mon_trn_constructor begin
       // pragma uvmx mon_trn_constructor end
+   endfunction
+
+   /**
+    * Initializes objects and arrays.
+    */
+   virtual function void build();
+      // pragma uvmx mon_trn_build begin
+      matrix = uvml_math_mtx_c::type_id::create("matrix");
+      matrix.build(3, 3);
+      // pragma uvmx mon_trn_build end
    endfunction
 
    /**
@@ -66,10 +82,6 @@ class uvma_mapu_b_mon_trn_c extends uvmx_block_sb_mon_trn_c #(
    virtual function void do_print(uvm_printer printer);
       // pragma uvmx mon_trn_do_print begin
       super.do_print(printer);
-      // Print dependent on configuration and/or fields
-      // Ex: if (cfg.enable_abc) begin
-      //        printer.print_field("abc", abc, 8);
-      //     end
       // pragma uvmx mon_trn_do_print end
    endfunction
 
@@ -78,7 +90,26 @@ class uvma_mapu_b_mon_trn_c extends uvmx_block_sb_mon_trn_c #(
     */
    virtual function uvmx_metadata_t get_metadata();
       // pragma uvmx mon_trn_get_metadata begin
-      string  val_str;
+      string           overflow_str, op_str;
+      uvmx_metadata_t  mm;
+      if (direction != UVMX_BLOCK_MON_IN) begin
+         overflow_str = (overflow === 1) ? "OF" : "  ";
+         `uvmx_metadata_field("of", overflow_str)
+      end
+      else begin
+         op_str = (op === UVMA_MAPU_B_OP_ADD) ? "ADD " : "MULT";
+         `uvmx_metadata_field("op", op_str)
+      end
+      mm = matrix.get_metadata();
+      foreach (mm[ii]) begin
+         if (cfg.data_width == 32) begin
+            mm[ii].width = 12;
+         end
+         else if (cfg.data_width == 64) begin
+            mm[ii].width = 18;
+         end
+         `uvmx_metadata_add(mm[ii])
+      end
       // pragma uvmx mon_trn_get_metadata end
    endfunction
 

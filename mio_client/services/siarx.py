@@ -245,7 +245,7 @@ class SiArxService(Service):
                 for file in package.files:
                     extracted_file_path: Path = package.extract_path / file.path
                     current_file_path: Path = self.rmh.project_root_path / package.path / file.path
-                    if self.rmh.file_exists(current_file_path):
+                    if self.rmh.file_exists(current_file_path) and file.replace_user_file:
                         try:
                             user_file_sections = self.find_user_file_sections(current_file_path)
                         except Exception as e:
@@ -257,7 +257,7 @@ class SiArxService(Service):
                         else:
                             self.replace_generated_file_sections_with_user_contents(extracted_file_path, user_file_sections)
                             self.rmh.move_file(extracted_file_path, current_file_path)
-                    else:
+                    elif not self.rmh.file_exists(current_file_path):
                         self.rmh.move_file(extracted_file_path, current_file_path)
 
     def find_user_file_sections(self, file: Path) -> Dict:

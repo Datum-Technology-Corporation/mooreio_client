@@ -9,6 +9,7 @@ ip:
 
 dependencies:
   "datum/uvmx": ">=1.0"
+  "datum/uvml_math": ">=1.0"
 
 structure:
   docs_path    : "docs"

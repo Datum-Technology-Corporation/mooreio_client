@@ -29,6 +29,9 @@ class uvma_mapu_b_cp_mon_trn_c extends uvmx_mon_trn_c #(
 
    `uvm_object_utils_begin(uvma_mapu_b_cp_mon_trn_c)
       // pragma uvmx cp_mon_trn_uvm_field_macros begin
+      `uvm_field_int(i_en, UVM_DEFAULT)
+      `uvm_field_int(i_op, UVM_DEFAULT)
+      `uvm_field_int(o_of, UVM_DEFAULT)
       // pragma uvmx cp_mon_trn_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -38,8 +41,8 @@ class uvma_mapu_b_cp_mon_trn_c extends uvmx_mon_trn_c #(
     */
    function new(string name="uvma_mapu_b_cp_mon_trn");
       super.new(name);
-      // pragma uvmx cp_mon_trn_uvm_field_macros begin
-      // pragma uvmx cp_mon_trn_uvm_field_macros end
+      // pragma uvmx cp_mon_trn_constructor begin
+      // pragma uvmx cp_mon_trn_constructor end
    endfunction
 
    /**
@@ -47,15 +50,18 @@ class uvma_mapu_b_cp_mon_trn_c extends uvmx_mon_trn_c #(
     */
    virtual function uvmx_metadata_t get_metadata();
       // pragma uvmx cp_mon_trn_get_metadata begin
-      string i_en_str;
       string i_op_str;
       string o_of_str;
-      i_en_str = $sformatf("%h", i_en);
-      i_op_str = $sformatf("%h", i_op);
-      o_of_str = $sformatf("%h", o_of);
-      `uvmx_metadata_field("i_en", i_en_str)
-      `uvmx_metadata_field("i_op", i_op_str)
-      `uvmx_metadata_field("o_of", o_of_str)
+      if (i_en === 1) begin
+         case (i_op)
+            2'b00  : i_op_str = "ADD ";
+            2'b01  : i_op_str = "MULT";
+            default: i_op_str = "????";
+         endcase
+         o_of_str = (o_of === 1) ? "OF" : "";
+         `uvmx_metadata_field("i_op", i_op_str)
+         `uvmx_metadata_field("o_of", o_of_str)
+      end
       // pragma uvmx cp_mon_trn_get_metadata end
    endfunction
 

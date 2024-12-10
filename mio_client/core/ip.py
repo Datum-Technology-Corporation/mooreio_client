@@ -498,6 +498,10 @@ class Ip(Model):
         return self._resolved_top_vhdl_files
 
     @property
+    def resolved_tests_path(self) -> Path:
+        return self._root_path / self.hdl_src.tests_path
+
+    @property
     def resolved_encrypted_hdl_directories(self) -> dict[str, List[Path]]:
         return self._resolved_encrypted_hdl_directories
 

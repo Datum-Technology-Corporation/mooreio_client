@@ -47,7 +47,6 @@ class uvma_mapu_b_dpi_mon_c extends uvmx_mp_mon_c #(
       `uvmx_mp_mon_signal(trn, i_r0)
       `uvmx_mp_mon_signal(trn, i_r1)
       `uvmx_mp_mon_signal(trn, i_r2)
-      `uvmx_mp_mon_signal(trn, i_r3)
       // pragma uvmx dpi_mon_sample_trn begin
       // pragma uvmx dpi_mon_sample_trn end
    endtask
@@ -62,8 +61,6 @@ class uvma_mapu_b_dpi_mon_c extends uvmx_mp_mon_c #(
          `uvmx_trim(trn.i_r1, cfg.data_width)
       end      foreach (trn.i_r2[ii]) begin
          `uvmx_trim(trn.i_r2, cfg.data_width)
-      end      foreach (trn.i_r3[ii]) begin
-         `uvmx_trim(trn.i_r3, cfg.data_width)
       end      // pragma uvmx dpi_mon_process_trn begin
       // pragma uvmx dpi_mon_process_trn end
    endfunction

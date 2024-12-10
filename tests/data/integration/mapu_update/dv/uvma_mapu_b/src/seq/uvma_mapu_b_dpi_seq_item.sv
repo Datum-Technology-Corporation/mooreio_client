@@ -22,7 +22,6 @@ class uvma_mapu_b_dpi_seq_item_c extends uvmx_seq_item_c #(
    rand uvma_mapu_b_i_r0_b_t  i_r0; ///< Input Data Row 0
    rand uvma_mapu_b_i_r1_b_t  i_r1; ///< Input Data Row 1
    rand uvma_mapu_b_i_r2_b_t  i_r2; ///< Input Data Row 2
-   rand uvma_mapu_b_i_r3_b_t  i_r3; ///< Input Data Row 3
    /// @}
 
    /// @name Metadata
@@ -40,7 +39,6 @@ class uvma_mapu_b_dpi_seq_item_c extends uvmx_seq_item_c #(
       `uvm_field_int(i_r0, UVM_DEFAULT)
       `uvm_field_int(i_r1, UVM_DEFAULT)
       `uvm_field_int(i_r2, UVM_DEFAULT)
-      `uvm_field_int(i_r3, UVM_DEFAULT)
       `uvm_field_int(o_rdy, UVM_DEFAULT)
       // pragma uvmx dpi_seq_item_uvm_field_macros end
    `uvm_object_utils_end
@@ -69,21 +67,21 @@ class uvma_mapu_b_dpi_seq_item_c extends uvmx_seq_item_c #(
       string i_r0_str;
       string i_r1_str;
       string i_r2_str;
-      string i_r3_str;
       i_vld_str = $sformatf("%h", i_vld);
       o_rdy_str = $sformatf("%h", o_rdy);
       i_r0_str = $sformatf("%h", i_r0);
       i_r1_str = $sformatf("%h", i_r1);
       i_r2_str = $sformatf("%h", i_r2);
-      i_r3_str = $sformatf("%h", i_r3);
       `uvmx_metadata_field("i_vld", i_vld_str)
       `uvmx_metadata_field("o_rdy", o_rdy_str)
       `uvmx_metadata_field("i_r0", i_r0_str)
       `uvmx_metadata_field("i_r1", i_r1_str)
       `uvmx_metadata_field("i_r2", i_r2_str)
-      `uvmx_metadata_field("i_r3", i_r3_str)
       // pragma uvmx seq_item_get_metadata end
    endfunction
+
+   // pragma uvmx seq_item_methods begin
+   // pragma uvmx seq_item_methods end
 
 endclass
 

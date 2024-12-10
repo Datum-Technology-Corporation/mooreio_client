@@ -23,6 +23,7 @@
 `include "uvmx_macros.svh"
 `include "uvma_mapu_b_macros.svh"
 // pragma uvmx pkg_macros begin
+`include "uvml_math_macros.svh"
 // pragma uvmx pkg_macros end
 
 // Interface(s)
@@ -41,6 +42,7 @@ package uvma_mapu_b_pkg;
    import uvmx_pkg::*;
 
    // pragma uvmx pkg_start begin
+   import uvml_math_pkg::*;
    // pragma uvmx pkg_start end
 
    // Constants / Structs / Enums

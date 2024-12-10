@@ -47,7 +47,6 @@ class uvma_mapu_b_dpo_mon_c extends uvmx_mp_mon_c #(
       `uvmx_mp_mon_signal(trn, o_r0)
       `uvmx_mp_mon_signal(trn, o_r1)
       `uvmx_mp_mon_signal(trn, o_r2)
-      `uvmx_mp_mon_signal(trn, o_r3)
       // pragma uvmx dpo_mon_sample_trn begin
       // pragma uvmx dpo_mon_sample_trn end
    endtask
@@ -62,8 +61,6 @@ class uvma_mapu_b_dpo_mon_c extends uvmx_mp_mon_c #(
          `uvmx_trim(trn.o_r1, cfg.data_width)
       end      foreach (trn.o_r2[ii]) begin
          `uvmx_trim(trn.o_r2, cfg.data_width)
-      end      foreach (trn.o_r3[ii]) begin
-         `uvmx_trim(trn.o_r3, cfg.data_width)
       end      // pragma uvmx dpo_mon_process_trn begin
       // pragma uvmx dpo_mon_process_trn end
    endfunction
