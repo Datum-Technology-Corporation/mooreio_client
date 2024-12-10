@@ -41,8 +41,8 @@ class uvme_mapu_b_fix_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
     */
    virtual task body();
       // pragma uvmx fix_ill_stim_seq_body begin
-      uvma_mapu_seq_item_c  seq_item;
-      `uvmx_create_on(seq_item, agent_vsequencer)
+      uvma_mapu_b_seq_item_c  seq_item;
+      `uvmx_create_on(seq_item, agent_sequencer)
       seq_item.ton_pct = 100;
       seq_item.op  = UVMA_MAPU_B_OP_ADD;
       seq_item.ma.load('{

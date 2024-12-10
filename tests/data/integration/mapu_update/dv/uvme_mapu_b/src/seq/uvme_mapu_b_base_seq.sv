@@ -42,6 +42,8 @@ class uvme_mapu_b_base_seq_c extends uvmx_block_sb_env_seq_c #(
 
    // pragma uvmx base_seq_methods begin
    task legal_item();
+      uvma_mapu_b_seq_item_c  seq_item;
+      int unsigned add_max_val, mult_max_val;
       if (cfg.data_width == 32) begin
          add_max_val  = 1_000_000_000;
          mult_max_val = 1_000;

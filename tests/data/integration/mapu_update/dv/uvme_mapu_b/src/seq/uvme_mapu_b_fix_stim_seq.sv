@@ -87,7 +87,7 @@ class uvme_mapu_b_fix_stim_seq_c extends uvme_mapu_b_base_seq_c;
     * Runs 2 multiplications.
     */
    virtual task mult();
-      uvma_mapu_seq_item_c  seq_item;
+      uvma_mapu_b_seq_item_c  seq_item;
       `uvmx_create_on(seq_item, agent_sequencer)
       seq_item.ton_pct = 100;
       seq_item.op  = UVMA_MAPU_B_OP_MULT;

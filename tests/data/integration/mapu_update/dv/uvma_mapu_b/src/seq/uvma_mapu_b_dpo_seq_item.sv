@@ -61,23 +61,22 @@ class uvma_mapu_b_dpo_seq_item_c extends uvmx_seq_item_c #(
     * Describes transaction for logger.
     */
    virtual function uvmx_metadata_t get_metadata();
-      // pragma uvmx seq_item_get_metadata begin
-      string o_vld_str;
+      // pragma uvmx dpo_seq_item_get_metadata begin
       string i_rdy_str;
       string o_r0_str;
       string o_r1_str;
       string o_r2_str;
-      o_vld_str = $sformatf("%h", o_vld);
-      i_rdy_str = $sformatf("%h", i_rdy);
-      o_r0_str = $sformatf("%h", o_r0);
-      o_r1_str = $sformatf("%h", o_r1);
-      o_r2_str = $sformatf("%h", o_r2);
-      `uvmx_metadata_field("o_vld", o_vld_str)
-      `uvmx_metadata_field("i_rdy", i_rdy_str)
-      `uvmx_metadata_field("o_r0", o_r0_str)
-      `uvmx_metadata_field("o_r1", o_r1_str)
-      `uvmx_metadata_field("o_r2", o_r2_str)
-      // pragma uvmx seq_item_get_metadata end
+      if (o_vld === 1) begin
+         i_rdy_str = $sformatf("%h", i_rdy);
+         o_r0_str = $sformatf("%h", o_r0);
+         o_r1_str = $sformatf("%h", o_r1);
+         o_r2_str = $sformatf("%h", o_r2);
+         `uvmx_metadata_field("i_rdy", i_rdy_str)
+         `uvmx_metadata_field("o_r0", o_r0_str)
+         `uvmx_metadata_field("o_r1", o_r1_str)
+         `uvmx_metadata_field("o_r2", o_r2_str)
+      end
+      // pragma uvmx dpo_seq_item_get_metadata end
    endfunction
 
    // pragma uvmx seq_item_methods begin

@@ -23,6 +23,19 @@ module uvmt_mapu_b_dut_wrap (
    mapu_top #(
       .DATA_WIDTH(`UVMT_MAPU_B_DATA_WIDTH)
    ) dut (
+      .i_vld(agent_if.i_vld),
+      .o_rdy(agent_if.o_rdy),
+      .i_r0(agent_if.i_r0),
+      .i_r1(agent_if.i_r1),
+      .i_r2(agent_if.i_r2),
+      .o_vld(agent_if.o_vld),
+      .i_rdy(agent_if.i_rdy),
+      .o_r0(agent_if.o_r0),
+      .o_r1(agent_if.o_r1),
+      .o_r2(agent_if.o_r2),
+      .i_en(agent_if.i_en),
+      .i_op(agent_if.i_op),
+      .o_of(agent_if.o_of),
       .clk(clk_if.clk),
       .reset_n(reset_n_if.reset_n)
    );

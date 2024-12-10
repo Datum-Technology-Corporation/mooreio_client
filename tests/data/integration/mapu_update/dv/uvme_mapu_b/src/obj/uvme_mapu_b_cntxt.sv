@@ -51,7 +51,6 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
       agent_cntxt = uvma_mapu_b_cntxt_c::type_id::create("agent_cntxt");
       sb_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("sb_cntxt");
       // pragma uvmx cntxt_build begin
-      agent_cntxt.reset();
       // pragma uvmx cntxt_build end
    endfunction
 
@@ -59,10 +58,10 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
     * Returns all state variables to initial values.
     */
    virtual function void do_reset(uvme_mapu_b_cfg_c cfg);
-      // pragma uvmx cntxt_build begin
+      // pragma uvmx cntxt_do_reset begin
       agent_cntxt.reset();
       prd_overflow_count = 0;
-      // pragma uvmx cntxt_build end
+      // pragma uvmx cntxt_do_reset end
    endfunction
 
    // pragma uvmx cntxt_methods begin

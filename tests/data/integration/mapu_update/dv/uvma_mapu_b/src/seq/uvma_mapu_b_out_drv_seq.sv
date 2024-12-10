@@ -21,7 +21,7 @@ class uvma_mapu_b_out_drv_seq_c extends uvma_mapu_b_base_seq_c;
       // pragma uvmx out_drv_seq_uvm_field_macros begin
       // pragma uvmx out_drv_seq_uvm_field_macros end
    `uvm_object_utils_end
-   `uvmx_out_drv_seq()
+   `uvmx_out_drv_seq(uvma_mapu_b_out_drv_seq_c)
 
 
    // pragma uvmx out_drv_seq_constraints begin
@@ -42,22 +42,36 @@ class uvma_mapu_b_out_drv_seq_c extends uvma_mapu_b_base_seq_c;
     */
    virtual task drive();
       // pragma uvmx out_drv_seq_drive begin
+      uvma_mapu_b_dpo_seq_item_c  dpo_seq_item;
+      bit                         within_transfer;
       forever begin
-         clk(); // TODO Remove this line after implementing uvma_mapu_b_out_drv_seq_c::drive()
-         // TODO Implement uvma_mapu_b_out_drv_seq_c::drive()
-         //      Ex: randcase
-         //             cfg.out_drv_ton_pct: begin
-         //                uvma_mapu_b_dpi_seq_item_c  dpi_seq_item;
-         //                `uvmx_create_on(dpi_seq_item, dpi_sequencer)
-         //                dpi_seq_item.rdy = 1;
-         //                `uvmx_send_drv(dpi_seq_item)
-         //             end
-         //             (100-cfg.out_drv_ton_pct): begin
-         //                clk();
-         //             end
-         //          endcase
+         within_transfer = 0;
+         if (dpo_seq_item != null) begin
+            if (dpo_seq_item.o_vld === 1) begin
+               within_transfer = 1;
+            end
+         end
+         if (within_transfer) begin
+            `uvmx_create_on(dpo_seq_item, dpo_sequencer)
+            `uvmx_rand_send_drv_with(dpo_seq_item, {
+               i_rdy == 1;
+            })
+         end
+         else begin
+            randcase
+               cfg.out_drv_ton_pct: begin
+                  `uvmx_create_on(dpo_seq_item, dpo_sequencer)
+                  `uvmx_rand_send_drv_with(dpo_seq_item, {
+                     i_rdy == 1;
+                  })
+               end
+               (100-cfg.out_drv_ton_pct): begin
+                  clk();
+               end
+            endcase
+         end
       end
-      // pragma uvmx out_drv_seq_drive begin
+      // pragma uvmx out_drv_seq_drive end
    endtask
 
    // pragma uvmx out_drv_seq_methods begin

@@ -21,7 +21,7 @@ class uvma_mapu_b_in_drv_seq_c extends uvma_mapu_b_base_seq_c;
       // pragma uvmx in_drv_seq_uvm_field_macros begin
       // pragma uvmx in_drv_seq_uvm_field_macros end
    `uvm_object_utils_end
-   `uvmx_in_drv_seq()
+   `uvmx_in_drv_seq(uvma_mapu_b_in_drv_seq_c)
 
 
    // pragma uvmx in_drv_seq_constraints begin
@@ -39,9 +39,8 @@ class uvma_mapu_b_in_drv_seq_c extends uvma_mapu_b_base_seq_c;
 
    // pragma uvmx in_drv_seq_drive_item begin
    /**
-    * TODO Describe uvma_mapu_b_in_drv_seq_c::drive_item()
-    *      Note: For asynchronous protocols (async==1), the response must be sent via `virtual task respond(seq_item)`.
-    *            Use `uvma_mapu_b_cntxt_c` to store shared data.
+    * * Drives 2 matrices, row-by-row using drive_row, while ensuring `i_en=1` and `i_op` is correct on the last row of the second matrix.
+    * * Respects `ton` using `randcase`
     */
    task drive_item(bit async=0, ref uvma_mapu_b_seq_item_c seq_item);
       uvma_mapu_b_cp_seq_item_c   cp_seq_item ;

@@ -77,6 +77,7 @@ class uvme_mapu_b_prd_c extends uvmx_block_sb_prd_c #(
       out_trn.from(in_a_trn);
       out_trn.from(in_b_trn);
       // 2.
+      out_trn.direction = UVMX_BLOCK_MON_OUT;
       out_trn.op = in_b_trn.op;
       case (in_b_trn.op)
          UVMA_MAPU_B_OP_ADD : out_trn.matrix = in_a_trn.matrix.add     (in_b_trn.matrix);

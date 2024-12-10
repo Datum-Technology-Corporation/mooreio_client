@@ -57,17 +57,18 @@ class uvma_mapu_b_cp_seq_item_c extends uvmx_seq_item_c #(
     * Describes transaction for logger.
     */
    virtual function uvmx_metadata_t get_metadata();
-      // pragma uvmx seq_item_get_metadata begin
+      // pragma uvmx cp_seq_item_get_metadata begin
       string i_en_str;
       string i_op_str;
-      string o_of_str;
-      i_en_str = $sformatf("%h", i_en);
-      i_op_str = $sformatf("%h", i_op);
-      o_of_str = $sformatf("%h", o_of);
+      i_en_str = (i_en === 1) ? "Y " : "N ";
+      case (i_op)
+            2'b00  : i_op_str = "ADD ";
+            2'b01  : i_op_str = "MULT";
+            default: i_op_str = "????";
+         endcase
       `uvmx_metadata_field("i_en", i_en_str)
       `uvmx_metadata_field("i_op", i_op_str)
-      `uvmx_metadata_field("o_of", o_of_str)
-      // pragma uvmx seq_item_get_metadata end
+      // pragma uvmx cp_seq_item_get_metadata end
    endfunction
 
    // pragma uvmx seq_item_methods begin

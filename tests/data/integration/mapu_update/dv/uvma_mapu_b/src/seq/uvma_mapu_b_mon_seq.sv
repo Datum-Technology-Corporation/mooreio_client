@@ -22,7 +22,7 @@ class uvma_mapu_b_mon_seq_c extends uvma_mapu_b_base_seq_c;
       // pragma uvmx mon_seq_uvm_field_macros begin
       // pragma uvmx mon_seq_uvm_field_macros end
    `uvm_object_utils_end
-   `uvmx_mon_seq()
+   `uvmx_mon_seq(uvma_mapu_b_mon_seq_c)
 
 
    // pragma uvmx mon_seq_constraints begin
@@ -62,7 +62,7 @@ class uvma_mapu_b_mon_seq_c extends uvma_mapu_b_base_seq_c;
          first_m = 1;
          repeat (2) begin
             row_count = 0;
-            in_trn = uvma_mapu_b_mon_trn_c::type_id::create("in_trn");
+            `uvmx_create_mon_trn(in_trn, uvma_mapu_b_mon_trn_c)
             in_trn.direction = UVMX_BLOCK_MON_IN;
             do begin
                `uvmx_get_mon_trn(cp_trn , cp_mon_trn_fifo )
@@ -110,7 +110,7 @@ class uvma_mapu_b_mon_seq_c extends uvma_mapu_b_base_seq_c;
       int unsigned  row_count;
       forever begin
          row_count = 0;
-         out_trn = uvma_mapu_b_mon_trn_c::type_id::create("out_trn");
+         `uvmx_create_mon_trn(out_trn, uvma_mapu_b_mon_trn_c)
          out_trn.direction = UVMX_BLOCK_MON_OUT;
          do begin
             `uvmx_get_mon_trn(dpo_trn, dpo_mon_trn_fifo)
