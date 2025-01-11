@@ -73,7 +73,7 @@ class uvme_mapu_b_prd_c extends uvmx_block_sb_prd_c #(
       // 1.
       `uvmx_prd_get(fifo, in_a_trn)
       `uvmx_prd_get(fifo, in_b_trn)
-      out_trn = uvma_mapu_b_mon_trn_c::type_id::create("out_trn");
+      `uvmx_prd_create_trn(out_trn, uvma_mapu_b_mon_trn_c)
       out_trn.from(in_a_trn);
       out_trn.from(in_b_trn);
       // 2.

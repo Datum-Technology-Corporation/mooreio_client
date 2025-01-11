@@ -56,6 +56,14 @@ class TestCliSiArx(TestBase):
         result = self.siarx(capsys, self.mapu_raw_path, '2')
         result = self.one_shot_sim_ip(capsys, self.mapu_raw_path, app, "uvmt_mapu_b", "fix_stim", 1)
 
+    def cli_siarx_sim_fix_stim(self, capsys, app: str):
+        self.reset_workspace()
+        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mapu_b", "fix_stim", 1)
+
+    def cli_siarx_sim_rand_stim(self, capsys, app: str):
+        self.reset_workspace()
+        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mapu_b", "rand_stim", 1)
+
     def cli_siarx_update_project_sim_dsim(self, capsys, app: str):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
@@ -67,6 +75,18 @@ class TestCliSiArx(TestBase):
     @pytest.mark.dsim
     def test_cli_siarx_gen_project_sim_dsim(self, capsys):
         self.cli_siarx_gen_project_sim_dsim(capsys, 'dsim')
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_sim_fix_stim_dsim(self, capsys):
+        self.cli_siarx_sim_fix_stim(capsys, 'dsim')
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_sim_rand_stim_dsim(self, capsys):
+        self.cli_siarx_sim_rand_stim(capsys, 'dsim')
 
     @pytest.mark.single_process
     #@pytest.mark.integration

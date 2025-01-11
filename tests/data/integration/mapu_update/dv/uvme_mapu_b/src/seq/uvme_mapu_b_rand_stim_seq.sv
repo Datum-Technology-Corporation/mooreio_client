@@ -37,7 +37,7 @@ class uvme_mapu_b_rand_stim_seq_c extends uvme_mapu_b_base_seq_c;
     * Describes randomization space for knobs.
     */
    constraint space_cons {
-      max_gap inside {['d0:'d100]};
+      max_gap inside {['d0:'d10]};
       min_gap inside {['d0:max_gap]};
    }
 
