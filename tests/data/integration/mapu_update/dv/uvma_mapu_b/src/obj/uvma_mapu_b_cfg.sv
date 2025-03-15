@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -13,6 +13,11 @@
  */
 class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
 
+   /// @name Settings
+   /// @{
+   rand int unsigned out_drv_ton_pct; ///< Percentage of active clock cycles for out_drv_seq_type.
+   /// @}
+
    /// @name Bus Widths
    /// @{
    rand int unsigned  data_width; ///< Data Width
@@ -26,7 +31,6 @@ class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
    /// @}
 
    // pragma uvmx cfg_fields begin
-   rand int unsigned  out_drv_ton_pct; ///< Percentage of active clock cycles for out_drv_seq_type.
    // pragma uvmx cfg_fields end
 
 
@@ -45,26 +49,20 @@ class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
 
 
    /**
+    * Describes settings randomization space.
+    */
+   constraint settings_space_cons {
+       out_drv_ton_pct inside {[1:100]};
+   }
+
+   /**
     * Rules for parameters.
     */
    constraint parameter_space_cons {
       data_width inside {[`UVMA_MAPU_B_DATA_WIDTH_MIN:`UVMA_MAPU_B_DATA_WIDTH_MAX]};
    }
 
-   /**
-    * Restricts settings randomization space.
-    */
-   constraint rules_cons {
-      soft drv_idle_random == 0;
-   }
-
    // pragma uvmx cfg_constraints begin
-   /**
-    * Sets bounds for out_drv_ton_pct.
-    */
-   constraint custom_cons {
-      out_drv_ton_pct inside {[1:100]};
-   }
    // pragma uvmx cfg_constraints end
 
 

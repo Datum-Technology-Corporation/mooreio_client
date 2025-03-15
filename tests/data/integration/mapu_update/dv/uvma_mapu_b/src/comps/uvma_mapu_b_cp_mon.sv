@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -48,6 +48,16 @@ class uvma_mapu_b_cp_mon_c extends uvmx_mp_mon_c #(
       // pragma uvmx cp_mon_sample_trn begin
       // pragma uvmx cp_mon_sample_trn end
    endtask
+
+   /**
+    * Determine if sampled transaction is meaningful traffic.
+    */
+   virtual function bit is_idle(ref uvma_mapu_b_cp_mon_trn_c current_trn, ref uvma_mapu_b_cp_mon_trn_c last_trn);
+      // pragma uvmx cp_mon_is_idle begin
+      // TODO Implement uvma_mapu_b_cp_mon_c::is_idle()
+      return super.is_idle(current_trn, last_trn);
+      // pragma uvmx cp_mon_is_idle end
+   endfunction
 
 
    // pragma uvmx cp_mon_methods begin

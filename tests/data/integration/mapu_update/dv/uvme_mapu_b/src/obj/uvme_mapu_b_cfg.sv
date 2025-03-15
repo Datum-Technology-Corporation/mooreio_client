@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -15,11 +15,12 @@ class uvme_mapu_b_cfg_c extends uvmx_block_sb_env_cfg_c;
 
    /// @name Settings
    /// @{
+   rand int unsigned  out_drv_ton_pct; ///< Percentage of active clock cycles for out_drv_seq_type.
    /// @}
 
-   // @name Bus Widths
+   /// @name Bus Widths
    /// @{
-   rand int unsigned data_width; ///< Data Width
+   rand int unsigned  data_width; ///< Data Width
    /// @}
 
     /// @name Objects
@@ -40,11 +41,19 @@ class uvme_mapu_b_cfg_c extends uvmx_block_sb_env_cfg_c;
       `uvm_field_int(drv_idle_random, UVM_DEFAULT)
       `uvm_field_int(scoreboarding_enabled, UVM_DEFAULT)
       `uvm_field_int(data_width, UVM_DEFAULT + UVM_DEC)
+      `uvm_field_int(out_drv_ton_pct, UVM_DEFAULT + UVM_DEC)
       `uvm_field_object(agent_cfg, UVM_DEFAULT)
       `uvm_field_object(sb_cfg, UVM_DEFAULT)
       // pragma uvmx cfg_uvm_field_macros end
    `uvm_object_utils_end
 
+
+   /**
+    * Assigns agent settings.
+    */
+   constraint settings_sync_cons {
+      agent_cfg.out_drv_ton_pct == out_drv_ton_pct;
+   }
 
    /**
     * Assigns agent parameter fields.

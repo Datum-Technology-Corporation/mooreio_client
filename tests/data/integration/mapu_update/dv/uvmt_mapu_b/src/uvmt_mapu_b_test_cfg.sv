@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -74,10 +74,10 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_sb_test_cfg_c;
     * Describes randomization space for knobs.
     */
    constraint knobs_cons {
-      num_items inside {[1:50]};
-      num_errors inside {[0:10]};
-      min_gap inside {[0:10]};
-      max_gap inside {[0:10]};
+      num_items inside {[1:1000]};
+      num_errors inside {[0:1000]};
+      min_gap inside {[0:1000]};
+      max_gap inside {[0:1000]};
    }
 
 

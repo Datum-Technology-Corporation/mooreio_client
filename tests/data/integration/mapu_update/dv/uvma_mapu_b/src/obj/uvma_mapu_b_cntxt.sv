@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -16,6 +16,12 @@ class uvma_mapu_b_cntxt_c extends uvmx_block_sb_agent_cntxt_c #(
    .T_VIF(virtual uvma_mapu_b_if)
 );
 
+   /// @name Fields
+   /// @{
+   bit  mon_overflow; ///< 
+   int unsigned  mon_overflow_count; ///< 
+   /// @}
+
    /// @name Sequences
    /// @{
    uvm_sequence_base  idle_drv_seq ; ///< Sequence driving data into the DUT.
@@ -24,8 +30,6 @@ class uvma_mapu_b_cntxt_c extends uvmx_block_sb_agent_cntxt_c #(
    /// @}
 
    // pragma uvmx cntxt_fields begin
-   bit           mon_overflow      ; ///< Current out trn has been flagged as overflowed.
-   int unsigned  mon_overflow_count; ///< Count of out trn monitored with overflow=1.
    // pragma uvmx cntxt_fields end
 
 

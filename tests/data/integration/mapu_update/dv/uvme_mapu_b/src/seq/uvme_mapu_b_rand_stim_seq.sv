@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -37,7 +37,7 @@ class uvme_mapu_b_rand_stim_seq_c extends uvme_mapu_b_base_seq_c;
     * Describes randomization space for knobs.
     */
    constraint space_cons {
-      max_gap inside {['d0:'d10]};
+      max_gap inside {['d0:'d100]};
       min_gap inside {['d0:max_gap]};
    }
 

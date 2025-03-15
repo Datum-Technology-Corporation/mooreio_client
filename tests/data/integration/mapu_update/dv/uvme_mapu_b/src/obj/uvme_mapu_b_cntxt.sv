@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -15,6 +15,11 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
    .T_CFG(uvme_mapu_b_cfg_c)
 );
 
+   /// @name Integrals
+   /// @{
+   int unsigned  prd_overflow_count; ///< 
+   /// @}
+
    /// @name Objects
    /// @{
    uvma_mapu_b_cntxt_c  agent_cntxt; ///< Block Agent context.
@@ -22,7 +27,6 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
    /// @}
 
    // pragma uvmx cntxt_fields begin
-   int unsigned  prd_overflow_count; ///< Count of out trn with overflow=1 predicted.
    // pragma uvmx cntxt_fields end
 
 

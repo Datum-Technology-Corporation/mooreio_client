@@ -1,4 +1,4 @@
-// Copyright 2024 Datron Limited Partnership
+// Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -14,6 +14,7 @@
 module uvma_mapu_b_if_chkr (
    uvma_mapu_b_if  agent_if ///< Target interface
 );
+
    // pragma uvmx interface_checker begin
    // pragma uvmx interface_checker end
 
