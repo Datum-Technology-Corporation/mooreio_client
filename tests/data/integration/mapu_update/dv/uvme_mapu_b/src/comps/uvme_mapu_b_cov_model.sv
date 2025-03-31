@@ -16,33 +16,26 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
    .T_CNTXT(uvme_mapu_b_cntxt_c)
 );
 
-   /// @name Objects
-   /// @{
-   uvma_mapu_b_seq_item_c      seq_item    ; ///< Sequence Item being sampled.
-   uvma_mapu_b_mon_trn_c       in_mon_trn  ; ///< Input Monitor Transaction being sampled.
-   uvma_mapu_b_mon_trn_c       out_mon_trn ; ///< Output Monitor Transaction being sampled.
-   uvma_mapu_b_dpi_seq_item_c   dpi_seq_item; ///< Data Plane Input Sequence Item being sampled.
-   uvma_mapu_b_dpo_seq_item_c   dpo_seq_item; ///< Data Plane Output Sequence Item being sampled.
-   uvma_mapu_b_cp_seq_item_c   cp_seq_item; ///< Control Plane Sequence Item being sampled.
-   uvma_mapu_b_dpi_mon_trn_c    dpi_mon_trn; ///< Data Plane Input Monitor Transaction being sampled.
-   uvma_mapu_b_dpo_mon_trn_c    dpo_mon_trn; ///< Data Plane Output Monitor Transaction being sampled.
-   uvma_mapu_b_cp_mon_trn_c    cp_mon_trn; ///< Control Plane Monitor Transaction being sampled.
-   /// @}
-
    /// @name FIFOs
    /// @{
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_seq_item_c    )  seq_item_fifo    ; ///< Input FIFO for Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_mon_trn_c     )  in_mon_trn_fifo  ; ///< Input FIFO for Input Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_mon_trn_c     )  out_mon_trn_fifo ; ///< Input FIFO for Output Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpi_seq_item_c)  dpi_seq_item_fifo; ///< Input FIFO for Data Plane Input Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpo_seq_item_c)  dpo_seq_item_fifo; ///< Input FIFO for Data Plane Output Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_seq_item_c)  cp_seq_item_fifo; ///< Input FIFO for Control Plane Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpi_mon_trn_c)  dpi_mon_trn_fifo; ///< Input FIFO for Data Plane Input Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpo_mon_trn_c)  dpo_mon_trn_fifo; ///< Input FIFO for Data Plane Output Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_mon_trn_c)  cp_mon_trn_fifo; ///< Input FIFO for Control Plane Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_op_seq_item_c)  agent_op_seq_item_fifo; ///< Input FIFO for Sequence Items.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_ig_mon_trn_c)  agent_ig_mon_trn_fifo; ///< Input FIFO for Agent Ingress Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  agent_eg_mon_trn_fifo; ///< Input FIFO for Agent Egress Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  predictor_eg_mon_trn_fifo; ///< Input FIFO for Predictor Egress Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpi_seq_item_c)  agent_dpi_seq_item_fifo; ///< Input FIFO for Agent Data Plane Input Sequence Items.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpo_seq_item_c)  agent_dpo_seq_item_fifo; ///< Input FIFO for Agent Data Plane Output Sequence Items.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_seq_item_c)  agent_cp_seq_item_fifo; ///< Input FIFO for Agent Control Plane Sequence Items.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpi_mon_trn_c)  agent_dpi_mon_trn_fifo; ///< Input FIFO for Agent Data Plane Input Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpo_mon_trn_c)  agent_dpo_mon_trn_fifo; ///< Input FIFO for Agent Data Plane Output Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_mon_trn_c)  agent_cp_mon_trn_fifo; ///< Input FIFO for Agent Control Plane Monitor Transactions.
    /// @}
 
    // pragma uvmx cov_model_fields begin
+   uvma_mapu_b_op_seq_item_c   agent_op_seq_item; ///< Sequence Item being sampled.
+   uvma_mapu_b_ig_mon_trn_c    agent_ig_mon_trn; ///< Ingress Monitor Transaction being sampled.
+   uvma_mapu_b_eg_mon_trn_c    predictor_eg_mon_trn; ///< Egress Monitor Transaction being sampled.
+   uvma_mapu_b_cp_seq_item_c   agent_cp_seq_item; ///< Control Plane Sequence Item being sampled.
+   uvma_mapu_b_cp_mon_trn_c    agent_cp_mon_trn; ///< Control Plane Monitor Transaction being sampled.
    // pragma uvmx cov_model_fields end
 
 
@@ -52,126 +45,81 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
    `uvm_component_utils_end
 
 
+   // pragma uvmx cov_model_covergroups begin
    /**
     * Environment configuration functional coverage.
     */
    covergroup mapu_b_cfg_cg;
-      // pragma uvmx cov_model_cfg_cg begin
       data_width_cp : coverpoint cfg.data_width {
          bins valid[] = {32,64};
       }
-      out_drv_ton_pct_cp : coverpoint cfg.agent_cfg.out_drv_ton_pct {
+      eg_drv_ton_pct_cp : coverpoint cfg.agent_cfg.eg_drv_ton_pct {
          bins valid[] = {[1:100]};
       }
-      // pragma uvmx cov_model_cfg_cg end
    endgroup
 
    /**
     * Environment context functional coverage.
     */
    covergroup mapu_b_cntxt_cg;
-      // pragma uvmx cov_model_cntxt_cg begin
       prd_overflow_count_cp : coverpoint cntxt.prd_overflow_count {
          bins at_least_one[] = {[1:$]};
       }
-      // pragma uvmx cov_model_cntxt_cg end
    endgroup
 
    /**
     * Sequence Item functional coverage.
     */
-   covergroup mapu_b_seq_item_cg;
-      // pragma uvmx cov_model_seq_item_cg begin
-      op_cp : coverpoint seq_item.op;
-      coverpoint seq_item.ton_pct {
+   covergroup mapu_b_op_seq_item_cg;
+      op_cp : coverpoint agent_op_seq_item.op;
+      coverpoint agent_op_seq_item.ton_pct {
          bins valid[] = {[1:100]};
       }
-      // pragma uvmx cov_model_seq_item_cg end
    endgroup
 
    /**
-    * Input Monitor Transaction functional coverage.
+    * Ingress Monitor Transaction functional coverage.
     */
-   covergroup mapu_b_in_mon_trn_cg;
-      // pragma uvmx cov_model_in_mon_trn_cg begin
-      // pragma uvmx cov_model_in_mon_trn_cg end
+   covergroup mapu_b_ig_mon_trn_cg;
+      op_cp : coverpoint agent_ig_mon_trn.op;
    endgroup
 
    /**
-    * Output Monitor Transaction functional coverage.
+    * Egress Monitor Transaction functional coverage.
     */
-   covergroup mapu_b_out_mon_trn_cg;
-      // pragma uvmx cov_model_out_mon_trn_cg begin
-      overflow_cp : coverpoint out_mon_trn.overflow;
-      // pragma uvmx cov_model_out_mon_trn_cg end
+   covergroup mapu_b_eg_mon_trn_cg;
+      overflow_cp : coverpoint predictor_eg_mon_trn.overflow;
    endgroup
 
-   /**
-    * Data Plane Input Sequence Item functional coverage.
-    */
-   covergroup mapu_b_dpi_seq_item_cg;
-      // pragma uvmx cov_model_dpi_seq_item_cg begin
-      // pragma uvmx cov_model_dpi_seq_item_cg end
-   endgroup
-   /**
-    * Data Plane Output Sequence Item functional coverage.
-    */
-   covergroup mapu_b_dpo_seq_item_cg;
-      // pragma uvmx cov_model_dpo_seq_item_cg begin
-      // pragma uvmx cov_model_dpo_seq_item_cg end
-   endgroup
    /**
     * Control Plane Sequence Item functional coverage.
     */
    covergroup mapu_b_cp_seq_item_cg;
-      // pragma uvmx cov_model_cp_seq_item_cg begin
-      i_op_cp : coverpoint cp_seq_item.i_op;
-      // pragma uvmx cov_model_cp_seq_item_cg end
+      i_op_cp : coverpoint agent_cp_seq_item.i_op;
    endgroup
 
-   /**
-    * Data Plane Input Monitor Transaction functional coverage.
-    */
-   covergroup mapu_b_dpi_mon_trn_cg;
-      // pragma uvmx cov_model_dpi_mon_trn_cg begin
-      // pragma uvmx cov_model_dpi_mon_trn_cg end
-   endgroup
-   /**
-    * Data Plane Output Monitor Transaction functional coverage.
-    */
-   covergroup mapu_b_dpo_mon_trn_cg;
-      // pragma uvmx cov_model_dpo_mon_trn_cg begin
-      // pragma uvmx cov_model_dpo_mon_trn_cg end
-   endgroup
    /**
     * Control Plane Monitor Transaction functional coverage.
     */
    covergroup mapu_b_cp_mon_trn_cg;
-      // pragma uvmx cov_model_cp_mon_trn_cg begin
-      o_of_cp : coverpoint cp_mon_trn.o_of;
-      // pragma uvmx cov_model_cp_mon_trn_cg end
+      o_of_cp : coverpoint agent_cp_mon_trn.o_of;
    endgroup
-
-   // pragma uvmx cov_model_covergroups begin
    // pragma uvmx cov_model_covergroups end
+
 
    /**
     * Creates covergroups.
     */
    function new(string name="uvme_mapu_b_cov_model", uvm_component parent=null);
       super.new(name, parent);
-      mapu_b_cfg_cg   = new();
-      mapu_b_cntxt_cg = new();
-      mapu_b_seq_item_cg     = new();
-      mapu_b_in_mon_trn_cg   = new();
-      mapu_b_out_mon_trn_cg  = new();
-      mapu_b_dpi_seq_item_cg = new();
-      mapu_b_dpo_seq_item_cg = new();
-      mapu_b_cp_seq_item_cg = new();
-      mapu_b_dpi_mon_trn_cg = new();
-      mapu_b_dpo_mon_trn_cg = new();
-      mapu_b_cp_mon_trn_cg = new();
       // pragma uvmx cov_model_constructor begin
+      mapu_b_cfg_cg          = new();
+      mapu_b_cntxt_cg        = new();
+      mapu_b_op_seq_item_cg  = new();
+      mapu_b_ig_mon_trn_cg   = new();
+      mapu_b_eg_mon_trn_cg   = new();
+      mapu_b_cp_seq_item_cg  = new();
+      mapu_b_cp_mon_trn_cg   = new();
       // pragma uvmx cov_model_constructor end
    endfunction
 
@@ -179,64 +127,53 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     * Creates TLM FIFOs.
     */
    virtual function void create_fifos();
-      seq_item_fifo     = new("seq_item_fifo"    , this);
-      in_mon_trn_fifo   = new("in_mon_trn_fifo"  , this);
-      out_mon_trn_fifo  = new("out_mon_trn_fifo" , this);
-      dpi_seq_item_fifo = new("dpi_seq_item_fifo", this);
-      dpo_seq_item_fifo = new("dpo_seq_item_fifo", this);
-      cp_seq_item_fifo = new("cp_seq_item_fifo", this);
-      dpi_mon_trn_fifo = new("dpi_mon_trn_fifo", this);
-      dpo_mon_trn_fifo = new("dpo_mon_trn_fifo", this);
-      cp_mon_trn_fifo = new("cp_mon_trn_fifo", this);
+      agent_op_seq_item_fifo = new("op_seq_item_fifo", this);
+      agent_ig_mon_trn_fifo = new("ig_mon_trn_fifo", this);
+      agent_eg_mon_trn_fifo = new("eg_mon_trn_fifo", this);
+      predictor_eg_mon_trn_fifo = new("eg_mon_trn_fifo", this);
+      agent_dpi_seq_item_fifo = new("dpi_seq_item_fifo", this);
+      agent_dpo_seq_item_fifo = new("dpo_seq_item_fifo", this);
+      agent_cp_seq_item_fifo = new("cp_seq_item_fifo", this);
+      agent_dpi_mon_trn_fifo = new("dpi_mon_trn_fifo", this);
+      agent_dpo_mon_trn_fifo = new("dpo_mon_trn_fifo", this);
+      agent_cp_mon_trn_fifo = new("cp_mon_trn_fifo", this);
       // pragma uvmx cov_model_create_fifos begin
       // pragma uvmx cov_model_create_fifos end
    endfunction
 
-   /// @name Sampling functions
-   /// @{
+   // pragma uvmx cov_model_sample_dox begin
    virtual function void sample_cfg  (); mapu_b_cfg_cg  .sample(); endfunction
    virtual function void sample_cntxt(); mapu_b_cntxt_cg.sample(); endfunction
-   virtual task sample_tlm();
+   /**
+    * TODO Implement uvme_mapu_b_cov_model_c::sample()
+    */
+   // pragma uvmx cov_model_sample_dox end
+   virtual task sample();
+      // pragma uvmx cov_model_sample begin
       fork
          forever begin
-            seq_item_fifo.get(seq_item);
-            mapu_b_seq_item_cg.sample();
+            agent_op_seq_item_fifo.get(agent_op_seq_item);
+            mapu_b_op_seq_item_cg.sample();
          end
          forever begin
-            in_mon_trn_fifo.get(in_mon_trn);
-            mapu_b_in_mon_trn_cg.sample();
+            agent_ig_mon_trn_fifo.get(agent_ig_mon_trn);
+            mapu_b_ig_mon_trn_cg.sample();
          end
          forever begin
-            out_mon_trn_fifo.get(out_mon_trn);
-            mapu_b_out_mon_trn_cg.sample();
+            predictor_eg_mon_trn_fifo.get(predictor_eg_mon_trn);
+            mapu_b_eg_mon_trn_cg.sample();
          end
          forever begin
-            dpi_seq_item_fifo.get(dpi_seq_item);
-            mapu_b_dpi_seq_item_cg.sample();
-         end
-         forever begin
-            dpo_seq_item_fifo.get(dpo_seq_item);
-            mapu_b_dpo_seq_item_cg.sample();
-         end
-         forever begin
-            cp_seq_item_fifo.get(cp_seq_item);
+            agent_cp_seq_item_fifo.get(agent_cp_seq_item);
             mapu_b_cp_seq_item_cg.sample();
          end
          forever begin
-            dpi_mon_trn_fifo.get(dpi_mon_trn);
-            mapu_b_dpi_mon_trn_cg.sample();
-         end
-         forever begin
-            dpo_mon_trn_fifo.get(dpo_mon_trn);
-            mapu_b_dpo_mon_trn_cg.sample();
-         end
-         forever begin
-            cp_mon_trn_fifo.get(cp_mon_trn);
+            agent_cp_mon_trn_fifo.get(agent_cp_mon_trn);
             mapu_b_cp_mon_trn_cg.sample();
          end
       join
+      // pragma uvmx cov_model_sample end
    endtask
-   /// @}
 
    // pragma uvmx cov_model_methods begin
    // pragma uvmx cov_model_methods end

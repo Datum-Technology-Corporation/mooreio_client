@@ -36,13 +36,11 @@ class uvme_mapu_b_base_seq_c extends uvmx_block_sb_env_seq_c #(
     */
    function new(string name="uvme_mapu_b_base_seq");
       super.new(name);
-      // pragma uvmx base_seq_constructor begin
-      // pragma uvmx base_seq_constructor end
    endfunction
 
    // pragma uvmx base_seq_methods begin
    task legal_item();
-      uvma_mapu_b_seq_item_c  seq_item;
+      uvma_mapu_b_op_seq_item_c  seq_item;
       int unsigned add_max_val, mult_max_val;
       if (cfg.data_width == 32) begin
          add_max_val  = 1_000_000_000;
@@ -65,7 +63,7 @@ class uvme_mapu_b_base_seq_c extends uvmx_block_sb_env_seq_c #(
    endtask
 
    task illegal_item();
-      uvma_mapu_b_seq_item_c  seq_item;
+      uvma_mapu_b_op_seq_item_c  seq_item;
       int unsigned add_max_val, mult_max_val;
       if (cfg.data_width == 32) begin
          add_max_val  = 1_000_000_000;

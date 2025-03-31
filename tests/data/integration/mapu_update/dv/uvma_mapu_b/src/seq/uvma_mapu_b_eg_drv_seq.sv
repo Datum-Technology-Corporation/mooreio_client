@@ -3,45 +3,33 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-`ifndef __UVMA_MAPU_B_OUT_DRV_SEQ_SV__
-`define __UVMA_MAPU_B_OUT_DRV_SEQ_SV__
+`ifndef __UVMA_MAPU_B_EG_DRV_SEQ_SV__
+`define __UVMA_MAPU_B_EG_DRV_SEQ_SV__
 
 
 /**
- * Sequence generating Channel Sequence Items and driving uvma_mapu_b_drv_c.
+ * Egress: Drives DUT output bus
  * @ingroup uvma_mapu_b_seq
  */
-class uvma_mapu_b_out_drv_seq_c extends uvma_mapu_b_base_seq_c;
+class uvma_mapu_b_eg_drv_seq_c extends uvma_mapu_b_base_seq_c;
 
-   // pragma uvmx out_drv_seq_fields begin
-   // pragma uvmx out_drv_seq_fields end
-   
-
-   `uvm_object_utils_begin(uvma_mapu_b_out_drv_seq_c)
-      // pragma uvmx out_drv_seq_uvm_field_macros begin
-      // pragma uvmx out_drv_seq_uvm_field_macros end
-   `uvm_object_utils_end
-   `uvmx_out_drv_seq(uvma_mapu_b_out_drv_seq_c)
-
-
-   // pragma uvmx out_drv_seq_constraints begin
-   // pragma uvmx out_drv_seq_constraints end
-
+   `uvm_object_utils(uvma_mapu_b_eg_drv_seq_c)
+   `uvmx_drv_seq(uvma_mapu_b_eg_drv_seq_c)
 
    /**
     * Default constructor.
     */
-   function new(string name="uvma_mapu_b_out_drv_seq");
+   function new(string name="uvma_mapu_b_eg_drv_seq");
       super.new(name);
-      // pragma uvmx out_drv_seq_constructor begin
-      // pragma uvmx out_drv_seq_constructor end
    endfunction
 
+   // pragma uvmx eg_drv_seq_dox begin
    /**
-    * TODO Describe uvma_mapu_b_out_drv_seq_c::drive()
+    * Drives Egress port's i_rdy signal.
     */
+   // pragma uvmx eg_drv_seq_dox end
    virtual task drive();
-      // pragma uvmx out_drv_seq_drive begin
+      // pragma uvmx eg_drv_seq_drive begin
       uvma_mapu_b_dpo_seq_item_c  dpo_seq_item;
       bit                         within_transfer;
       forever begin
@@ -59,25 +47,25 @@ class uvma_mapu_b_out_drv_seq_c extends uvma_mapu_b_base_seq_c;
          end
          else begin
             randcase
-               cfg.out_drv_ton_pct: begin
+               cfg.eg_drv_ton_pct: begin
                   `uvmx_create_on(dpo_seq_item, dpo_sequencer)
                   `uvmx_rand_send_drv_with(dpo_seq_item, {
                      i_rdy == 1;
                   })
                end
-               (100-cfg.out_drv_ton_pct): begin
+               (100-cfg.eg_drv_ton_pct): begin
                   clk();
                end
             endcase
          end
       end
-      // pragma uvmx out_drv_seq_drive end
+      // pragma uvmx eg_drv_seq_drive end
    endtask
 
-   // pragma uvmx out_drv_seq_methods begin
-   // pragma uvmx out_drv_seq_methods end
+   // pragma uvmx eg_drv_seq_methods begin
+   // pragma uvmx eg_drv_seq_methods end
 
 endclass
 
 
-`endif // __UVMA_MAPU_B_OUT_DRV_SEQ_SV__
+`endif // __UVMA_MAPU_B_EG_DRV_SEQ_SV__

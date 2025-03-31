@@ -53,8 +53,6 @@ class uvma_mapu_b_dpo_seq_item_c extends uvmx_seq_item_c #(
     */
    function new(string name="uvma_mapu_b_dpo_seq_item");
       super.new(name);
-      // pragma uvmx dpo_seq_item_constructor begin
-      // pragma uvmx dpo_seq_item_constructor end
    endfunction
 
    /**

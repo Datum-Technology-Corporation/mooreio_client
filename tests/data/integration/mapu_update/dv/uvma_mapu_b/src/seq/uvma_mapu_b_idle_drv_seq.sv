@@ -1,6 +1,6 @@
 // Copyright 2025 Datron Limited Partnership
 // SPDX-License-Identifier: MIT
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 `ifndef __UVMA_MAPU_B_IDLE_DRV_SEQ_SV__
@@ -8,38 +8,26 @@
 
 
 /**
- * Sequence generating 'idle' Sequence Items at all times.
+ * Idle: Ensures valid signals stay low when buses are inactive
  * @ingroup uvma_mapu_b_seq
  */
 class uvma_mapu_b_idle_drv_seq_c extends uvma_mapu_b_base_seq_c;
-
-   // pragma uvmx idle_drv_seq_fields begin
-   // pragma uvmx idle_drv_seq_fields end
    
-   
-   `uvm_object_utils_begin(uvma_mapu_b_idle_drv_seq_c)
-      // pragma uvmx idle_drv_seq_uvm_field_macros begin
-      // pragma uvmx idle_drv_seq_uvm_field_macros end
-   `uvm_object_utils_end
-   `uvmx_idle_seq(uvma_mapu_b_idle_drv_seq_c)
-
-
-   // pragma uvmx idle_drv_seq_constraints begin
-   // pragma uvmx idle_drv_seq_constraints end
-
+   `uvm_object_utils(uvma_mapu_b_idle_drv_seq_c)
+   `uvmx_drv_idle_seq(uvma_mapu_b_idle_drv_seq_c)
 
    /**
     * Default constructor.
     */
    function new(string name="uvma_mapu_b_idle_drv_seq");
       super.new(name);
-      // pragma uvmx idle_drv_seq_constructor begin
-      // pragma uvmx idle_drv_seq_constructor end
    endfunction
 
+   // pragma uvmx idle_drv_seq_idle_dox begin
    /**
-    * Infinite loops generating idle sequence items.
+    * Infinite loops generating idle Sequence Items for Data Plane Input and Data Plane Output.
     */
+   // pragma uvmx idle_drv_seq_idle_dox end
    task idle();
       // pragma uvmx idle_drv_seq_idle begin
       uvma_mapu_b_dpi_seq_item_c  dpi_seq_item;

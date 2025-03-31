@@ -8,14 +8,14 @@
 
 
 /**
- * Sequence for test 'fix_ill_stim'.
- * @ingroup uvme_mapu_b_seq
+ * Fixed Illegal Stimulus: Generates fixed illegal stimulus.
+ * @ingroup uvme_mapu_b_seq_error
  */
 class uvme_mapu_b_fix_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
 
    // pragma uvmx fix_ill_stim_seq_fields begin
    // pragma uvmx fix_ill_stim_seq_fields end
-   
+
 
    `uvm_object_utils_begin(uvme_mapu_b_fix_ill_stim_seq_c)
       // pragma uvmx fix_ill_stim_seq_uvm_field_macros begin
@@ -32,16 +32,17 @@ class uvme_mapu_b_fix_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
     */
    function new(string name="uvme_mapu_b_fix_ill_stim_seq");
       super.new(name);
-      // pragma uvmx fix_ill_stim_seq_constructor begin
-      // pragma uvmx fix_ill_stim_seq_constructor end
    endfunction
 
+   // pragma uvmx fix_ill_stim_seq_post_randomize_work begin
+   // pragma uvmx fix_ill_stim_seq_post_randomize_work end
+
+   // pragma uvmx fix_ill_stim_seq_body begin
    /**
-    * TODO Describe uvme_mapu_b_fix_ill_stim_seq_c::body()
+    * TODO Implement uvme_mapu_b_fix_ill_stim_seq_c::body()
     */
    virtual task body();
-      // pragma uvmx fix_ill_stim_seq_body begin
-      uvma_mapu_b_seq_item_c  seq_item;
+      uvma_mapu_b_op_seq_item_c  seq_item;
       `uvmx_create_on(seq_item, agent_sequencer)
       seq_item.ton_pct = 100;
       seq_item.op  = UVMA_MAPU_B_OP_ADD;
@@ -86,8 +87,8 @@ class uvme_mapu_b_fix_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
          '{2,1,0}
       });
       `uvmx_send(seq_item)
-      // pragma uvmx fix_ill_stim_seq_body end
    endtask
+   // pragma uvmx fix_ill_stim_seq_body end
 
    // pragma uvmx fix_ill_stim_seq_methods begin
    // pragma uvmx fix_ill_stim_seq_methods end

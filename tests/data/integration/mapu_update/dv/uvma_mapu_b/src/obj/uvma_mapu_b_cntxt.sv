@@ -18,15 +18,8 @@ class uvma_mapu_b_cntxt_c extends uvmx_block_sb_agent_cntxt_c #(
 
    /// @name Fields
    /// @{
-   bit  mon_overflow; ///< 
-   int unsigned  mon_overflow_count; ///< 
-   /// @}
-
-   /// @name Sequences
-   /// @{
-   uvm_sequence_base  idle_drv_seq ; ///< Sequence driving data into the DUT.
-   uvm_sequence_base  in_drv_seq ; ///< Sequence driving data into the DUT.
-   uvm_sequence_base  out_drv_seq; ///< Sequence driving data out of the DUT.
+   bit  mon_overflow; ///< Monitor overflow: Current out trn has been flagged as overflowed
+   int unsigned  mon_overflow_count; ///< Monitor overflow counter: Count of out trn monitored with overflow=1
    /// @}
 
    // pragma uvmx cntxt_fields begin
@@ -43,12 +36,10 @@ class uvma_mapu_b_cntxt_c extends uvmx_block_sb_agent_cntxt_c #(
 
 
    /**
-    * Creates event objects.
+    * Default constructor.
     */
    function new(string name="uvma_mapu_b_cntxt");
       super.new(name);
-      // pragma uvmx cntxt_constructor begin
-      // pragma uvmx cntxt_constructor end
    endfunction
 
    /**

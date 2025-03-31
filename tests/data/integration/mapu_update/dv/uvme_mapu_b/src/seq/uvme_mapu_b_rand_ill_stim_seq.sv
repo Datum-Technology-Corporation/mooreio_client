@@ -8,26 +8,22 @@
 
 
 /**
- * Sequence for test 'rand_ill_stim'.
- * @ingroup uvme_mapu_b_seq
+ * Random Illegal Stimulus: Generates mix of valid and illegal, random stimulus.
+ * @ingroup uvme_mapu_b_seq_error
  */
 class uvme_mapu_b_rand_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
 
-   /// @name Knobs
+   /// @name Random Fields
    /// @{
-   rand int unsigned  num_items ; ///< Number of legal items to generate.
-   rand int unsigned  num_errors; ///< Number of illegal items to generate.
-   rand int unsigned  min_gap   ; ///< Minimum number of cycles between items.
-   rand int unsigned  max_gap   ; ///< Maximum number of cycles between items.
-   /// @}
-
-   /// @name Data
-   /// @{
-   bit           error_idx_q[$]; ///< Illegal item indices.
-   int unsigned  error_count   ; ///< Tally for illegal items generated.
+   rand int unsigned  num_items; ///< Number of items
+   rand int unsigned  num_errors; ///< Number of errors
+   rand int unsigned  min_gap; ///< Minimum gap
+   rand int unsigned  max_gap; ///< Maximum gap
    /// @}
 
    // pragma uvmx rand_ill_stim_seq_fields begin
+   bit           error_idx_q[$]; ///< Illegal item indices.
+   int unsigned  error_count   ; ///< Tally for illegal items generated.
    // pragma uvmx rand_ill_stim_seq_fields end
 
 
@@ -44,15 +40,23 @@ class uvme_mapu_b_rand_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
 
 
    /**
-    * Describes randomization space for knobs.
+    * Sets randomization space for random fields.
     */
    constraint space_cons {
-      max_gap    inside {['d0:'d100]};
-      num_errors inside {['d1:num_items]};
-      min_gap    inside {['d0:max_gap  ]};
+      num_items inside {[1:100]};
+      num_errors inside {[1:10]};
+      min_gap inside {[0:100]};
+      max_gap inside {[0:100]};
    }
 
    // pragma uvmx rand_ill_stim_seq_constraints begin
+   /**
+    * Limits randomization space.
+    */
+   constraint limits_cons {
+      num_errors <= num_items;
+      min_gap <= max_gap;
+   }
    // pragma uvmx rand_ill_stim_seq_constraints end
 
 
@@ -61,25 +65,23 @@ class uvme_mapu_b_rand_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
     */
    function new(string name="uvme_mapu_b_rand_ill_stim_seq");
       super.new(name);
-      // pragma uvmx rand_ill_stim_seq_constructor begin
-      // pragma uvmx rand_ill_stim_seq_constructor end
    endfunction
 
+   // pragma uvmx rand_ill_stim_seq_post_randomize_work begin
    /**
     * Fills #error_idx_q with positions of illegal sequence items.
     */
    virtual function void post_randomize_work();
       `uvmx_rand_bit_q(error_idx_q, num_items, num_errors)
-      // pragma uvmx rand_ill_stim_seq_post_randomize_work begin
-      // pragma uvmx rand_ill_stim_seq_post_randomize_work end
    endfunction
+   // pragma uvmx rand_ill_stim_seq_post_randomize_work end
 
+   // pragma uvmx rand_ill_stim_seq_body begin
    /**
-    * Generates #num_items of random stimulus, #num_errors of which are illegal, using #error_idx_q for sequencing.
+    * TODO Implement uvme_{{ ip_name }}_b_{{ current_seq.name }}_seq_c::body()
     */
    virtual task body();
-      // pragma uvmx rand_ill_stim_seq_body begin
-      uvma_mapu_b_seq_item_c  seq_item;
+      uvma_mapu_b_op_seq_item_c  seq_item;
       int unsigned  gap_size;
       for (int unsigned ii=0; ii<num_items; ii++) begin
          gap_size = $urandom_range(min_gap, max_gap);
@@ -99,11 +101,11 @@ class uvme_mapu_b_rand_ill_stim_seq_c extends uvme_mapu_b_base_seq_c;
             `uvm_info("MAPU_B_RAND_ILL_STIM_SEQ", $sformatf("Finished item #%0d/%0d with gap size %0d", (ii+1), num_items, gap_size), UVM_HIGH)
          end
       end
-      // pragma uvmx rand_ill_stim_seq_body end
    endtask
+   // pragma uvmx rand_ill_stim_seq_body end
 
-   // pragma uvmx fix_ill_stim_seq_methods begin
-   // pragma uvmx fix_ill_stim_seq_methods end
+   // pragma uvmx rand_ill_stim_seq_methods begin
+   // pragma uvmx rand_ill_stim_seq_methods end
 
 endclass
 

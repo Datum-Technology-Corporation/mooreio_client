@@ -58,6 +58,7 @@ package uvme_mapu_b_pkg;
    // Components
    `include "uvme_mapu_b_sqr.sv"
    `include "uvme_mapu_b_prd.sv"
+   `include "uvme_mapu_b_sb.sv"
    `include "uvme_mapu_b_cov_model.sv"
    `include "uvme_mapu_b_env.sv"
 

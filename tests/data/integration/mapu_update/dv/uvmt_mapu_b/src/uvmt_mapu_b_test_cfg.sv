@@ -15,10 +15,10 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_sb_test_cfg_c;
 
    /// @name Knobs
    /// @{
-   rand int unsigned  num_items; ///< 
-   rand int unsigned  num_errors; ///< 
-   rand int unsigned  min_gap; ///< 
-   rand int unsigned  max_gap; ///< 
+   rand int unsigned  num_items; ///< Number of items
+   rand int unsigned  num_errors; ///< Number of errors
+   rand int unsigned  min_gap; ///< Minimum inter-item gap
+   rand int unsigned  max_gap; ///< Maximum inter-item gap
    rand int unsigned  clk_frequency; ///< Clock frequency (Hz).
    /// @}
 
@@ -71,15 +71,14 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_sb_test_cfg_c;
 
 
    /**
-    * Describes randomization space for knobs.
+    * Sets randomization space for random fields.
     */
    constraint knobs_cons {
-      num_items inside {[1:1000]};
-      num_errors inside {[0:1000]};
-      min_gap inside {[0:1000]};
-      max_gap inside {[0:1000]};
+      num_items inside {[1:100]};
+      num_errors inside {[0:100]};
+      min_gap inside {[0:100]};
+      max_gap inside {[0:100]};
    }
-
 
    /**
     * Sets safe defaults parameters.
@@ -105,15 +104,16 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_sb_test_cfg_c;
       reset_n_agent_cfg.is_active == UVM_ACTIVE;
    }
 
+   // pragma uvmx test_cfg_constraints begin
    /**
     * Restricts randomization space for knobs.
     */
    constraint rules_cons {
       num_errors inside {['d1:num_items]};
       min_gap    inside {['d0:max_gap  ]};
+      soft max_gap inside {[0:10]};
+      soft num_items inside {[10:50]};
    }
-
-   // pragma uvmx test_cfg_constraints begin
    // pragma uvmx test_cfg_constraints end
 
 
@@ -122,8 +122,6 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_sb_test_cfg_c;
     */
    function new(string name="uvmt_mapu_b_test_cfg");
       super.new(name);
-      // pragma uvmx test_cfg_constructor begin
-      // pragma uvmx test_cfg_constructor end
    endfunction
 
    /**

@@ -40,8 +40,6 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
     */
    function new(string name="uvme_mapu_b_env", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx env_constructor begin
-      // pragma uvmx env_constructor end
    endfunction
 
    /**
@@ -49,7 +47,6 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
     */
    virtual function void assign_cfg();
       uvm_config_db#(uvma_mapu_b_cfg_c)::set(this, "agent", "cfg", cfg.agent_cfg);
-      uvm_config_db#(uvmx_sb_simplex_cfg_c)::set(this, "scoreboard", "cfg", cfg.sb_cfg);
       // pragma uvmx env_assign_cfg begin
       // pragma uvmx env_assign_cfg end
    endfunction
@@ -59,7 +56,6 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
     */
    virtual function void assign_cntxt();
       uvm_config_db#(uvma_mapu_b_cntxt_c)::set(this, "agent", "cntxt", cntxt.agent_cntxt);
-      uvm_config_db#(uvmx_sb_simplex_cntxt_c)::set(this, "scoreboard", "cntxt", cntxt.sb_cntxt);
       // pragma uvmx env_assign_cntxt begin
       // pragma uvmx env_assign_cntxt end
    endfunction
@@ -77,7 +73,7 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
     * Connects agents to predictor.
     */
    virtual function void connect_predictor();
-      agent.in_mon_trn_ap.connect(predictor.fifo.analysis_export);
+      agent.ig_mon_trn_ap.connect(predictor.ig_fifo.analysis_export);
       // pragma uvmx env_connect_predictor begin
       // pragma uvmx env_connect_predictor end
    endfunction
@@ -86,8 +82,8 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
     * Connects scoreboards components to agents/predictor.
     */
    virtual function void connect_scoreboard();
-      predictor.ap.connect(scoreboard.exp_export);
-      agent.out_mon_trn_ap.connect(scoreboard.act_export);
+      predictor.eg_ap.connect(scoreboard.egress_scoreboard.exp_export);
+      agent.eg_mon_trn_ap.connect(scoreboard.egress_scoreboard.act_export);
       // pragma uvmx env_connect_scoreboard begin
       // pragma uvmx env_connect_scoreboard end
    endfunction
@@ -96,15 +92,16 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
     * Connects environment coverage model to agents/predictor/scoreboard.
     */
    virtual function void connect_coverage_model();
-      agent.seq_item_ap    .connect(cov_model.seq_item_fifo    .analysis_export);
-      agent.in_mon_trn_ap  .connect(cov_model.in_mon_trn_fifo  .analysis_export);
-      agent.out_mon_trn_ap .connect(cov_model.out_mon_trn_fifo .analysis_export);
-      agent.dpi_seq_item_ap.connect(cov_model.dpi_seq_item_fifo.analysis_export);
-      agent.dpo_seq_item_ap.connect(cov_model.dpo_seq_item_fifo.analysis_export);
-      agent.cp_seq_item_ap.connect(cov_model.cp_seq_item_fifo.analysis_export);
-      agent.dpi_mon_trn_ap.connect(cov_model.dpi_mon_trn_fifo.analysis_export);
-      agent.dpo_mon_trn_ap.connect(cov_model.dpo_mon_trn_fifo.analysis_export);
-      agent.cp_mon_trn_ap.connect(cov_model.cp_mon_trn_fifo.analysis_export);
+      agent.seq_item_ap.connect(cov_model.agent_op_seq_item_fifo.analysis_export);
+      agent.ig_mon_trn_ap.connect(cov_model.agent_ig_mon_trn_fifo.analysis_export);
+      agent.eg_mon_trn_ap.connect(cov_model.agent_eg_mon_trn_fifo.analysis_export);
+      predictor.eg_ap.connect(cov_model.predictor_eg_mon_trn_fifo.analysis_export);
+      agent.dpi_seq_item_ap.connect(cov_model.agent_dpi_seq_item_fifo.analysis_export);
+      agent.dpo_seq_item_ap.connect(cov_model.agent_dpo_seq_item_fifo.analysis_export);
+      agent.cp_seq_item_ap.connect(cov_model.agent_cp_seq_item_fifo.analysis_export);
+      agent.dpi_mon_trn_ap.connect(cov_model.agent_dpi_mon_trn_fifo.analysis_export);
+      agent.dpo_mon_trn_ap.connect(cov_model.agent_dpo_mon_trn_fifo.analysis_export);
+      agent.cp_mon_trn_ap.connect(cov_model.agent_cp_mon_trn_fifo.analysis_export);
       // pragma uvmx env_connect_coverage_model begin
       // pragma uvmx env_connect_coverage_model end
    endfunction

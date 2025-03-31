@@ -1260,14 +1260,15 @@ class SimulatorMetricsDSim(LogicSimulator):
         return Version('1.0.0')
 
     def set_job_env(self, job:Job):
-        job.env_vars["DSIM_HOME"] = self.rmh.configuration.logic_simulation.metrics_dsim_installation_path
+        dsim_home: str = f"{self.rmh.configuration.logic_simulation.metrics_dsim_installation_path}"
+        job.env_vars["DSIM_HOME"] = dsim_home
+        job.env_vars["STD_LIBS"] = f"{dsim_home}/std_pkgs/lib"
+        job.env_vars["RADFLEX_PATH"] = f"{dsim_home}/radflex"
+        job.env_vars["LLVM_HOME"] = f"{dsim_home}/llvm_small"
+        job.pre_path = f"{dsim_home}/bin:{dsim_home}/{self.rmh.configuration.logic_simulation.uvm_version.value}/bin:{dsim_home}/llvm_small/bin"
+        job.env_vars["LD_LIBRARY_PATH"] = f"{dsim_home}/lib:" +"${LD_LIBRARY_PATH}:" + f"{dsim_home}/llvm_small/lib"
+        job.env_vars["UVM_HOME"] = f"{dsim_home}/uvm/" + self.rmh.configuration.logic_simulation.uvm_version.value
         job.env_vars["DSIM_LICENSE"] = self.rmh.configuration.logic_simulation.metrics_dsim_license_path
-        job.env_vars["LLVM_HOME"] = "${DSIM_HOME}/llvm_small"
-        job.env_vars["STD_LIBS"] = "$DSIM_HOME/std_pkgs/lib"
-        job.env_vars["UVM_HOME"] = "${DSIM_HOME}/uvm/" + self.rmh.configuration.logic_simulation.uvm_version.value
-        job.env_vars["DSIM_LD_LIBRARY_PATH"] = "${DSIM_HOME}/lib:${LD_LIBRARY_PATH}:${DSIM_HOME}/llvm_small/lib"
-        job.env_vars["LD_LIBRARY_PATH"] = "${DSIM_LD_LIBRARY_PATH}"
-        job.pre_path = "${DSIM_HOME}/bin:${DSIM_HOME}/" + self.rmh.configuration.logic_simulation.uvm_version.value + "/bin:${DSIM_HOME}/llvm_small/bin"
 
     def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass

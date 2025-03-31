@@ -53,8 +53,6 @@ class uvma_mapu_b_dpi_seq_item_c extends uvmx_seq_item_c #(
     */
    function new(string name="uvma_mapu_b_dpi_seq_item");
       super.new(name);
-      // pragma uvmx dpi_seq_item_constructor begin
-      // pragma uvmx dpi_seq_item_constructor end
    endfunction
 
    /**

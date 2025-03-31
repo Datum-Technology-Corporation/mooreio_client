@@ -7,6 +7,14 @@
 `define __UVMA_MAPU_B_TDEFS_SV__
 
 
+/**
+ * Operation
+ */
+typedef enum bit {
+   UVMA_MAPU_B_OP_ADD = 0, ///< Addition
+   UVMA_MAPU_B_OP_MULT = 1 ///< Multiplication
+} uvma_mapu_b_op_enum;
+
 /// @name Logic vectors
 /// @{
 typedef logic  uvma_mapu_b_i_vld_l_t; ///< Input Valid logic vector
@@ -42,13 +50,6 @@ typedef bit  uvma_mapu_b_o_of_b_t; ///< Overflow flag bit vector
 /// @}
 
 // pragma uvmx tdefs begin
-/**
- * MAPU matrix operations allowed.
- */
-typedef enum bit [1:0] {
-   UVMA_MAPU_B_OP_ADD  = 2'b00,
-   UVMA_MAPU_B_OP_MULT = 2'b01
-} uvma_mapu_b_op_enum;
 // pragma uvmx tdefs end
 
 

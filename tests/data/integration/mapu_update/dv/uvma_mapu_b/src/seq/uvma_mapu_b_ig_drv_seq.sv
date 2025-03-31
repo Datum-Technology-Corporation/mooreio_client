@@ -3,46 +3,34 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-`ifndef __UVMA_MAPU_B_IN_DRV_SEQ_SV__
-`define __UVMA_MAPU_B_IN_DRV_SEQ_SV__
+`ifndef __UVMA_MAPU_B_IG_DRV_SEQ_SV__
+`define __UVMA_MAPU_B_IG_DRV_SEQ_SV__
 
 
 /**
- * Sequence taking in uvma_mapu_b_seq_item_c instances and driving uvma_mapu_b_drv_c with Channel Sequence Items.
+ * Ingress: Drives input matrices and operator
  * @ingroup uvma_mapu_b_seq
  */
-class uvma_mapu_b_in_drv_seq_c extends uvma_mapu_b_base_seq_c;
+class uvma_mapu_b_ig_drv_seq_c extends uvma_mapu_b_base_seq_c;
 
-   // pragma uvmx in_drv_seq_fields begin
-   // pragma uvmx in_drv_seq_fields end
-   
-
-   `uvm_object_utils_begin(uvma_mapu_b_in_drv_seq_c)
-      // pragma uvmx in_drv_seq_uvm_field_macros begin
-      // pragma uvmx in_drv_seq_uvm_field_macros end
-   `uvm_object_utils_end
-   `uvmx_in_drv_seq(uvma_mapu_b_in_drv_seq_c)
-
-
-   // pragma uvmx in_drv_seq_constraints begin
-   // pragma uvmx in_drv_seq_constraints end
-   
+   `uvm_object_utils(uvma_mapu_b_ig_drv_seq_c)
+   `uvmx_drv_main_seq(uvma_mapu_b_ig_drv_seq_c)
 
    /**
     * Default constructor.
     */
-   function new(string name="uvma_mapu_b_in_drv_seq");
+   function new(string name="uvma_mapu_b_ig_drv_seq");
       super.new(name);
-      // pragma uvmx in_drv_seq_constructor begin
-      // pragma uvmx in_drv_seq_constructor end
    endfunction
 
-   // pragma uvmx in_drv_seq_drive_item begin
+   // pragma uvmx ig_drv_seq_drive_item_dox begin
    /**
     * * Drives 2 matrices, row-by-row using drive_row, while ensuring `i_en=1` and `i_op` is correct on the last row of the second matrix.
     * * Respects `ton` using `randcase`
     */
-   task drive_item(bit async=0, ref uvma_mapu_b_seq_item_c seq_item);
+   // pragma uvmx ig_drv_seq_drive_item_dox end
+   task drive_item(bit async=0, ref uvma_mapu_b_op_seq_item_c seq_item);
+      // pragma uvmx ig_drv_seq_drive_item begin
       uvma_mapu_b_cp_seq_item_c   cp_seq_item ;
       uvma_mapu_b_dpi_seq_item_c  dpi_seq_item;
       int unsigned row_count = 0;
@@ -81,14 +69,14 @@ class uvma_mapu_b_in_drv_seq_c extends uvma_mapu_b_base_seq_c;
             end
          endcase
       end while (row_count<6);
+      // pragma uvmx ig_drv_seq_drive_item end
    endtask
-   // pragma uvmx in_drv_seq_drive_item end
 
-   // pragma uvmx in_drv_seq_methods begin
+   // pragma uvmx ig_drv_seq_methods begin
    /**
     * Drives a single matrix row into the DUT.
     */
-   virtual task drive_row(uvma_mapu_b_seq_item_c seq_item, uvml_math_mtx_c matrix, int unsigned row);
+   virtual task drive_row(uvma_mapu_b_op_seq_item_c seq_item, uvml_math_mtx_c matrix, int unsigned row);
       uvma_mapu_b_dpi_seq_item_c  dpi_seq_item;
       while (cntxt.vif.o_rdy !== 1) begin
          clk();
@@ -101,9 +89,9 @@ class uvma_mapu_b_in_drv_seq_c extends uvma_mapu_b_base_seq_c;
       dpi_seq_item.i_r2  = matrix.geti(row, 2, cfg.data_width);
       `uvmx_send_drv(dpi_seq_item)
    endtask
-   // pragma uvmx in_drv_seq_methods end
+   // pragma uvmx ig_drv_seq_methods end
 
 endclass
 
 
-`endif // __UVMA_MAPU_B_IN_DRV_SEQ_SV__
+`endif // __UVMA_MAPU_B_IG_DRV_SEQ_SV__

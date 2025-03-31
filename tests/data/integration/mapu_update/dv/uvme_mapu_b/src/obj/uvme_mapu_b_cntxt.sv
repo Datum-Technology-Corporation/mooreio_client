@@ -17,13 +17,13 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
 
    /// @name Integrals
    /// @{
-   int unsigned  prd_overflow_count; ///< 
+   int unsigned  prd_overflow_count; ///< Predictor Overflow Event Counter: Determined by predictor
    /// @}
 
    /// @name Objects
    /// @{
    uvma_mapu_b_cntxt_c  agent_cntxt; ///< Block Agent context.
-   uvmx_sb_simplex_cntxt_c  sb_cntxt; ///< Scoreboard context
+   uvmx_sb_simplex_cntxt_c  egress_scoreboard_cntxt; ///< Egress Scoreboard context
    /// @}
 
    // pragma uvmx cntxt_fields begin
@@ -33,8 +33,9 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
    `uvm_object_utils_begin(uvme_mapu_b_cntxt_c)
       // pragma uvmx cntxt_uvm_field_macros begin
       `uvm_field_enum(uvmx_reset_state_enum, reset_state, UVM_DEFAULT)
+      `uvm_field_int(prd_overflow_count, UVM_DEFAULT)
       `uvm_field_object(agent_cntxt, UVM_DEFAULT)
-      `uvm_field_object(sb_cntxt, UVM_DEFAULT)
+      `uvm_field_object(egress_scoreboard_cntxt, UVM_DEFAULT)
       // pragma uvmx cntxt_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -44,8 +45,6 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
     */
    function new(string name="uvme_mapu_b_cntxt");
       super.new(name);
-      // pragma uvmx cntxt_constructor begin
-      // pragma uvmx cntxt_constructor end
    endfunction
 
    /**
@@ -53,7 +52,7 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
     */
    virtual function void build(uvme_mapu_b_cfg_c cfg);
       agent_cntxt = uvma_mapu_b_cntxt_c::type_id::create("agent_cntxt");
-      sb_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("sb_cntxt");
+      egress_scoreboard_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("egress_scoreboard_cntxt");
       // pragma uvmx cntxt_build begin
       // pragma uvmx cntxt_build end
    endfunction

@@ -47,12 +47,12 @@ class uvme_mapu_b_seq_lib_c extends uvmx_seq_lib_c #(
     * Adds sequences to library.
     */
    virtual function void add_lib_sequences();
-      // pragma uvmx seq_lib_body begin
       add_sequence(uvme_mapu_b_fix_stim_seq_c::get_type());
       add_sequence(uvme_mapu_b_fix_ill_stim_seq_c::get_type());
       add_sequence(uvme_mapu_b_rand_stim_seq_c::get_type());
       add_sequence(uvme_mapu_b_rand_ill_stim_seq_c::get_type());
-      // pragma uvmx seq_lib_body end
+      // pragma uvmx seq_lib_add_lib_sequences begin
+      // pragma uvmx seq_lib_add_lib_sequences end
    endfunction
 
    // pragma uvmx seq_lib_methods begin

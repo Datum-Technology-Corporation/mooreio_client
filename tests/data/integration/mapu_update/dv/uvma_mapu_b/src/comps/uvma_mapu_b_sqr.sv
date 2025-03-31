@@ -45,7 +45,7 @@ typedef uvmx_sqr_c #(
 class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
    .T_CFG     (uvma_mapu_b_cfg_c  ),
    .T_CNTXT   (uvma_mapu_b_cntxt_c),
-   .T_SEQ_ITEM(uvma_mapu_b_seq_item_c)
+   .T_SEQ_ITEM(uvma_mapu_b_op_seq_item_c)
 );
 
    /// @name Components
@@ -57,8 +57,8 @@ class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
 
    /// @name FIFOs
    /// @{
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_mon_trn_c)  in_mon_trn_fifo; ///< Output for Input Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_mon_trn_c)  out_mon_trn_fifo; ///< Output for Output Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_ig_mon_trn_c)  ig_mon_trn_fifo; ///< Output for  }} Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  eg_mon_trn_fifo; ///< Output for  }} Monitor Transactions.
    uvm_tlm_analysis_fifo #(uvma_mapu_b_dpi_mon_trn_c)  dpi_mon_trn_fifo ; ///< Input for Monitor Transactions from uvma_mapu_b_dpi_mon_c.
    uvm_tlm_analysis_fifo #(uvma_mapu_b_dpo_mon_trn_c)  dpo_mon_trn_fifo ; ///< Input for Monitor Transactions from uvma_mapu_b_dpo_mon_c.
    uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_mon_trn_c)  cp_mon_trn_fifo ; ///< Input for Monitor Transactions from uvma_mapu_b_cp_mon_c.
@@ -79,8 +79,6 @@ class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
     */
    function new(string name="uvma_mapu_b_sqr", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx mon_uvm_field_macros begin
-      // pragma uvmx mon_uvm_field_macros end
    endfunction
 
    /**
@@ -98,8 +96,8 @@ class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
     * Creates TLM FIFOs.
     */
    virtual function void create_fifos();
-      in_mon_trn_fifo  = new("in_mon_trn_fifo", this);
-      out_mon_trn_fifo = new("out_mon_trn_fifo", this);
+      ig_mon_trn_fifo = new("ig_mon_trn_fifo", this);
+      eg_mon_trn_fifo = new("eg_mon_trn_fifo", this);
       dpi_mon_trn_fifo = new("dpi_mon_trn_fifo", this);
       dpo_mon_trn_fifo = new("dpo_mon_trn_fifo", this);
       cp_mon_trn_fifo = new("cp_mon_trn_fifo", this);

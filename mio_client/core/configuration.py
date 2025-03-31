@@ -28,7 +28,7 @@ class LogicSimulators(Enum):
     QUESTA = "questa"
     RIVIERA = "riviera"
     #UNDEFINED = "!Undefined!"
-    #DSIM = "Metrics DSim"
+    #DSIM = "Altair DSim"
     #VIVADO = "Xilinx Vivado"
     #VCS = "Synopsys VCS"
     #XCELIUM = "Cadence XCelium"

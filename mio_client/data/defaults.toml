@@ -19,7 +19,7 @@ compilation_and_elaboration_timeout=60
 simulation_timeout=60
 metrics_dsim_cloud_max_compute_size="s4"
 metrics_dsim_default_compilation_sv_arguments=[
-    "-suppress MultiBlockWrite:ReadingOutputModport:UndefinedMacro"
+    "-suppress MultiBlockWrite:ReadingOutputModport:UndefinedMacro:IneffectiveDynamicCast"
 ]
 xilinx_vivado_default_compilation_sv_arguments=[
     "--incr"
@@ -38,7 +38,7 @@ xilinx_vivado_default_elaboration_arguments=[
 ]
 metrics_dsim_default_compilation_and_elaboration_arguments=[
     "+acc+b",
-    "-suppress MultiBlockWrite:ReadingOutputModport",
+    "-suppress MultiBlockWrite:ReadingOutputModport:IneffectiveDynamicCast",
     "-warn UndefinedMacro:DupModuleDefn"
 ]
 metrics_dsim_default_simulation_arguments=[

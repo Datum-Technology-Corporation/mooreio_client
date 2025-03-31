@@ -55,11 +55,13 @@ package uvma_mapu_b_pkg;
    `include "uvma_mapu_b_cntxt.sv"
 
    // Sequence Items and Monitor Transactions
-   `include "uvma_mapu_b_seq_item.sv"
+   `include "uvma_mapu_b_op_seq_item.sv"
+   `include "uvma_mapu_b_op_seq_item.sv"
+   `include "uvma_mapu_b_ig_mon_trn.sv"
+   `include "uvma_mapu_b_eg_mon_trn.sv"
    `include "uvma_mapu_b_dpi_seq_item.sv"
    `include "uvma_mapu_b_dpo_seq_item.sv"
    `include "uvma_mapu_b_cp_seq_item.sv"
-   `include "uvma_mapu_b_mon_trn.sv"
    `include "uvma_mapu_b_dpi_mon_trn.sv"
    `include "uvma_mapu_b_dpo_mon_trn.sv"
    `include "uvma_mapu_b_cp_mon_trn.sv"
@@ -79,11 +81,11 @@ package uvma_mapu_b_pkg;
 
    // Sequences
    `include "uvma_mapu_b_base_seq.sv"
+   `include "uvma_mapu_b_ig_mon_seq.sv"
+   `include "uvma_mapu_b_eg_mon_seq.sv"
    `include "uvma_mapu_b_idle_drv_seq.sv"
-   `include "uvma_mapu_b_mon_seq.sv"
-   `include "uvma_mapu_b_in_drv_seq.sv"
-   `include "uvma_mapu_b_out_drv_seq.sv"
-
+   `include "uvma_mapu_b_ig_drv_seq.sv"
+   `include "uvma_mapu_b_eg_drv_seq.sv"
    // pragma uvmx pkg_end begin
    // pragma uvmx pkg_end end
 

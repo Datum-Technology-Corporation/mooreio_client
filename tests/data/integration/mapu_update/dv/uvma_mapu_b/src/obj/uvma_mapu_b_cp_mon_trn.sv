@@ -41,8 +41,6 @@ class uvma_mapu_b_cp_mon_trn_c extends uvmx_mon_trn_c #(
     */
    function new(string name="uvma_mapu_b_cp_mon_trn");
       super.new(name);
-      // pragma uvmx cp_mon_trn_constructor begin
-      // pragma uvmx cp_mon_trn_constructor end
    endfunction
 
    /**

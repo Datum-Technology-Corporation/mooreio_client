@@ -8,19 +8,12 @@
 
 
 /**
- * FSM state space for DUT.
- */
-typedef enum {
-   UVME_mapu_B_FSM_INIT ///< State out of reset
-} uvme_mapu_b_fsm_enum;
-
-
-/**
- * Scoreboard specialization for Data Plane Output Monitor Transactions.
+ * Scoreboard specialization for Egress.
  */
 typedef uvmx_sb_simplex_c #(
-   .T_ACT_TRN(uvma_mapu_b_mon_trn_c)
-) uvme_mapu_b_sb_c;
+   .T_EXP_TRN(uvma_mapu_b_eg_mon_trn_c),
+   .T_ACT_TRN(uvma_mapu_b_eg_mon_trn_c)
+) uvme_mapu_b_egress_sb_c;
 
 
 // pragma uvmx tdefs begin
