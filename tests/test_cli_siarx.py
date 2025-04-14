@@ -83,7 +83,7 @@ class TestCliSiArx(TestBase):
         result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mapu_b", "fix_stim", 1)
 
     @pytest.mark.single_process
-    @pytest.mark.integration
+    #@pytest.mark.integration
     @pytest.mark.dsim
     def test_cli_siarx_gen_project_sim_dsim(self, capsys):
         self.cli_siarx_gen_project_sim_dsim(capsys, 'dsim')
