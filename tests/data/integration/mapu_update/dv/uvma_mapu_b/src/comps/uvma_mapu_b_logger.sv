@@ -11,14 +11,14 @@
  * Component logging to disk metadata from the transactions generated and monitored by uvma_mapu_b_agent_c.
  * @ingroup uvma_mapu_b_comps
  */
-class uvma_mapu_b_logger_c extends uvmx_block_sb_agent_logger_c #(
+class uvma_mapu_b_logger_c extends uvmx_block_agent_logger_c #(
    .T_CFG     (uvma_mapu_b_cfg_c  ),
-   .T_CNTXT   (uvma_mapu_b_cntxt_c),
-   .T_SEQ_ITEM(uvma_mapu_b_op_seq_item_c)
+   .T_CNTXT   (uvma_mapu_b_cntxt_c)
 );
 
    /// @name Loggers
    /// @{
+   uvmx_tlm_logger_c #(uvma_mapu_b_op_seq_item_c)  seq_item_logger; ///< Output port for 'Operation' Sequence Items
    uvmx_tlm_logger_c #(uvma_mapu_b_ig_mon_trn_c)  ig_mon_trn_logger; ///< Logger for Ingress Monitor Transactions.
    uvmx_tlm_logger_c #(uvma_mapu_b_eg_mon_trn_c)  eg_mon_trn_logger; ///< Logger for Egress Monitor Transactions.
    uvmx_tlm_logger_c #(uvma_mapu_b_dpi_seq_item_c)  dpi_seq_item_logger; ///< Logger for Data Plane Input Sequence Items.
@@ -50,6 +50,7 @@ class uvma_mapu_b_logger_c extends uvmx_block_sb_agent_logger_c #(
     * Creates logger components.
     */
    virtual function void create_loggers();
+      seq_item_logger = uvmx_tlm_logger_c #(uvma_mapu_b_op_seq_item_c)::type_id::create("seq_item_logger", this);
       ig_mon_trn_logger = uvmx_tlm_logger_c #(uvma_mapu_b_ig_mon_trn_c)::type_id::create("ig_mon_trn_logger", this);
       eg_mon_trn_logger = uvmx_tlm_logger_c #(uvma_mapu_b_eg_mon_trn_c)::type_id::create("eg_mon_trn_logger", this);
       dpi_seq_item_logger = uvmx_tlm_logger_c #(uvma_mapu_b_dpi_seq_item_c)::type_id::create("dpi_seq_item_logger", this);
@@ -66,6 +67,7 @@ class uvma_mapu_b_logger_c extends uvmx_block_sb_agent_logger_c #(
     * Sets filenames for logger components.
     */
    virtual function void configure_loggers();
+   seq_item_logger.set_filename("seq_item");
       ig_mon_trn_logger.set_filename("ig_mon_trn");
       eg_mon_trn_logger.set_filename("eg_mon_trn");
       dpi_seq_item_logger.set_filename("dpi_seq_item");

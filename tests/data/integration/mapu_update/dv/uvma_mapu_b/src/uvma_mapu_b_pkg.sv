@@ -86,6 +86,7 @@ package uvma_mapu_b_pkg;
    `include "uvma_mapu_b_idle_drv_seq.sv"
    `include "uvma_mapu_b_ig_drv_seq.sv"
    `include "uvma_mapu_b_eg_drv_seq.sv"
+
    // pragma uvmx pkg_end begin
    // pragma uvmx pkg_end end
 

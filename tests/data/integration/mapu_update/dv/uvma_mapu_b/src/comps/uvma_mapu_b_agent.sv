@@ -11,19 +11,19 @@
  * Sequence-based UVM Agent capable of driving/monitoring the Matrix APU Interface (uvma_mapu_b_if).
  * @ingroup uvma_mapu_b_comps
  */
-class uvma_mapu_b_agent_c extends uvmx_block_sb_agent_c #(
-   .T_VIF      (virtual uvma_mapu_b_if),
-   .T_CFG      (uvma_mapu_b_cfg_c     ),
-   .T_CNTXT    (uvma_mapu_b_cntxt_c   ),
-   .T_SEQ_ITEM (uvma_mapu_b_op_seq_item_c),
-   .T_SQR      (uvma_mapu_b_sqr_c     ),
-   .T_DRV      (uvma_mapu_b_drv_c     ),
-   .T_MON      (uvma_mapu_b_mon_c     ),
-   .T_LOGGER   (uvma_mapu_b_logger_c  )
+class uvma_mapu_b_agent_c extends uvmx_block_agent_c #(
+   .T_VIF    (virtual uvma_mapu_b_if),
+   .T_CFG    (uvma_mapu_b_cfg_c     ),
+   .T_CNTXT  (uvma_mapu_b_cntxt_c   ),
+   .T_SQR    (uvma_mapu_b_sqr_c     ),
+   .T_DRV    (uvma_mapu_b_drv_c     ),
+   .T_MON    (uvma_mapu_b_mon_c     ),
+   .T_LOGGER (uvma_mapu_b_logger_c  )
 );
 
    /// @name Ports
    /// @{
+   uvm_analysis_port #(uvma_mapu_b_op_seq_item_c)  seq_item_ap; ///< Output port for 'Operation' Sequence Items
    uvm_analysis_port #(uvma_mapu_b_ig_mon_trn_c)  ig_mon_trn_ap; ///< Ingress: Input of matrix operation
    uvm_analysis_port #(uvma_mapu_b_eg_mon_trn_c)  eg_mon_trn_ap; ///< Egress: Output of matrix operation
    uvm_analysis_port #(uvma_mapu_b_dpi_seq_item_c)  dpi_seq_item_ap; ///< Output port for Data Plane Input Sequence Items
@@ -67,6 +67,7 @@ class uvma_mapu_b_agent_c extends uvmx_block_sb_agent_c #(
     * Connects top-level ports to lower-level components'.
     */
    virtual function void connect_ports();
+      seq_item_ap = sequencer.ap;
       ig_mon_trn_ap = sequencer.ig_mon_trn_fifo.put_ap;
       eg_mon_trn_ap = sequencer.eg_mon_trn_fifo.put_ap;
       dpi_seq_item_ap = sequencer.dpi_sequencer.ap;
@@ -81,6 +82,7 @@ class uvma_mapu_b_agent_c extends uvmx_block_sb_agent_c #(
     * Connects loggers to ports.
     */
    virtual function void connect_logger();
+      seq_item_ap.connect(logger.seq_item_logger.analysis_export);
       ig_mon_trn_ap.connect(logger.ig_mon_trn_logger.analysis_export);
       eg_mon_trn_ap.connect(logger.eg_mon_trn_logger.analysis_export);
       dpi_seq_item_ap.connect(logger.dpi_seq_item_logger.analysis_export);

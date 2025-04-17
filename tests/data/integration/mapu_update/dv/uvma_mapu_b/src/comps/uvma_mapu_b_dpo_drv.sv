@@ -34,8 +34,6 @@ class uvma_mapu_b_dpo_drv_c extends uvmx_mp_drv_c #(
     */
    function new(string name="uvma_mapu_b_dpo_drv", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx dpo_drv_constructor begin
-      // pragma uvmx dpo_drv_constructor end
    endfunction
 
    /**

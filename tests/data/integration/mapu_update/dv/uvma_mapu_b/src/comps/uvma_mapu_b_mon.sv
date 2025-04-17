@@ -11,7 +11,7 @@
  * Component sampling Monitor Transactions from Matrix APU Interface (uvma_mapu_b_if).
  * @ingroup uvma_mapu_b_comps
  */
-class uvma_mapu_b_mon_c extends uvmx_block_sb_mon_c #(
+class uvma_mapu_b_mon_c extends uvmx_block_mon_c #(
    .T_CFG  (uvma_mapu_b_cfg_c  ),
    .T_CNTXT(uvma_mapu_b_cntxt_c)
 );

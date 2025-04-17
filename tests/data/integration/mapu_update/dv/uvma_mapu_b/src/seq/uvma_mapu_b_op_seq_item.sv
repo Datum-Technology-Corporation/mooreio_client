@@ -11,7 +11,7 @@
  * Operation: Operation on 2 matrices
  * @ingroup uvma_mapu_b_seq
  */
-class uvma_mapu_b_op_seq_item_c extends uvmx_block_sb_seq_item_c #(
+class uvma_mapu_b_op_seq_item_c extends uvmx_block_seq_item_c #(
    .T_CFG  (uvma_mapu_b_cfg_c  ),
    .T_CNTXT(uvma_mapu_b_cntxt_c)
 );

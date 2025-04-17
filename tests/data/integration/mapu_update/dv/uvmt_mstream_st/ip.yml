@@ -1,0 +1,33 @@
+ip:
+  sync: true
+  sync_id: 2
+  pkg_type: dv_tb
+  vendor: "datron"
+  name: "uvmt_mstream_st"
+  full_name: "Matrix Stream Interface UVM Agent Self-Test Bench"
+  version: "1.0.0"
+
+dependencies:
+  "datum/uvmx": ">=1.0"
+  "datum/uvma_clk": ">=1.0"
+  "datum/uvma_reset": ">=1.0"
+  "datron/uvma_mstream": "*"
+  "datron/uvme_mstream_st": "*"
+
+structure:
+  docs_path    : "docs"
+  examples_path: "examples"
+  hdl_src_path : "src"
+
+hdl_src:
+  directories: [".", "tests"]
+  top_sv_files: ["uvmt_mstream_st_pkg.sv"]
+  top: ["uvmt_mstream_st_tb", "uvmx_sim_summary"]
+  tests_path: "tests"
+  tests_name_template: "uvmt_mstream_st_{{ name }}_test_c"
+
+targets:
+  default:
+    dut: default
+    cmp:
+      UVMT_MSTREAM_B_DATA_WIDTH: 32

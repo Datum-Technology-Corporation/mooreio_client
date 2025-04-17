@@ -77,8 +77,8 @@ class uvma_mapu_b_dpo_seq_item_c extends uvmx_seq_item_c #(
       // pragma uvmx dpo_seq_item_get_metadata end
    endfunction
 
-   // pragma uvmx seq_item_methods begin
-   // pragma uvmx seq_item_methods end
+   // pragma uvmx dpo_seq_item_methods begin
+   // pragma uvmx dpo_seq_item_methods end
 
 endclass
 

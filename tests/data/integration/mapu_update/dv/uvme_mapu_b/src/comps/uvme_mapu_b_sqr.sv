@@ -11,7 +11,7 @@
  * Sequencer running Matrix APU Block Environment Sequences extending uvme_mapu_b_base_seq_c.
  * @ingroup uvme_mapu_b_comps
  */
-class uvme_mapu_b_sqr_c extends uvmx_block_sb_env_sqr_c #(
+class uvme_mapu_b_sqr_c extends uvmx_block_env_sqr_c #(
    .T_CFG  (uvme_mapu_b_cfg_c  ),
    .T_CNTXT(uvme_mapu_b_cntxt_c)
 );

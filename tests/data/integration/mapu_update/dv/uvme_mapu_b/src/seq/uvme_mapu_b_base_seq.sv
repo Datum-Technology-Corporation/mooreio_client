@@ -8,10 +8,10 @@
 
 
 /**
- * Abstract Sequence from which all Matrix APU Block Self-Test Environment Virtual Sequences extend.
+ * Abstract Sequence from which all Matrix APU Block Environment Virtual Sequences extend.
  * @ingroup uvme_mapu_b_seq
  */
-class uvme_mapu_b_base_seq_c extends uvmx_block_sb_env_seq_c #(
+class uvme_mapu_b_base_seq_c extends uvmx_block_env_seq_c #(
    .T_CFG  (uvme_mapu_b_cfg_c  ),
    .T_CNTXT(uvme_mapu_b_cntxt_c),
    .T_SQR  (uvme_mapu_b_sqr_c  )

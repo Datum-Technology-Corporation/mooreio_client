@@ -15,7 +15,7 @@ class uvmt_mapu_b_fix_stim_test_c extends uvmt_mapu_b_base_test_c;
 
    /// @name Sequences
    /// @{
-   rand uvme_mapu_b_fix_stim_seq_c  fix_stim_seq; ///< Fixed Stimulus
+   rand uvme_mapu_b_fix_stim_seq_c  fix_stim_seq; ///< 
    /// @}
 
    // pragma uvmx fix_stim_test_fields begin

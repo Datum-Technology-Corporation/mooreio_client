@@ -13,7 +13,7 @@
  * @ingroup uvma_mapu_b_pkg
  */
 interface uvma_mapu_b_if #(
-   parameter DATA_WIDTH = `UVMA_MAPU_B_DATA_WIDTH_MAX
+   parameter int unsigned DATA_WIDTH = `UVMA_MAPU_B_DATA_WIDTH_MAX
 ) (
    input  clk, ///< Clock: System clock
    input  reset_n ///< Reset: System reset

@@ -8,10 +8,10 @@
 
 
 /**
- * Matrix APU Block UVM Environment with TLM self-checking scoreboards and prediction.
+ * Matrix APU Block UVM Environment with TLM prediction.
  * @ingroup uvme_mapu_b_comps
  */
-class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
+class uvme_mapu_b_env_c extends uvmx_block_env_c #(
    .T_CFG      (uvme_mapu_b_cfg_c      ),
    .T_CNTXT    (uvme_mapu_b_cntxt_c    ),
    .T_SQR      (uvme_mapu_b_sqr_c      ),
@@ -23,6 +23,13 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
    /// @name Agents
    /// @{
    uvma_mapu_b_agent_c  agent; ///< Block agent
+   /// @}
+
+   /// @name Ports
+   /// @{
+   uvm_analysis_port #(uvma_mapu_b_ig_mon_trn_c)  monitored_ig_ap; ///< Monitored ingress
+   uvm_analysis_port #(uvma_mapu_b_eg_mon_trn_c)  monitored_eg_ap; ///< Monitored egress
+   uvm_analysis_port #(uvma_mapu_b_eg_mon_trn_c)  predicted_eg_ap; ///< Predicted egress
    /// @}
 
    // pragma uvmx env_fields begin
@@ -89,21 +96,27 @@ class uvme_mapu_b_env_c extends uvmx_block_sb_env_c #(
    endfunction
 
    /**
-    * Connects environment coverage model to agents/predictor/scoreboard.
+    * Connects environment coverage model to agent/predictor.
     */
    virtual function void connect_coverage_model();
       agent.seq_item_ap.connect(cov_model.agent_op_seq_item_fifo.analysis_export);
       agent.ig_mon_trn_ap.connect(cov_model.agent_ig_mon_trn_fifo.analysis_export);
-      agent.eg_mon_trn_ap.connect(cov_model.agent_eg_mon_trn_fifo.analysis_export);
       predictor.eg_ap.connect(cov_model.predictor_eg_mon_trn_fifo.analysis_export);
-      agent.dpi_seq_item_ap.connect(cov_model.agent_dpi_seq_item_fifo.analysis_export);
-      agent.dpo_seq_item_ap.connect(cov_model.agent_dpo_seq_item_fifo.analysis_export);
-      agent.cp_seq_item_ap.connect(cov_model.agent_cp_seq_item_fifo.analysis_export);
-      agent.dpi_mon_trn_ap.connect(cov_model.agent_dpi_mon_trn_fifo.analysis_export);
-      agent.dpo_mon_trn_ap.connect(cov_model.agent_dpo_mon_trn_fifo.analysis_export);
-      agent.cp_mon_trn_ap.connect(cov_model.agent_cp_mon_trn_fifo.analysis_export);
+      agent.cp_seq_item_ap.connect(cov_model.agent_cp_stim_seq_item_fifo.analysis_export);
+      agent.cp_mon_trn_ap.connect(cov_model.agent_cp_mon_mon_trn_fifo.analysis_export);
       // pragma uvmx env_connect_coverage_model begin
       // pragma uvmx env_connect_coverage_model end
+   endfunction
+
+   /**
+    * Connects environment output ports to components.
+    */
+   virtual function void connect_ports();
+      monitored_ig_ap = agent.ig_mon_trn_ap;
+      monitored_eg_ap = agent.eg_mon_trn_ap;
+      predicted_eg_ap = predictor.eg_ap;
+      // pragma uvmx env_connect_ports begin
+      // pragma uvmx env_connect_ports end
    endfunction
 
    /**

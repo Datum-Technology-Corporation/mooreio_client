@@ -64,7 +64,7 @@ class uvme_mapu_b_rand_stim_seq_c extends uvme_mapu_b_base_seq_c;
 
    // pragma uvmx rand_stim_seq_body begin
    /**
-    * TODO Implement uvme_{{ ip_name }}_b_{{ current_seq.name }}_seq_c::body()
+    * TODO Describe uvme_mapu_b_rand_stim_seq_c::body()
     */
    virtual task body();
       uvma_mapu_b_op_seq_item_c  seq_item;

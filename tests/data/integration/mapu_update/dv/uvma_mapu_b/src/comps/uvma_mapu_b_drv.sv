@@ -11,7 +11,7 @@
  * Component driving Matrix APU Interface (uvma_mapu_b_if) for all planes.
  * @ingroup uvma_mapu_b_comps
  */
-class uvma_mapu_b_drv_c extends uvmx_block_sb_drv_c #(
+class uvma_mapu_b_drv_c extends uvmx_block_drv_c #(
    .T_CFG  (uvma_mapu_b_cfg_c  ),
    .T_CNTXT(uvma_mapu_b_cntxt_c)
 );
@@ -38,8 +38,6 @@ class uvma_mapu_b_drv_c extends uvmx_block_sb_drv_c #(
     */
    function new(string name="uvma_mapu_b_drv", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx drv_constructor begin
-      // pragma uvmx drv_constructor end
    endfunction
 
    /**

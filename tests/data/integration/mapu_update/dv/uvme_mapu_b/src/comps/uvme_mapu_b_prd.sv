@@ -8,10 +8,10 @@
 
 
 /**
- * Component implementing TLM scoreboard prediction of Matrix APU DUT behavior.
+ * Component implementing TLM prediction/checking of Matrix APU Block behavior.
  * @ingroup uvme_mapu_b_comps
  */
-class uvme_mapu_b_prd_c extends uvmx_block_sb_prd_c #(
+class uvme_mapu_b_prd_c extends uvmx_block_prd_c #(
    .T_CFG  (uvme_mapu_b_cfg_c  ),
    .T_CNTXT(uvme_mapu_b_cntxt_c)
 );
@@ -25,7 +25,6 @@ class uvme_mapu_b_prd_c extends uvmx_block_sb_prd_c #(
    /// @{
    uvm_analysis_port #(uvma_mapu_b_eg_mon_trn_c)  eg_ap; ///< Port producing predicted Egress Monitor Transactions.
    /// @}
-
    // pragma uvmx prd_fields begin
    // pragma uvmx prd_fields end
 
@@ -60,12 +59,11 @@ class uvme_mapu_b_prd_c extends uvmx_block_sb_prd_c #(
       // pragma uvmx prd_create_ports begin
       // pragma uvmx prd_create_ports end
    endfunction
-
-   // pragma uvmx prd_predict_dox begin
+   // pragma uvmx prd_dox begin
    /**
     * TODO Implement uvme_mapu_b_prd_c::predict()
     */
-   // pragma uvmx prd_predict_dox end
+   // pragma uvmx prd_dox end
    virtual task predict();
       // pragma uvmx prd_predict begin
       uvma_mapu_b_ig_mon_trn_c  ig_a_trn, ig_b_trn;

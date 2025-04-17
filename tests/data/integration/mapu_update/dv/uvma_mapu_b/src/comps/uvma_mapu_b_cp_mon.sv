@@ -34,8 +34,6 @@ class uvma_mapu_b_cp_mon_c extends uvmx_mp_mon_c #(
     */
    function new(string name="uvma_mapu_b_cp_mon", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx cp_mon_constructor begin
-      // pragma uvmx cp_mon_constructor end
    endfunction
 
    /**

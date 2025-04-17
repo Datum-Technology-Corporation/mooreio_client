@@ -11,7 +11,7 @@
  * Component encapsulating scoreboarding components for Matrix APU Block.
  * @ingroup uvme_mapu_b_comps
  */
-class uvme_mapu_b_sb_c extends uvmx_block_sb_sb_c #(
+class uvme_mapu_b_sb_c extends uvmx_block_sb_c #(
    .T_CFG  (uvme_mapu_b_cfg_c  ),
    .T_CNTXT(uvme_mapu_b_cntxt_c)
 );

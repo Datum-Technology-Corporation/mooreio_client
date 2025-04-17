@@ -42,7 +42,7 @@ typedef uvmx_sqr_c #(
  * Sequencer running Matrix APU Agent Sequences extending uvma_mapu_b_base_seq_c.
  * @ingroup uvma_mapu_b_comps
  */
-class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
+class uvma_mapu_b_sqr_c extends uvmx_block_agent_sqr_c #(
    .T_CFG     (uvma_mapu_b_cfg_c  ),
    .T_CNTXT   (uvma_mapu_b_cntxt_c),
    .T_SEQ_ITEM(uvma_mapu_b_op_seq_item_c)
@@ -50,9 +50,9 @@ class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
 
    /// @name Components
    /// @{
-   uvma_mapu_b_dpi_sqr_c   dpi_sequencer; ///< Data Plane Input Sequencer connected to uvma_mapu_b_dpi_drv_c.
-   uvma_mapu_b_dpo_sqr_c   dpo_sequencer; ///< Data Plane Output Sequencer connected to uvma_mapu_b_dpo_drv_c.
-   uvma_mapu_b_cp_sqr_c   cp_sequencer; ///< Control Plane Sequencer connected to uvma_mapu_b_cp_drv_c.
+   uvma_mapu_b_dpi_sqr_c  dpi_sequencer; ///< Data Plane Input Sequencer connected to uvma_mapu_b_dpi_drv_c.
+   uvma_mapu_b_dpo_sqr_c  dpo_sequencer; ///< Data Plane Output Sequencer connected to uvma_mapu_b_dpo_drv_c.
+   uvma_mapu_b_cp_sqr_c  cp_sequencer; ///< Control Plane Sequencer connected to uvma_mapu_b_cp_drv_c.
    /// @}
 
    /// @name FIFOs
@@ -88,8 +88,8 @@ class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
       dpi_sequencer = uvma_mapu_b_dpi_sqr_c::type_id::create("dpi_sequencer", this);
       dpo_sequencer = uvma_mapu_b_dpo_sqr_c::type_id::create("dpo_sequencer", this);
       cp_sequencer = uvma_mapu_b_cp_sqr_c::type_id::create("cp_sequencer", this);
-      // pragma uvmx mon_create_sequencers begin
-      // pragma uvmx mon_create_sequencers end
+      // pragma uvmx sqr_create_sequencers begin
+      // pragma uvmx sqr_create_sequencers end
    endfunction
 
    /**
@@ -101,8 +101,8 @@ class uvma_mapu_b_sqr_c extends uvmx_block_sb_agent_sqr_c #(
       dpi_mon_trn_fifo = new("dpi_mon_trn_fifo", this);
       dpo_mon_trn_fifo = new("dpo_mon_trn_fifo", this);
       cp_mon_trn_fifo = new("cp_mon_trn_fifo", this);
-      // pragma uvmx mon_create_fifos begin
-      // pragma uvmx mon_create_fifos end
+      // pragma uvmx sqr_create_fifos begin
+      // pragma uvmx sqr_create_fifos end
    endfunction
 
    // pragma uvmx sqr_methods begin

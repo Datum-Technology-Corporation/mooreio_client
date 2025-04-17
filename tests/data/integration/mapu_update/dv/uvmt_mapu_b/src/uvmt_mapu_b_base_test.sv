@@ -12,7 +12,7 @@
  * Subclasses must provide stimulus via sequencer by implementing UVM runtime phases.
  * @ingroup uvmt_mapu_b_tests
  */
-class uvmt_mapu_b_base_test_c extends uvmx_block_sb_test_c #(
+class uvmt_mapu_b_base_test_c extends uvmx_block_test_c #(
    .T_CFG      (uvmt_mapu_b_test_cfg_c),
    .T_ENV_CFG  (uvme_mapu_b_cfg_c     ),
    .T_ENV_CNTXT(uvme_mapu_b_cntxt_c   ),

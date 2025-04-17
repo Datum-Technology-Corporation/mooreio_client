@@ -11,7 +11,7 @@
  * Object encapsulating common configuration parameters for Matrix APU Block Tests.
  * @ingroup uvmt_mapu_b_tests
  */
-class uvmt_mapu_b_test_cfg_c extends uvmx_block_sb_test_cfg_c;
+class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
 
    /// @name Knobs
    /// @{
@@ -138,19 +138,19 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_sb_test_cfg_c;
     * Processes Command Line Interface arguments.
     */
    virtual function void process_cli_args();
-      `uvmx_cli_arg_parse("UVMT_MAPU_B_NUM_ITEMS", cli_num_items_override)
+      `uvmx_cli_arg_parse("NUM_ITEMS", cli_num_items_override)
       if (cli_num_items_override) begin
          `uvmx_cli_int_val(cli_arg_str, cli_num_items)
       end
-      `uvmx_cli_arg_parse("UVMT_MAPU_B_NUM_ERRORS", cli_num_errors_override)
+      `uvmx_cli_arg_parse("NUM_ERRORS", cli_num_errors_override)
       if (cli_num_errors_override) begin
          `uvmx_cli_int_val(cli_arg_str, cli_num_errors)
       end
-      `uvmx_cli_arg_parse("UVMT_MAPU_B_MIN_GAP", cli_min_gap_override)
+      `uvmx_cli_arg_parse("MIN_GAP", cli_min_gap_override)
       if (cli_min_gap_override) begin
          `uvmx_cli_int_val(cli_arg_str, cli_min_gap)
       end
-      `uvmx_cli_arg_parse("UVMT_MAPU_B_MAX_GAP", cli_max_gap_override)
+      `uvmx_cli_arg_parse("MAX_GAP", cli_max_gap_override)
       if (cli_max_gap_override) begin
          `uvmx_cli_int_val(cli_arg_str, cli_max_gap)
       end

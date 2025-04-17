@@ -11,23 +11,18 @@
  * Component encapsulating Matrix APU Block's functional coverage model.
  * @ingroup uvme_mapu_b_comps
  */
-class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
+class uvme_mapu_b_cov_model_c extends uvmx_block_env_cov_model_c #(
    .T_CFG  (uvme_mapu_b_cfg_c  ),
    .T_CNTXT(uvme_mapu_b_cntxt_c)
 );
 
    /// @name FIFOs
    /// @{
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_op_seq_item_c)  agent_op_seq_item_fifo; ///< Input FIFO for Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_ig_mon_trn_c)  agent_ig_mon_trn_fifo; ///< Input FIFO for Agent Ingress Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  agent_eg_mon_trn_fifo; ///< Input FIFO for Agent Egress Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  predictor_eg_mon_trn_fifo; ///< Input FIFO for Predictor Egress Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpi_seq_item_c)  agent_dpi_seq_item_fifo; ///< Input FIFO for Agent Data Plane Input Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpo_seq_item_c)  agent_dpo_seq_item_fifo; ///< Input FIFO for Agent Data Plane Output Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_seq_item_c)  agent_cp_seq_item_fifo; ///< Input FIFO for Agent Control Plane Sequence Items.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpi_mon_trn_c)  agent_dpi_mon_trn_fifo; ///< Input FIFO for Agent Data Plane Input Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_dpo_mon_trn_c)  agent_dpo_mon_trn_fifo; ///< Input FIFO for Agent Data Plane Output Monitor Transactions.
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_mon_trn_c)  agent_cp_mon_trn_fifo; ///< Input FIFO for Agent Control Plane Monitor Transactions.
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_op_seq_item_c)  agent_op_seq_item_fifo; ///< Agent operation
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_ig_mon_trn_c)  agent_ig_mon_trn_fifo; ///< Agent ingress
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  predictor_eg_mon_trn_fifo; ///< Predictor egress
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_seq_item_c)  agent_cp_stim_seq_item_fifo; ///< Agent Control Plane stimulus
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_mon_trn_c)  agent_cp_mon_mon_trn_fifo; ///< Agent Control Plane monitoring
    /// @}
 
    // pragma uvmx cov_model_fields begin
@@ -127,16 +122,11 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
     * Creates TLM FIFOs.
     */
    virtual function void create_fifos();
-      agent_op_seq_item_fifo = new("op_seq_item_fifo", this);
-      agent_ig_mon_trn_fifo = new("ig_mon_trn_fifo", this);
-      agent_eg_mon_trn_fifo = new("eg_mon_trn_fifo", this);
-      predictor_eg_mon_trn_fifo = new("eg_mon_trn_fifo", this);
-      agent_dpi_seq_item_fifo = new("dpi_seq_item_fifo", this);
-      agent_dpo_seq_item_fifo = new("dpo_seq_item_fifo", this);
-      agent_cp_seq_item_fifo = new("cp_seq_item_fifo", this);
-      agent_dpi_mon_trn_fifo = new("dpi_mon_trn_fifo", this);
-      agent_dpo_mon_trn_fifo = new("dpo_mon_trn_fifo", this);
-      agent_cp_mon_trn_fifo = new("cp_mon_trn_fifo", this);
+      agent_op_seq_item_fifo = new("agent_op_seq_item_fifo", this);
+      agent_ig_mon_trn_fifo = new("agent_ig_mon_trn_fifo", this);
+      predictor_eg_mon_trn_fifo = new("predictor_eg_mon_trn_fifo", this);
+      agent_cp_stim_seq_item_fifo = new("agent_cp_stim_seq_item_fifo", this);
+      agent_cp_mon_mon_trn_fifo = new("agent_cp_mon_mon_trn_fifo", this);
       // pragma uvmx cov_model_create_fifos begin
       // pragma uvmx cov_model_create_fifos end
    endfunction
@@ -164,11 +154,11 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_sb_env_cov_model_c #(
             mapu_b_eg_mon_trn_cg.sample();
          end
          forever begin
-            agent_cp_seq_item_fifo.get(agent_cp_seq_item);
+            agent_cp_stim_seq_item_fifo.get(agent_cp_seq_item);
             mapu_b_cp_seq_item_cg.sample();
          end
          forever begin
-            agent_cp_mon_trn_fifo.get(agent_cp_mon_trn);
+            agent_cp_mon_mon_trn_fifo.get(agent_cp_mon_trn);
             mapu_b_cp_mon_trn_cg.sample();
          end
       join

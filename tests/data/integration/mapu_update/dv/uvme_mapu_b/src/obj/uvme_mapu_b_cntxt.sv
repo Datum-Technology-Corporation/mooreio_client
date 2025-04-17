@@ -11,7 +11,7 @@
  * Object encapsulating all state variables for Matrix APU Block environment (uvme_mapu_b_env_c).
  * @ingroup uvme_mapu_b_obj
  */
-class uvme_mapu_b_cntxt_c extends uvmx_block_sb_env_cntxt_c #(
+class uvme_mapu_b_cntxt_c extends uvmx_block_env_cntxt_c #(
    .T_CFG(uvme_mapu_b_cfg_c)
 );
 

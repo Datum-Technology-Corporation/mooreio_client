@@ -11,7 +11,7 @@
  * Object encapsulating all state variables for all Matrix APU Agent (uvma_mapu_b_agent_c) components.
  * @ingroup uvma_mapu_b_obj
  */
-class uvma_mapu_b_cntxt_c extends uvmx_block_sb_agent_cntxt_c #(
+class uvma_mapu_b_cntxt_c extends uvmx_block_agent_cntxt_c #(
    .T_CFG(uvma_mapu_b_cfg_c     ),
    .T_VIF(virtual uvma_mapu_b_if)
 );

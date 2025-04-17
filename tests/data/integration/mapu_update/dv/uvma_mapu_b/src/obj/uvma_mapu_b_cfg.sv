@@ -11,7 +11,7 @@
  * Object encapsulating all parameters for creating, connecting and running all Matrix APU Agent (uvma_mapu_b_agent_c) components.
  * @ingroup uvma_mapu_b_obj
  */
-class uvma_mapu_b_cfg_c extends uvmx_block_sb_agent_cfg_c;
+class uvma_mapu_b_cfg_c extends uvmx_block_agent_cfg_c;
 
    /// @name Settings
    /// @{
