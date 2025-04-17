@@ -26,30 +26,16 @@ typedef enum bit {
 
 /// @name Logic vectors
 /// @{
-typedef logic  uvma_mstream_ig_vld_l_t; ///< Ingress Valid logic vector
-typedef logic  uvma_mstream_ig_rdy_l_t; ///< Ingress Ready logic vector
-typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r0_l_t; ///< Ingress Data Row 0 logic vector
-typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r1_l_t; ///< Ingress Data Row 1 logic vector
-typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r2_l_t; ///< Ingress Data Row 2 logic vector
-typedef logic  uvma_mstream_eg_vld_l_t; ///< Egress Valid logic vector
-typedef logic  uvma_mstream_eg_rdy_l_t; ///< Egress Ready logic vector
-typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r0_l_t; ///< Egress Data Row 0 logic vector
-typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r1_l_t; ///< Egress Data Row 1 logic vector
-typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r2_l_t; ///< Egress Data Row 2 logic vector
-/// @}
-
-/// @name Bit vectors
-/// @{
-typedef bit  uvma_mstream_ig_vld_b_t; ///< Ingress Valid bit vector
-typedef bit  uvma_mstream_ig_rdy_b_t; ///< Ingress Ready bit vector
-typedef bit [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r0_b_t; ///< Ingress Data Row 0 bit vector
-typedef bit [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r1_b_t; ///< Ingress Data Row 1 bit vector
-typedef bit [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r2_b_t; ///< Ingress Data Row 2 bit vector
-typedef bit  uvma_mstream_eg_vld_b_t; ///< Egress Valid bit vector
-typedef bit  uvma_mstream_eg_rdy_b_t; ///< Egress Ready bit vector
-typedef bit [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r0_b_t; ///< Egress Data Row 0 bit vector
-typedef bit [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r1_b_t; ///< Egress Data Row 1 bit vector
-typedef bit [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r2_b_t; ///< Egress Data Row 2 bit vector
+typedef logic  uvma_mstream_ig_vld_t; ///< Ingress Valid logic vector
+typedef logic  uvma_mstream_ig_rdy_t; ///< Ingress Ready logic vector
+typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r0_t; ///< Ingress Data Row 0 logic vector
+typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r1_t; ///< Ingress Data Row 1 logic vector
+typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_ig_r2_t; ///< Ingress Data Row 2 logic vector
+typedef logic  uvma_mstream_eg_vld_t; ///< Egress Valid logic vector
+typedef logic  uvma_mstream_eg_rdy_t; ///< Egress Ready logic vector
+typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r0_t; ///< Egress Data Row 0 logic vector
+typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r1_t; ///< Egress Data Row 1 logic vector
+typedef logic [(`UVMA_MSTREAM_DATA_WIDTH_MAX-1):0]  uvma_mstream_eg_r2_t; ///< Egress Data Row 2 logic vector
 /// @}
 
 // pragma uvmx tdefs begin

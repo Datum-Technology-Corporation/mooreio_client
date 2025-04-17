@@ -42,6 +42,16 @@ class uvma_mapu_b_cntxt_c extends uvmx_block_agent_cntxt_c #(
       super.new(name);
    endfunction
 
+   // pragma uvmx cntxt_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx cntxt_seq_build_dox end
+   virtual function void build(uvma_mapu_b_cfg_c cfg);
+      // pragma uvmx cntxt_build begin
+      // pragma uvmx cntxt_build end
+   endfunction
+
    /**
     * Sets all state variables to initial values.
     */

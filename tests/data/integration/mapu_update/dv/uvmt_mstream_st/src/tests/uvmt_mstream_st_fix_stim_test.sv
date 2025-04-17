@@ -15,7 +15,7 @@ class uvmt_mstream_st_fix_stim_test_c extends uvmt_mstream_st_base_test_c;
 
    /// @name Sequences
    /// @{
-   rand uvme_mstream_st_fix_stim_seq_c  fix_stim_seq; ///< 
+   rand uvme_mstream_st_fix_stim_seq_c  fix_stim_seq; ///< Fixed Stimulus
    /// @}
 
    // pragma uvmx fix_stim_test_fields begin
@@ -51,6 +51,8 @@ class uvmt_mstream_st_fix_stim_test_c extends uvmt_mstream_st_base_test_c;
     */
    virtual function void create_sequences();
       fix_stim_seq = uvme_mstream_st_fix_stim_seq_c::type_id::create("fix_stim_seq");
+      // pragma uvmx fix_stim_create_sequences begin
+      // pragma uvmx fix_stim_create_sequences end
    endfunction
 
    // pragma uvmx fix_stim_test_post_randomize_work begin

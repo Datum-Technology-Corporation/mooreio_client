@@ -244,7 +244,7 @@ class SiArxService(Service):
             for package in ip.packages:
                 for file in package.files:
                     extracted_file_path: Path = package.extract_path / file.path
-                    current_file_path: Path = self.rmh.project_root_path / package.path / file.path
+                    current_file_path: Path = self.rmh.project_root_path / package.path / file.path # TODO Replace with IP location obtained from DB (if IP exists)
                     if self.rmh.file_exists(current_file_path) and file.replace_user_file:
                         try:
                             user_file_sections = self.find_user_file_sections(current_file_path)

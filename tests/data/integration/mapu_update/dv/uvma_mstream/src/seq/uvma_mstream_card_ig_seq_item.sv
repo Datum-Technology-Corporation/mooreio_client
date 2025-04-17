@@ -18,15 +18,15 @@ class uvma_mstream_card_ig_seq_item_c extends uvmx_seq_item_c #(
 
    /// @name Driven Signals
    /// @{
-   rand uvma_mstream_ig_rdy_b_t  ig_rdy; ///< Ingress Ready
+   rand uvma_mstream_ig_rdy_t  ig_rdy; ///< Ingress Ready
    /// @}
 
    /// @name Monitored Signals (following edge)
    /// @{
-   uvma_mstream_ig_vld_l_t  ig_vld; ///< Ingress Valid
-   uvma_mstream_ig_r0_l_t  ig_r0; ///< Ingress Data Row 0
-   uvma_mstream_ig_r1_l_t  ig_r1; ///< Ingress Data Row 1
-   uvma_mstream_ig_r2_l_t  ig_r2; ///< Ingress Data Row 2
+   uvma_mstream_ig_vld_t  ig_vld; ///< Ingress Valid
+   uvma_mstream_ig_r0_t  ig_r0; ///< Ingress Data Row 0
+   uvma_mstream_ig_r1_t  ig_r1; ///< Ingress Data Row 1
+   uvma_mstream_ig_r2_t  ig_r2; ///< Ingress Data Row 2
    /// @}
 
    // pragma uvmx card_ig_seq_item_fields begin

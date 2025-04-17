@@ -69,15 +69,25 @@ class uvme_mstream_st_rand_stim_seq_c extends uvme_mstream_st_base_seq_c;
       super.new(name);
    endfunction
 
-   // pragma uvmx rand_stim_seq_create_sequences begin
+   // pragma uvmx functional_rand_stim_seq_build_dox begin
    /**
-    * TODO Implement uvme_mstream_st_rand_stim_seq_c::create_sequences()
+    * Empty
     */
-   virtual function void create_sequences();
-      ig_seq = uvma_mstream_pkt_rand_stim_seq_c::type_id::create("ig_seq");
-      eg_seq = uvma_mstream_pkt_rand_stim_seq_c::type_id::create("eg_seq");
+   // pragma uvmx functional_rand_stim_seq_build_dox end
+   virtual function void build();
+      // pragma uvmx functional_rand_stim_seq_build begin
+      // pragma uvmx functional_rand_stim_seq_build end
    endfunction
-   // pragma uvmx rand_stim_seq_create_sequences end
+
+   // pragma uvmx functional_rand_stim_seq_create_sequences_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx functional_rand_stim_seq_create_sequences_dox end
+   virtual function void create_sequences();
+      // pragma uvmx functional_rand_stim_seq_create_sequences begin
+      // pragma uvmx functional_rand_stim_seq_create_sequences end
+   endfunction
 
    // pragma uvmx rand_stim_seq_post_randomize_work begin
    /**

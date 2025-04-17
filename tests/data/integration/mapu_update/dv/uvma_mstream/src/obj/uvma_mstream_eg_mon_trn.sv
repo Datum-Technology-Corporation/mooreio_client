@@ -18,11 +18,11 @@ class uvma_mstream_eg_mon_trn_c extends uvmx_mon_trn_c #(
 
    /// @name Data
    /// @{
-   uvma_mstream_eg_vld_l_t  eg_vld; ///< Egress Valid
-   uvma_mstream_eg_rdy_l_t  eg_rdy; ///< Egress Ready
-   uvma_mstream_eg_r0_l_t  eg_r0; ///< Egress Data Row 0
-   uvma_mstream_eg_r1_l_t  eg_r1; ///< Egress Data Row 1
-   uvma_mstream_eg_r2_l_t  eg_r2; ///< Egress Data Row 2
+   uvma_mstream_eg_vld_t  eg_vld; ///< Egress Valid
+   uvma_mstream_eg_rdy_t  eg_rdy; ///< Egress Ready
+   uvma_mstream_eg_r0_t  eg_r0; ///< Egress Data Row 0
+   uvma_mstream_eg_r1_t  eg_r1; ///< Egress Data Row 1
+   uvma_mstream_eg_r2_t  eg_r2; ///< Egress Data Row 2
    /// @}
 
    // pragma uvmx eg_mon_trn_fields begin

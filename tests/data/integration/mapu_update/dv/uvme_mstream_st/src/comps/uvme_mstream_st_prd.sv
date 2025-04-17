@@ -72,11 +72,12 @@ class uvme_mstream_st_prd_c extends uvmx_agent_prd_c #(
       // pragma uvmx prd_create_ports begin
       // pragma uvmx prd_create_ports end
    endfunction
-   // pragma uvmx prd_dox begin
+
+   // pragma uvmx prd_predict_dox begin
    /**
     * TODO Implement uvme_mstream_st_prd_c::predict()
     */
-   // pragma uvmx prd_dox end
+   // pragma uvmx prd_predict_dox end
    virtual task predict();
       // pragma uvmx prd_predict begin
       uvma_mstream_pkt_seq_item_c  agent_ig_trn;
@@ -112,7 +113,7 @@ class uvme_mstream_st_prd_c extends uvmx_agent_prd_c #(
             out_trn.copy(e2e_eg_trn);
             `uvmx_prd_send(e2e_eg_ap, out_trn)
          end
-      join_all
+      join
       // pragma uvmx prd_predict end
    endtask
 

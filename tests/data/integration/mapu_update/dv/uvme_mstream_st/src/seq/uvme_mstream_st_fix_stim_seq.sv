@@ -34,6 +34,26 @@ class uvme_mstream_st_fix_stim_seq_c extends uvme_mstream_st_base_seq_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx functional_fix_stim_seq_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx functional_fix_stim_seq_build_dox end
+   virtual function void build();
+      // pragma uvmx functional_fix_stim_seq_build begin
+      // pragma uvmx functional_fix_stim_seq_build end
+   endfunction
+
+   // pragma uvmx functional_fix_stim_seq_create_sequences_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx functional_fix_stim_seq_create_sequences_dox end
+   virtual function void create_sequences();
+      // pragma uvmx functional_fix_stim_seq_create_sequences begin
+      // pragma uvmx functional_fix_stim_seq_create_sequences end
+   endfunction
+
    // pragma uvmx fix_stim_seq_post_randomize_work begin
    // pragma uvmx fix_stim_seq_post_randomize_work end
 

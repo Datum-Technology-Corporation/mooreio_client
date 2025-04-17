@@ -59,6 +59,26 @@ class uvma_mstream_pkt_rand_stim_seq_c extends uvma_mstream_pkt_base_seq_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx pkt_rand_stim_seq_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx pkt_rand_stim_seq_build_dox end
+   virtual function void build();
+      // pragma uvmx pkt_rand_stim_seq_build begin
+      // pragma uvmx pkt_rand_stim_seq_build end
+   endfunction
+
+   // pragma uvmx pkt_rand_stim_seq_create_sequences_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx pkt_rand_stim_seq_create_sequences_dox end
+   virtual function void create_sequences();
+      // pragma uvmx pkt_rand_stim_seq_create_sequences begin
+      // pragma uvmx pkt_rand_stim_seq_create_sequences end
+   endfunction
+
    // pragma uvmx pkt_rand_stim_seq_post_randomize_work begin
    /**
     * TODO Implement or remove uvma_mstream_pkt_rand_stim_seq_c::post_randomize_work()

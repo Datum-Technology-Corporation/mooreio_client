@@ -18,15 +18,15 @@ class uvma_mapu_b_dpo_seq_item_c extends uvmx_seq_item_c #(
 
    /// @name Data
    /// @{
-   rand uvma_mapu_b_i_rdy_b_t  i_rdy; ///< Output data Ready
+   rand uvma_mapu_b_i_rdy_t  i_rdy; ///< Output data Ready
    /// @}
 
    /// @name Metadata
    /// @{
-   uvma_mapu_b_o_vld_l_t  o_vld; ///< Output Valid
-   uvma_mapu_b_o_r0_l_t  o_r0; ///< Output Data Row 0
-   uvma_mapu_b_o_r1_l_t  o_r1; ///< Output Data Row 1
-   uvma_mapu_b_o_r2_l_t  o_r2; ///< Output Data Row 2
+   uvma_mapu_b_o_vld_t  o_vld; ///< Output Valid
+   uvma_mapu_b_o_r0_t  o_r0; ///< Output Data Row 0
+   uvma_mapu_b_o_r1_t  o_r1; ///< Output Data Row 1
+   uvma_mapu_b_o_r2_t  o_r2; ///< Output Data Row 2
    /// @}
 
    // pragma uvmx dpo_seq_item_fields begin

@@ -59,6 +59,26 @@ class uvme_mapu_b_rand_stim_seq_c extends uvme_mapu_b_base_seq_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx functional_rand_stim_seq_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx functional_rand_stim_seq_build_dox end
+   virtual function void build();
+      // pragma uvmx functional_rand_stim_seq_build begin
+      // pragma uvmx functional_rand_stim_seq_build end
+   endfunction
+
+   // pragma uvmx functional_rand_stim_seq_create_sequences_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx functional_rand_stim_seq_create_sequences_dox end
+   virtual function void create_sequences();
+      // pragma uvmx functional_rand_stim_seq_create_sequences begin
+      // pragma uvmx functional_rand_stim_seq_create_sequences end
+   endfunction
+
    // pragma uvmx rand_stim_seq_post_randomize_work begin
    // pragma uvmx rand_stim_seq_post_randomize_work end
 

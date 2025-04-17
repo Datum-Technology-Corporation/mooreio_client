@@ -67,6 +67,18 @@ class uvma_mapu_b_op_seq_item_c extends uvmx_block_seq_item_c #(
       super.new(name);
    endfunction
 
+   // pragma uvmx op_seq_item_build_dox begin
+   /**
+    * Initializes objects and arrays.
+    */
+   // pragma uvmx op_seq_item_build_dox end
+   virtual function void build();
+      // pragma uvmx op_seq_item_build begin
+      ma = uvml_math_mtx_c::type_id::create("ma");
+      mb = uvml_math_mtx_c::type_id::create("mb");
+      // pragma uvmx op_seq_item_build end
+   endfunction
+
    // pragma uvmx op_seq_item_post_randomize_work begin
    // pragma uvmx op_seq_item_post_randomize_work end
 
@@ -111,13 +123,6 @@ class uvma_mapu_b_op_seq_item_c extends uvmx_block_seq_item_c #(
    // pragma uvmx op_seq_item_get_metadata end
 
    // pragma uvmx op_seq_item_methods begin
-   /**
-    * Initializes objects and arrays.
-    */
-   virtual function void build();
-      ma = uvml_math_mtx_c::type_id::create("ma");
-      mb = uvml_math_mtx_c::type_id::create("mb");
-   endfunction
    // pragma uvmx op_seq_item_methods end
 
 endclass

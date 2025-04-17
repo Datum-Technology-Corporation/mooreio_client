@@ -41,6 +41,18 @@ class uvma_mapu_b_ig_mon_trn_c extends uvmx_block_mon_trn_c #(
       super.new(name);
    endfunction
 
+   // pragma uvmx ig_mon_trn_build_dox begin
+   /**
+    * Initializes objects and arrays.
+    */
+   // pragma uvmx ig_mon_trn_build_dox end
+   virtual function void build();
+      // pragma uvmx ig_mon_trn_build begin
+      matrix = uvml_math_mtx_c::type_id::create("matrix");
+      matrix.build(3, 3);
+      // pragma uvmx ig_mon_trn_build end
+   endfunction
+
    // pragma uvmx ig_mon_trn_do_compare begin
    /**
     * TODO Implement or remove uvma_mapu_b_ig_mon_trn_c::do_compare()
@@ -86,15 +98,6 @@ class uvma_mapu_b_ig_mon_trn_c extends uvmx_block_mon_trn_c #(
    // pragma uvmx ig_mon_trn_get_metadata end
 
    // pragma uvmx ig_mon_trn_methods begin
-   /**
-    * Initializes objects and arrays.
-    */
-   virtual function void build();
-      // pragma uvmx mon_trn_build begin
-      matrix = uvml_math_mtx_c::type_id::create("matrix");
-      matrix.build(3, 3);
-      // pragma uvmx mon_trn_build end
-   endfunction
    // pragma uvmx ig_mon_trn_methods end
 
 endclass

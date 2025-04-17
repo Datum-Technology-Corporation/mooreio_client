@@ -69,6 +69,16 @@ class uvma_mapu_b_cfg_c extends uvmx_block_agent_cfg_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx cfg_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx cfg_seq_build_dox end
+   virtual function void build();
+      // pragma uvmx cfg_build begin
+      // pragma uvmx cfg_build end
+   endfunction
+
    // pragma uvmx cfg_post_randomize_work begin
    // pragma uvmx cfg_post_randomize_work end
 

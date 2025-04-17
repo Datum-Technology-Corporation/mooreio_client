@@ -15,7 +15,7 @@ class uvmt_mapu_b_fix_stim_test_c extends uvmt_mapu_b_base_test_c;
 
    /// @name Sequences
    /// @{
-   rand uvme_mapu_b_fix_stim_seq_c  fix_stim_seq; ///< 
+   rand uvme_mapu_b_fix_stim_seq_c  fix_stim_seq; ///< Fixed Stimulus
    /// @}
 
    // pragma uvmx fix_stim_test_fields begin
@@ -46,11 +46,25 @@ class uvmt_mapu_b_fix_stim_test_c extends uvmt_mapu_b_base_test_c;
       super.new(name, parent);
    endfunction
 
+   // pragma uvmx fix_stim_test_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx fix_stim_test_build_dox end
+   virtual function void build();
+      // pragma uvmx fix_stim_test_build begin
+      // pragma uvmx fix_stim_test_build end
+   endfunction
+
+   // pragma uvmx fix_stim_test_create_sequences_dox begin
    /**
     * Creates sequences fix_stim_seq.
     */
+   // pragma uvmx fix_stim_test_create_sequences_dox end
    virtual function void create_sequences();
       fix_stim_seq = uvme_mapu_b_fix_stim_seq_c::type_id::create("fix_stim_seq");
+      // pragma uvmx fix_stim_test_create_sequences begin
+      // pragma uvmx fix_stim_test_create_sequences end
    endfunction
 
    // pragma uvmx fix_stim_test_post_randomize_work begin
@@ -67,24 +81,29 @@ class uvmt_mapu_b_fix_stim_test_c extends uvmt_mapu_b_base_test_c;
       phase.drop_objection(this);
    endtask
 
-   // pragma uvmx fix_stim_test_methods begin
+   // pragma uvmx fix_stim_test_check_phase begin
    /**
     * Ensures that test goals were met.
     */
    virtual function void check_phase(uvm_phase phase);
       if (env_cntxt.egress_scoreboard_cntxt.match_count == 0) begin
-         `uvm_error("TEST", "Scoreboard did not see any matches during simulation")
+         `uvm_error("TEST", "Scoreboard 'Egress' did not observe any matches")
       end
    endfunction
+   // pragma uvmx fix_stim_test_check_phase end
 
+   // pragma uvmx fix_stim_test_report_phase begin
    /**
     * Prints end-of-test goals report.
     */
    virtual function void report_phase(uvm_phase phase);
       `uvmx_test_report({
-         $sformatf("Scoreboard saw %0d matches during simulation", env_cntxt.egress_scoreboard_cntxt.match_count)
+         $sformatf("Scoreboard 'Egress' observed %0d matches", env_cntxt.egress_scoreboard_cntxt.match_count)
       })
    endfunction
+   // pragma uvmx fix_stim_test_report_phase end
+
+   // pragma uvmx fix_stim_test_methods begin
    // pragma uvmx fix_stim_test_methods end
 
 endclass

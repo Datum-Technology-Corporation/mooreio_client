@@ -59,11 +59,12 @@ class uvme_mapu_b_prd_c extends uvmx_block_prd_c #(
       // pragma uvmx prd_create_ports begin
       // pragma uvmx prd_create_ports end
    endfunction
-   // pragma uvmx prd_dox begin
+
+   // pragma uvmx prd_predict_dox begin
    /**
     * TODO Implement uvme_mapu_b_prd_c::predict()
     */
-   // pragma uvmx prd_dox end
+   // pragma uvmx prd_predict_dox end
    virtual task predict();
       // pragma uvmx prd_predict begin
       uvma_mapu_b_ig_mon_trn_c  ig_a_trn, ig_b_trn;
@@ -107,7 +108,7 @@ class uvme_mapu_b_prd_c extends uvmx_block_prd_c #(
             end
          end
          // 4.
-         `uvmx_prd_send(eg_ap, eg_trn);
+         `uvmx_prd_send(eg_ap, eg_trn)
       end
       // pragma uvmx prd_predict end
    endtask

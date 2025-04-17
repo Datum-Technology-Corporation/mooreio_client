@@ -18,9 +18,9 @@ class uvma_mapu_b_cp_mon_trn_c extends uvmx_mon_trn_c #(
 
    /// @name Data
    /// @{
-   uvma_mapu_b_i_en_l_t  i_en; ///< Block enable
-   uvma_mapu_b_i_op_l_t  i_op; ///< Matrix Operation
-   uvma_mapu_b_o_of_l_t  o_of; ///< Overflow flag
+   uvma_mapu_b_i_en_t  i_en; ///< Block enable
+   uvma_mapu_b_i_op_t  i_op; ///< Matrix Operation
+   uvma_mapu_b_o_of_t  o_of; ///< Overflow flag
    /// @}
 
    // pragma uvmx cp_mon_trn_fields begin

@@ -19,7 +19,7 @@ module uvmt_mstream_st_dut_wrap (
    uvma_reset_if  reset_n_if ///< Reset interface
 );
 
-   // IG
+   // Ingress
    assign card_if.ig_vld = host_if.ig_vld;
    assign passive_if.ig_vld = host_if.ig_vld;
    assign card_if.ig_r0 = host_if.ig_r0;
@@ -30,7 +30,8 @@ module uvmt_mstream_st_dut_wrap (
    assign passive_if.ig_r2 = host_if.ig_r2;
    assign host_if.ig_rdy = card_if.ig_rdy;
    assign passive_if.ig_rdy = card_if.ig_rdy;
-   // EG
+
+   // Egress
    assign card_if.eg_rdy = host_if.eg_rdy;
    assign passive_if.eg_rdy = host_if.eg_rdy;
    assign host_if.eg_vld = card_if.eg_vld;
@@ -41,6 +42,7 @@ module uvmt_mstream_st_dut_wrap (
    assign passive_if.eg_r1 = card_if.eg_r1;
    assign host_if.eg_r2 = card_if.eg_r2;
    assign passive_if.eg_r2 = card_if.eg_r2;
+
 
    // pragma uvmx dut_wrap begin
    // pragma uvmx dut_wrap end

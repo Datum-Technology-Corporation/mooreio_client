@@ -15,7 +15,7 @@ class uvmt_mapu_b_rand_stim_test_c extends uvmt_mapu_b_base_test_c;
 
    /// @name Sequences
    /// @{
-   rand uvme_mapu_b_rand_stim_seq_c  rand_stim_seq; ///< 
+   rand uvme_mapu_b_rand_stim_seq_c  rand_stim_seq; ///< Random Stimulus
    /// @}
 
    // pragma uvmx rand_stim_test_fields begin
@@ -58,11 +58,25 @@ class uvmt_mapu_b_rand_stim_test_c extends uvmt_mapu_b_base_test_c;
       super.new(name, parent);
    endfunction
 
+   // pragma uvmx rand_stim_test_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx rand_stim_test_build_dox end
+   virtual function void build();
+      // pragma uvmx rand_stim_test_build begin
+      // pragma uvmx rand_stim_test_build end
+   endfunction
+
+   // pragma uvmx rand_stim_test_create_sequences_dox begin
    /**
     * Creates sequences rand_stim_seq.
     */
+   // pragma uvmx rand_stim_test_create_sequences_dox end
    virtual function void create_sequences();
       rand_stim_seq = uvme_mapu_b_rand_stim_seq_c::type_id::create("rand_stim_seq");
+      // pragma uvmx rand_stim_test_create_sequences begin
+      // pragma uvmx rand_stim_test_create_sequences end
    endfunction
 
    // pragma uvmx rand_stim_test_post_randomize_work begin
@@ -79,24 +93,29 @@ class uvmt_mapu_b_rand_stim_test_c extends uvmt_mapu_b_base_test_c;
       phase.drop_objection(this);
    endtask
 
-   // pragma uvmx rand_stim_test_methods begin
+   // pragma uvmx rand_stim_test_check_phase begin
    /**
     * Ensures that test goals were met.
     */
    virtual function void check_phase(uvm_phase phase);
       if (!(env_cntxt.egress_scoreboard_cntxt.match_count == rand_stim_seq.num_items)) begin
-         `uvm_error("TEST", $sformatf("Scoreboard did not see %0d matches during simulation:  %0d matches", rand_stim_seq.num_items, env_cntxt.egress_scoreboard_cntxt.match_count))
+         `uvm_error("TEST", $sformatf("Scoreboard 'Egress' did not observe %0d matches:  %0d matches", rand_stim_seq.num_items, env_cntxt.egress_scoreboard_cntxt.match_count))
       end
    endfunction
+   // pragma uvmx rand_stim_test_check_phase end
 
+   // pragma uvmx rand_stim_test_report_phase begin
    /**
     * Prints end-of-test goals report.
     */
    virtual function void report_phase(uvm_phase phase);
       `uvmx_test_report({
-         $sformatf("Scoreboard saw %0d matches during simulation", env_cntxt.egress_scoreboard_cntxt.match_count)
+         $sformatf("Scoreboard 'Egress' observed %0d matches", env_cntxt.egress_scoreboard_cntxt.match_count)
       })
    endfunction
+   // pragma uvmx rand_stim_test_report_phase end
+
+   // pragma uvmx rand_stim_test_methods begin
    // pragma uvmx rand_stim_test_methods end
 
 endclass

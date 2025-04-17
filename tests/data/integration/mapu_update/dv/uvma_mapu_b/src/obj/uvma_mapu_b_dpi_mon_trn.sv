@@ -18,11 +18,11 @@ class uvma_mapu_b_dpi_mon_trn_c extends uvmx_mon_trn_c #(
 
    /// @name Data
    /// @{
-   uvma_mapu_b_i_vld_l_t  i_vld; ///< Input Valid
-   uvma_mapu_b_o_rdy_l_t  o_rdy; ///< Input data Ready
-   uvma_mapu_b_i_r0_l_t  i_r0; ///< Input Data Row 0
-   uvma_mapu_b_i_r1_l_t  i_r1; ///< Input Data Row 1
-   uvma_mapu_b_i_r2_l_t  i_r2; ///< Input Data Row 2
+   uvma_mapu_b_i_vld_t  i_vld; ///< Input Valid
+   uvma_mapu_b_o_rdy_t  o_rdy; ///< Input data Ready
+   uvma_mapu_b_i_r0_t  i_r0; ///< Input Data Row 0
+   uvma_mapu_b_i_r1_t  i_r1; ///< Input Data Row 1
+   uvma_mapu_b_i_r2_t  i_r2; ///< Input Data Row 2
    /// @}
 
    // pragma uvmx dpi_mon_trn_fields begin

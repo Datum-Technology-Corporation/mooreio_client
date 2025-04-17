@@ -18,13 +18,13 @@ class uvma_mapu_b_cp_seq_item_c extends uvmx_seq_item_c #(
 
    /// @name Data
    /// @{
-   rand uvma_mapu_b_i_en_b_t  i_en; ///< Block enable
-   rand uvma_mapu_b_i_op_b_t  i_op; ///< Matrix Operation
+   rand uvma_mapu_b_i_en_t  i_en; ///< Block enable
+   rand uvma_mapu_b_i_op_t  i_op; ///< Matrix Operation
    /// @}
 
    /// @name Metadata
    /// @{
-   uvma_mapu_b_o_of_l_t  o_of; ///< Overflow flag
+   uvma_mapu_b_o_of_t  o_of; ///< Overflow flag
    /// @}
 
    // pragma uvmx cp_seq_item_fields begin

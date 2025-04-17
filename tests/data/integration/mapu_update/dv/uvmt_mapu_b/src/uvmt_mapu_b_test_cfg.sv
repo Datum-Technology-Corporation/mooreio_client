@@ -124,9 +124,11 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx test_cfg_build_dox begin
    /**
-    * Initializes objects and arrays.
+    * Creates objects and arrays.
     */
+   // pragma uvmx test_cfg_build_dox end
    virtual function void build();
       clk_agent_cfg = uvma_clk_cfg_c::type_id::create("clk_agent_cfg");
       reset_n_agent_cfg = uvma_reset_cfg_c::type_id::create("reset_n_agent_cfg");
@@ -134,9 +136,11 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
       // pragma uvmx test_cfg_build end
    endfunction
 
+   // pragma uvmx test_cfg_process_cli_args_dox begin
    /**
     * Processes Command Line Interface arguments.
     */
+   // pragma uvmx test_cfg_process_cli_args_dox end
    virtual function void process_cli_args();
       `uvmx_cli_arg_parse("NUM_ITEMS", cli_num_items_override)
       if (cli_num_items_override) begin

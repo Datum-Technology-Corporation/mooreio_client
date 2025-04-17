@@ -15,7 +15,7 @@ class uvmt_mstream_st_rand_stim_test_c extends uvmt_mstream_st_base_test_c;
 
    /// @name Sequences
    /// @{
-   rand uvme_mstream_st_rand_stim_seq_c  rand_stim_seq; ///< 
+   rand uvme_mstream_st_rand_stim_seq_c  rand_stim_seq; ///< Random Stimulus
    /// @}
 
    // pragma uvmx rand_stim_test_fields begin
@@ -63,6 +63,8 @@ class uvmt_mstream_st_rand_stim_test_c extends uvmt_mstream_st_base_test_c;
     */
    virtual function void create_sequences();
       rand_stim_seq = uvme_mstream_st_rand_stim_seq_c::type_id::create("rand_stim_seq");
+      // pragma uvmx rand_stim_create_sequences begin
+      // pragma uvmx rand_stim_create_sequences end
    endfunction
 
    // pragma uvmx rand_stim_test_post_randomize_work begin

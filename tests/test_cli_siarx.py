@@ -50,13 +50,11 @@ class TestCliSiArx(TestBase):
         result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.mapu_update_path, '2')
 
-    def cli_siarx_gen_project_cmpelab(self, capsys, app: str):
+    def cli_siarx_gen_project_cmpelab_ip(self, capsys, app: str, ip: str):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.mapu_raw_path, '2')
-        result = self.cmpelab_ip(capsys, self.mapu_raw_path, app, "uvmt_mapu_b")
-        result = self.cmpelab_ip(capsys, self.mapu_raw_path, app, "uvmt_mstream_st")
-        result = self.cmpelab_ip(capsys, self.mapu_raw_path, app, "uvmt_mpb_st")
+        result = self.cmpelab_ip(capsys, self.mapu_raw_path, app, ip)
 
     def cli_siarx_gen_project_sim_ip_test(self, capsys, app: str, ip: str, test: str):
         self.reset_workspace()
@@ -64,58 +62,33 @@ class TestCliSiArx(TestBase):
         result = self.siarx(capsys, self.mapu_raw_path, '2')
         result = self.one_shot_sim_ip(capsys, self.mapu_raw_path, app, ip, test, 1, args_boolean=["__DATUM_DBG"])
 
-    def cli_siarx_update_project_sim_mapu_fix_stim(self, capsys, app: str):
+    def cli_siarx_update_project_sim_ip_test(self, capsys, app: str, ip: str, test: str):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.mapu_update_path, '2')
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mapu_b", "fix_stim", 1)
+        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, ip, test, 1)
 
-    def cli_siarx_update_project_sim_mapu_rand_stim(self, capsys, app: str):
+    def cli_siarx_sim_ip_test(self, capsys, path: Path, app: str, ip: str, test: str):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
-        result = self.siarx(capsys, self.mapu_update_path, '2')
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mapu_b", "rand_stim", 1)
-
-    def cli_siarx_sim_mapu_fix_stim(self, capsys, app: str):
-        self.reset_workspace()
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mapu_b", "fix_stim", 1)
-
-    def cli_siarx_sim_mapu_rand_stim(self, capsys, app: str):
-        self.reset_workspace()
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mapu_b", "rand_stim", 1)
-
-    def cli_siarx_update_project_sim_mstream_fix_stim(self, capsys, app: str):
-        self.reset_workspace()
-        result = self.login(capsys, 'admin', 'admin')
-        result = self.siarx(capsys, self.mapu_update_path, '2')
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mstream_st", "fix_stim", 1)
-
-    def cli_siarx_update_project_sim_mstream_rand_stim(self, capsys, app: str):
-        self.reset_workspace()
-        result = self.login(capsys, 'admin', 'admin')
-        result = self.siarx(capsys, self.mapu_update_path, '2')
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mstream_st", "rand_stim", 1)
-
-    def cli_siarx_sim_mstream_fix_stim(self, capsys, app: str):
-        self.reset_workspace()
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mstream_st", "fix_stim", 1)
-
-    def cli_siarx_sim_mstream_rand_stim(self, capsys, app: str):
-        self.reset_workspace()
-        result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, "uvmt_mstream_st", "rand_stim", 1)
+        result = self.one_shot_sim_ip(capsys, path, app, ip, test, 1)
 
 
+    ###################################################################################################################
+    # MAPU
+    ###################################################################################################################
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
-    def test_cli_siarx_gen_project_cmpelab_dsim(self, capsys):
-        self.cli_siarx_gen_project_cmpelab(capsys, 'dsim')
+    def test_cli_siarx_gen_project_cmpelab_mapu_dsim(self, capsys):
+        self.cli_siarx_gen_project_cmpelab_ip(capsys, 'dsim', "uvmt_mapu_b")
 
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
     def test_cli_siarx_gen_project_sim_mapu_fix_stim_dsim(self, capsys):
         self.cli_siarx_gen_project_sim_ip_test(capsys, 'dsim', 'uvmt_mapu_b', 'fix_stim')
+
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
@@ -125,8 +98,31 @@ class TestCliSiArx(TestBase):
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
+    def test_cli_siarx_update_project_sim_mapu_fix_stim_dsim(self, capsys):
+        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mapu_b', 'fix_stim')
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_update_project_sim_mapu_rand_stim_dsim(self, capsys):
+        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mapu_b', 'rand_stim')
+
+
+    ###################################################################################################################
+    # MSTREAM
+    ###################################################################################################################
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_gen_project_cmpelab_mstream_dsim(self, capsys):
+        self.cli_siarx_gen_project_cmpelab_ip(capsys, 'dsim', "uvmt_mstream_st")
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
     def test_cli_siarx_gen_project_sim_mstream_fix_stim_dsim(self, capsys):
         self.cli_siarx_gen_project_sim_ip_test(capsys, 'dsim', 'uvmt_mstream_st', 'fix_stim')
+
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
@@ -136,60 +132,45 @@ class TestCliSiArx(TestBase):
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
+    def test_cli_siarx_update_project_sim_mstream_fix_stim_dsim(self, capsys):
+        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mstream_st', 'fix_stim')
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_update_project_sim_mstream_rand_stim_dsim(self, capsys):
+        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mstream_st', 'rand_stim')
+
+
+    ###################################################################################################################
+    # MPB
+    ###################################################################################################################
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_gen_project_cmpelab_mpb_dsim(self, capsys):
+        self.cli_siarx_gen_project_cmpelab_ip(capsys, 'dsim', "uvmt_mpb_st")
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
     def test_cli_siarx_gen_project_sim_mpb_fix_stim_dsim(self, capsys):
         self.cli_siarx_gen_project_sim_ip_test(capsys, 'dsim', 'uvmt_mpb_st', 'fix_stim')
+
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
     def test_cli_siarx_gen_project_sim_mpb_bit_bash_dsim(self, capsys):
         self.cli_siarx_gen_project_sim_ip_test(capsys, 'dsim', 'uvmt_mpb_st', 'bit_bash')
 
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_update_project_sim_mpb_fix_stim_dsim(self, capsys):
+        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mpb_st', 'fix_stim')
 
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
-    def test_cli_siarx_update_project_sim_mapu_fix_stim_dsim(self, capsys):
-        self.cli_siarx_update_project_sim_mapu_fix_stim(capsys, 'dsim')
-
-    @pytest.mark.single_process
-    #@pytest.mark.integration
-    @pytest.mark.dsim
-    def test_cli_siarx_update_project_sim_mapu_rand_stim_dsim(self, capsys):
-        self.cli_siarx_update_project_sim_mapu_rand_stim(capsys, 'dsim')
-
-    @pytest.mark.single_process
-    #@pytest.mark.integration
-    @pytest.mark.dsim
-    def test_cli_siarx_sim_mapu_fix_stim_dsim(self, capsys):
-        self.cli_siarx_sim_mapu_fix_stim(capsys, 'dsim')
-
-    @pytest.mark.single_process
-    #@pytest.mark.integration
-    @pytest.mark.dsim
-    def test_cli_siarx_sim_mapu_rand_stim_dsim(self, capsys):
-        self.cli_siarx_sim_mapu_rand_stim(capsys, 'dsim')
-
-
-    @pytest.mark.single_process
-    #@pytest.mark.integration
-    @pytest.mark.dsim
-    def test_cli_siarx_update_project_sim_mstream_fix_stim_dsim(self, capsys):
-        self.cli_siarx_update_project_sim_mstream_fix_stim(capsys, 'dsim')
-
-    @pytest.mark.single_process
-    #@pytest.mark.integration
-    @pytest.mark.dsim
-    def test_cli_siarx_update_project_sim_mstream_rand_stim_dsim(self, capsys):
-        self.cli_siarx_update_project_sim_mstream_rand_stim(capsys, 'dsim')
-
-    @pytest.mark.single_process
-    #@pytest.mark.integration
-    @pytest.mark.dsim
-    def test_cli_siarx_sim_mstream_fix_stim_dsim(self, capsys):
-        self.cli_siarx_sim_mstream_fix_stim(capsys, 'dsim')
-
-    @pytest.mark.single_process
-    #@pytest.mark.integration
-    @pytest.mark.dsim
-    def test_cli_siarx_sim_mstream_rand_stim_dsim(self, capsys):
-        self.cli_siarx_sim_mstream_rand_stim(capsys, 'dsim')
+    def test_cli_siarx_update_project_sim_mpb_rand_stim_dsim(self, capsys):
+        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mpb_st', 'bit_bash')

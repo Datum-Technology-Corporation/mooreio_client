@@ -47,9 +47,11 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_env_cntxt_c #(
       super.new(name);
    endfunction
 
+   // pragma uvmx cntxt_build_dox begin
    /**
     * Creates objects.
     */
+   // pragma uvmx cntxt_build_dox end
    virtual function void build(uvme_mapu_b_cfg_c cfg);
       agent_cntxt = uvma_mapu_b_cntxt_c::type_id::create("agent_cntxt");
       egress_scoreboard_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("egress_scoreboard_cntxt");
@@ -57,9 +59,11 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_env_cntxt_c #(
       // pragma uvmx cntxt_build end
    endfunction
 
+   // pragma uvmx cntxt_do_reset_dox begin
    /**
     * Returns all state variables to initial values.
     */
+   // pragma uvmx cntxt_do_reset_dox end
    virtual function void do_reset(uvme_mapu_b_cfg_c cfg);
       // pragma uvmx cntxt_do_reset begin
       agent_cntxt.reset();

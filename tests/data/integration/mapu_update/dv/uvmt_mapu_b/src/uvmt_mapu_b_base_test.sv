@@ -57,8 +57,8 @@ class uvmt_mapu_b_base_test_c extends uvmx_block_test_c #(
       env_cfg.data_width == `UVMT_MAPU_B_DATA_WIDTH;
    }
 
-   // pragma uvmx cfg_constraints begin
-   // pragma uvmx cfg_constraints end
+   // pragma uvmx base_test_constraints begin
+   // pragma uvmx base_test_constraints end
 
 
    /**
@@ -66,37 +66,16 @@ class uvmt_mapu_b_base_test_c extends uvmx_block_test_c #(
     */
    function new(string name="uvmt_mapu_b_base_test", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx cfg_constructor begin
-      // pragma uvmx cfg_constructor end
    endfunction
 
+   // pragma uvmx base_test_build_dox begin
    /**
-    * Creates agent components.
+    * Empty
     */
-   virtual function void create_components();
-      clk_agent = uvma_clk_agent_c::type_id::create("clk_agent", this);
-      reset_n_agent = uvma_reset_agent_c::type_id::create("reset_n_agent", this);
-      // pragma uvmx cfg_create_components begin
-      // pragma uvmx cfg_create_components end
-   endfunction
-
-   /**
-    * Connects the reset agent to the environment's reset port.
-    */
-   virtual function void connect_env_reset();
-      reset_n_agent.reset_mon_trn_ap.connect(env.reset_mon_trn_export);
-      // pragma uvmx cfg_connect_env_reset begin
-      // pragma uvmx cfg_connect_env_reset end
-   endfunction
-
-   /**
-    * Assigns configuration objects to agents.
-    */
-   virtual function void assign_cfg();
-      uvm_config_db#(uvma_clk_cfg_c)::set(this, "clk_agent", "cfg", test_cfg.clk_agent_cfg);
-      uvm_config_db#(uvma_reset_cfg_c)::set(this, "reset_n_agent", "cfg", test_cfg.reset_n_agent_cfg);
-      // pragma uvmx cfg_assign_cfg begin
-      // pragma uvmx cfg_assign_cfg end
+   // pragma uvmx base_test_build_dox end
+   virtual function void build();
+      // pragma uvmx base_test_build begin
+      // pragma uvmx base_test_build end
    endfunction
 
    /**
@@ -105,11 +84,56 @@ class uvmt_mapu_b_base_test_c extends uvmx_block_test_c #(
    virtual function void create_clk_reset_sequences();
       clk_seq = uvma_clk_start_seq_c::type_id::create("clk_seq");
       reset_n_seq = uvma_reset_pulse_seq_c::type_id::create("reset_n_seq");
-      // pragma uvmx cfg_create_clk_reset_sequences begin
-      // pragma uvmx cfg_create_clk_reset_sequences end
    endfunction
 
-/**
+   // pragma uvmx base_test_create_sequences_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx base_test_create_sequences_dox end
+   virtual function void create_sequences();
+      // pragma uvmx base_test_create_sequences begin
+      // pragma uvmx base_test_create_sequences end
+   endfunction
+
+   // pragma uvmx base_test_post_randomize_work begin
+   /**
+    * TODO Implement or remove uvmt_mapu_b_base_test_c::post_randomize_work()
+    */
+   virtual function void post_randomize_work();
+   endfunction
+   // pragma uvmx base_test_post_randomize_work end
+
+   /**
+    * Creates agent components.
+    */
+   virtual function void create_components();
+      clk_agent = uvma_clk_agent_c::type_id::create("clk_agent", this);
+      reset_n_agent = uvma_reset_agent_c::type_id::create("reset_n_agent", this);
+      // pragma uvmx base_test_create_components begin
+      // pragma uvmx base_test_create_components end
+   endfunction
+
+   /**
+    * Connects the reset agent to the environment's reset port.
+    */
+   virtual function void connect_env_reset();
+      reset_n_agent.reset_mon_trn_ap.connect(env.reset_mon_trn_export);
+      // pragma uvmx base_test_connect_env_reset begin
+      // pragma uvmx base_test_connect_env_reset end
+   endfunction
+
+   /**
+    * Assigns configuration objects to agents.
+    */
+   virtual function void assign_cfg();
+      uvm_config_db#(uvma_clk_cfg_c)::set(this, "clk_agent", "cfg", test_cfg.clk_agent_cfg);
+      uvm_config_db#(uvma_reset_cfg_c)::set(this, "reset_n_agent", "cfg", test_cfg.reset_n_agent_cfg);
+      // pragma uvmx base_test_assign_cfg begin
+      // pragma uvmx base_test_assign_cfg end
+   endfunction
+
+   /**
     * Runs clk_seq.
     */
    virtual task pre_reset_phase(uvm_phase phase);
@@ -131,7 +155,7 @@ class uvmt_mapu_b_base_test_c extends uvmx_block_test_c #(
       phase.drop_objection(this);
    endtask
 
-   // pragma uvmx base_test_methods begin
+   // pragma uvmx base_test_check_phase begin
    /**
     * Ensures that the number of overflow events observed and predicted match.
     */
@@ -140,6 +164,12 @@ class uvmt_mapu_b_base_test_c extends uvmx_block_test_c #(
          `uvm_error("TEST", $sformatf("Number of predicte overflow events (%0d) and observed (%0d) do not match", env_cntxt.prd_overflow_count, env_cntxt.agent_cntxt.mon_overflow_count))
       end
    endfunction
+   // pragma uvmx base_test_check_phase end
+
+   // pragma uvmx base_test_report_phase begin
+   // pragma uvmx base_test_report_phase end
+   
+   // pragma uvmx base_test_methods begin
    // pragma uvmx base_test_methods end
 
 endclass
