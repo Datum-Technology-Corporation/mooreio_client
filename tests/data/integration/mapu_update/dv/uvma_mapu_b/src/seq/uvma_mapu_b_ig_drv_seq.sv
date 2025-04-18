@@ -80,13 +80,13 @@ class uvma_mapu_b_ig_drv_seq_c extends uvma_mapu_b_base_seq_c;
       uvma_mapu_b_dpi_seq_item_c  dpi_seq_item;
       do begin
          `uvmx_create_on(dpi_seq_item, dpi_sequencer)
+         dpi_seq_item.from(seq_item);
          dpi_seq_item.i_vld = 1;
          dpi_seq_item.i_r0  = matrix.geti(row, 0, cfg.data_width);
          dpi_seq_item.i_r1  = matrix.geti(row, 1, cfg.data_width);
          dpi_seq_item.i_r2  = matrix.geti(row, 2, cfg.data_width);
          `uvmx_send_drv(dpi_seq_item)
       end while (cntxt.vif.o_rdy !== 1);
-      dpi_seq_item.from(seq_item);
    endtask
    // pragma uvmx ig_drv_seq_methods end
 

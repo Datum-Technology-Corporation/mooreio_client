@@ -38,11 +38,11 @@ class uvma_mpb_access_drv_seq_c extends uvma_mpb_base_seq_c;
             drive_write(seq_item);
          end
          else begin
-            `uvm_fatal("MPB_ACCESS_DRV_SEQ", $sformatf("Invalid seq_item.op: %s", seq_item.op.name()))
+            `uvm_fatal("ACCESS_DRV_SEQ", $sformatf("Invalid seq_item.op: %s", seq_item.op.name()))
          end
       end
       else begin
-         `uvm_fatal("MPB_ACCESS_DRV_SEQ", $sformatf("Invalid cfg.drv_mode: %s", cfg.drv_mode.name()))
+         `uvm_fatal("ACCESS_DRV_SEQ", $sformatf("Invalid cfg.drv_mode: %s", cfg.drv_mode.name()))
       end
       // pragma uvmx access_drv_seq_drive_item end
    endtask
