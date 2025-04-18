@@ -1,0 +1,20 @@
+ip:
+  sync: true
+  sync_id: 3
+  pkg_type: dv_agent
+  vendor: "datron"
+  name: "uvma_mpb"
+  full_name: "Matrix Peripheral Bus UVM Agent"
+  version: "1.0.0"
+
+dependencies:
+  "datum/uvmx": ">=1.0"
+
+structure:
+  docs_path    : "docs"
+  examples_path: "examples"
+  hdl_src_path : "src"
+
+hdl_src:
+  directories: [".", "comps", "obj", "reg", "seq"]
+  top_sv_files: ["uvma_mpb_pkg.sv"]

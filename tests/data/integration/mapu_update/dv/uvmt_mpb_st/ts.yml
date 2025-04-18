@@ -1,0 +1,15 @@
+ts:
+  name: default
+  ip: uvmt_mpb_st
+  target: ["*"]
+  waves: [sanity, bugs]
+  cov  : [nightly, weekly]
+  verbosity   : { 'sanity': 'high', 'nightly': 'medium', 'weekly': 'low', 'bugs': 'debug' }
+  max_errors  : { 'sanity':      1, 'nightly':       30, 'weekly':    30, 'bugs':       1 }
+  max_duration: { 'sanity':      1, 'nightly':        5, 'weekly':    12, 'bugs':       1 }
+  max_jobs    : { 'sanity':      5, 'nightly':       10, 'weekly':    20, 'bugs':       1 }
+
+tests:
+  functional:
+      fix_stim : { 'sanity': [1], 'nightly': 10, 'weekly': 100, 'bugs': [] }
+      bit_bash : { 'sanity': [1], 'nightly': 10, 'weekly': 100, 'bugs': [] }

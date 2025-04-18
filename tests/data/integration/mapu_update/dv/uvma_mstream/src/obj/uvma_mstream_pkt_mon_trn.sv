@@ -75,6 +75,7 @@ class uvma_mstream_pkt_mon_trn_c extends uvmx_mon_trn_c #(
    // pragma uvmx pkt_mon_trn_do_print begin
    // pragma uvmx pkt_mon_trn_do_print end
 
+
    // pragma uvmx pkt_mon_trn_get_metadata begin
    /**
     * Describes transaction for logger.

@@ -1,0 +1,94 @@
+// Copyright 2025 Datron Limited Partnership
+// SPDX-License-Identifier: MIT
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+`ifndef __UVMA_MPB_CFG_SV__
+`define __UVMA_MPB_CFG_SV__
+
+
+/**
+ * Object encapsulating all parameters for creating, connecting and running all Matrix Peripheral Bus Agent (uvma_mpb_agent_c) components.
+ * @ingroup uvma_mpb_obj
+ */
+class uvma_mpb_cfg_c extends uvmx_agent_cfg_c;
+
+   /// @name Settings
+   /// @{
+   rand uvma_mpb_drv_mode_enum  drv_mode; ///< Specifies direction to drive when in active mode.
+   /// @}
+
+   /// @name Bus Widths
+   /// @{
+   rand int unsigned  data_width; ///< Data Width
+   rand int unsigned  addr_width; ///< Address Width
+   /// @}
+
+   // pragma uvmx cfg_fields begin
+   // pragma uvmx cfg_fields end
+
+
+   `uvm_object_utils_begin(uvma_mpb_cfg_c)
+      // pragma uvmx cfg_uvm_field_macros begin
+      `uvm_field_int(enabled, UVM_DEFAULT)
+      `uvm_field_int(bypass_mode, UVM_DEFAULT)
+      `uvm_field_enum(uvm_active_passive_enum, is_active, UVM_DEFAULT)
+      `uvm_field_enum(uvma_mpb_drv_mode_enum, drv_mode, UVM_DEFAULT)
+      `uvm_field_enum(uvmx_reset_type_enum, reset_type, UVM_DEFAULT)
+      `uvm_field_enum(uvm_sequencer_arb_mode, sqr_arb_mode, UVM_DEFAULT)
+      `uvm_field_int(data_width, UVM_DEFAULT + UVM_DEC)
+      `uvm_field_int(addr_width, UVM_DEFAULT + UVM_DEC)
+      // pragma uvmx cfg_uvm_field_macros end
+   `uvm_object_utils_end
+
+
+   /**
+    * Rules for parameters.
+    */
+   constraint parameter_space_cons {
+      data_width inside {[`UVMA_MPB_DATA_WIDTH_MIN:`UVMA_MPB_DATA_WIDTH_MAX]};
+      addr_width inside {[`UVMA_MPB_ADDR_WIDTH_MIN:`UVMA_MPB_ADDR_WIDTH_MAX]};
+   }
+
+   // pragma uvmx cfg_constraints begin
+   /**
+    * Restricts settings randomization space.
+    */
+   constraint rules_cons {
+      // ...
+   }
+   // pragma uvmx cfg_constraints end
+
+
+   /**
+    * Default constructor.
+    */
+   function new(string name="uvma_mpb_cfg");
+      super.new(name);
+   endfunction
+
+   // pragma uvmx cfg_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx cfg_seq_build_dox end
+   virtual function void build();
+      // pragma uvmx cfg_build begin
+      // pragma uvmx cfg_build end
+   endfunction
+
+   // pragma uvmx cfg_post_randomize_work begin
+   /**
+    * TODO Implement or remove uvma_mpb_cfg_c::post_randomize()
+    */
+   virtual function void post_randomize_work();
+   endfunction
+   // pragma uvmx cfg_post_randomize_work end
+
+   // pragma uvmx cfg_methods begin
+   // pragma uvmx cfg_methods end
+
+endclass
+
+
+`endif // __UVMA_MPB_CFG_SV__

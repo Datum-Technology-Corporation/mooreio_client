@@ -80,6 +80,7 @@ class uvma_mstream_pkt_seq_item_c extends uvmx_seq_item_c #(
    // pragma uvmx pkt_seq_item_do_print begin
    // pragma uvmx pkt_seq_item_do_print end
 
+
    // pragma uvmx pkt_seq_item_get_metadata begin
    /**
     * Describes transaction for logger.

@@ -8,7 +8,7 @@
 
 
 /**
- * 
+ * Packet: Packet stimulus
  * @ingroup uvma_mstream_seq_pkt
  */
 class uvma_mstream_pkt_base_seq_c extends uvma_mstream_base_seq_c;

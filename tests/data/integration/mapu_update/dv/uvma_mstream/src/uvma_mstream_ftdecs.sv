@@ -22,6 +22,7 @@ typedef class uvma_mstream_eg_mon_seq_c;
 typedef class uvma_mstream_idle_drv_seq_c;
 typedef class uvma_mstream_pkt_drv_seq_c;
 typedef class uvma_mstream_rx_drv_seq_c;
+typedef class uvma_mstream_pkt_base_seq_c;
 typedef class uvma_mstream_pkt_rand_stim_seq_c;
 
 // pragma uvmx ftdecs begin
