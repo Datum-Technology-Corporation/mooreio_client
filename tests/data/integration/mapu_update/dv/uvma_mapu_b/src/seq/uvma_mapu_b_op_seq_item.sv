@@ -80,6 +80,10 @@ class uvma_mapu_b_op_seq_item_c extends uvmx_block_seq_item_c #(
    endfunction
 
    // pragma uvmx op_seq_item_post_randomize_work begin
+   virtual function void post_randomize();
+      ma.round_to_int();
+      mb.round_to_int();
+   endfunction
    // pragma uvmx op_seq_item_post_randomize_work end
 
    // pragma uvmx op_seq_item_do_print begin

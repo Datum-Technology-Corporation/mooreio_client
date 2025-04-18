@@ -25,8 +25,8 @@ class uvme_mstream_st_cfg_c extends uvmx_agent_env_cfg_c;
    rand uvma_mstream_cfg_c  passive_agent_cfg; ///< Passive Agent configuration.
    rand uvmx_sb_simplex_cfg_c  agent_ig_scoreboard_cfg; ///< Agent Ingress Scoreboard configuration
    rand uvmx_sb_simplex_cfg_c  agent_eg_scoreboard_cfg; ///< Agent Egress Scoreboard configuration
-   rand uvmx_sb_simplex_cfg_c  e2e_eg_scoreboard_cfg; ///< End-to-end Ingress Scoreboard configuration
-   rand uvmx_sb_simplex_cfg_c  e2e_ig_scoreboard_cfg; ///< End-to-end Egress Scoreboard configuration
+   rand uvmx_sb_simplex_cfg_c  e2e_ig_scoreboard_cfg; ///< End-to-end Ingress Scoreboard configuration
+   rand uvmx_sb_simplex_cfg_c  e2e_eg_scoreboard_cfg; ///< End-to-end Egress Scoreboard configuration
    /// @}
 
    // pragma uvmx cfg_fields begin
@@ -69,7 +69,7 @@ class uvme_mstream_st_cfg_c extends uvmx_agent_env_cfg_c;
       card_agent_cfg.is_active   == is_active;
       card_agent_cfg.bypass_mode == 0;
       passive_agent_cfg.enabled     == enabled;
-      passive_agent_cfg.is_active   == is_active;
+      passive_agent_cfg.is_active   == UVM_PASSIVE;
       passive_agent_cfg.bypass_mode == 0;
       host_agent_cfg.drv_mode == UVMA_MSTREAM_DRV_MODE_HOST;
       host_agent_cfg.reset_type == reset_type;
@@ -123,17 +123,19 @@ class uvme_mstream_st_cfg_c extends uvmx_agent_env_cfg_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx cfg_build_dox begin
    /**
     * Initializes objects and arrays.
     */
+   // pragma uvmx cfg_build_dox end
    virtual function void build();
       host_agent_cfg = uvma_mstream_cfg_c::type_id::create("host_agent_cfg");
       card_agent_cfg = uvma_mstream_cfg_c::type_id::create("card_agent_cfg");
       passive_agent_cfg = uvma_mstream_cfg_c::type_id::create("passive_agent_cfg");
       agent_ig_scoreboard_cfg = uvmx_sb_simplex_cfg_c::type_id::create("agent_ig_scoreboard_cfg");
       agent_eg_scoreboard_cfg = uvmx_sb_simplex_cfg_c::type_id::create("agent_eg_scoreboard_cfg");
-      e2e_eg_scoreboard_cfg = uvmx_sb_simplex_cfg_c::type_id::create("e2e_eg_scoreboard_cfg");
       e2e_ig_scoreboard_cfg = uvmx_sb_simplex_cfg_c::type_id::create("e2e_ig_scoreboard_cfg");
+      e2e_eg_scoreboard_cfg = uvmx_sb_simplex_cfg_c::type_id::create("e2e_eg_scoreboard_cfg");
       // pragma uvmx cfg_build begin
       // pragma uvmx cfg_build end
    endfunction

@@ -49,32 +49,30 @@ class uvma_mstream_pkt_drv_seq_c extends uvma_mstream_base_seq_c;
    /**
     * Drives a single matrix row into the DUT.
     */
-   virtual task drive_row(uvma_mapu_b_op_seq_item_c seq_item, int unsigned row);
+   virtual task drive_row(uvma_mstream_pkt_seq_item_c seq_item, int unsigned row);
       uvma_mstream_host_ig_seq_item_c  host_ig_seq_item;
       uvma_mstream_card_eg_seq_item_c  card_eg_seq_item;
       if (cfg.drv_mode == UVMA_MSTREAM_DRV_MODE_HOST) begin
-          while (cntxt.vif.ig_rdy !== 1) begin
-             clk();
-          end
-          `uvmx_create_on(host_ig_seq_item, host_ig_sequencer)
-          host_ig_seq_item.from(seq_item);
-          host_ig_seq_item.ig_vld = 1;
-          host_ig_seq_item.ig_r0  = seq_item.matrix.geti(row, 0, cfg.data_width);
-          host_ig_seq_item.ig_r1  = seq_item.matrix.geti(row, 1, cfg.data_width);
-          host_ig_seq_item.ig_r2  = seq_item.matrix.geti(row, 2, cfg.data_width);
-          `uvmx_send_drv(host_ig_seq_item)
+         do begin
+            `uvmx_create_on(host_ig_seq_item, host_ig_sequencer)
+            host_ig_seq_item.from(seq_item);
+            host_ig_seq_item.ig_vld = 1;
+            host_ig_seq_item.ig_r0  = seq_item.matrix.geti(row, 0, cfg.data_width);
+            host_ig_seq_item.ig_r1  = seq_item.matrix.geti(row, 1, cfg.data_width);
+            host_ig_seq_item.ig_r2  = seq_item.matrix.geti(row, 2, cfg.data_width);
+            `uvmx_send_drv(host_ig_seq_item)
+         end while (host_ig_seq_item.ig_rdy !== 1);
       end
       else if (cfg.drv_mode == UVMA_MSTREAM_DRV_MODE_CARD) begin
-          while (cntxt.vif.eg_rdy !== 1) begin
-             clk();
-          end
-          `uvmx_create_on(card_eg_seq_item, card_eg_sequencer)
-          card_eg_seq_item.from(seq_item);
-          card_eg_seq_item.eg_vld = 1;
-          card_eg_seq_item.eg_r0  = seq_item.matrix.geti(row, 0, cfg.data_width);
-          card_eg_seq_item.eg_r1  = seq_item.matrix.geti(row, 1, cfg.data_width);
-          card_eg_seq_item.eg_r2  = seq_item.matrix.geti(row, 2, cfg.data_width);
-          `uvmx_send_drv(card_eg_seq_item)
+         do begin
+            `uvmx_create_on(card_eg_seq_item, card_eg_sequencer)
+            card_eg_seq_item.from(seq_item);
+            card_eg_seq_item.eg_vld = 1;
+            card_eg_seq_item.eg_r0  = seq_item.matrix.geti(row, 0, cfg.data_width);
+            card_eg_seq_item.eg_r1  = seq_item.matrix.geti(row, 1, cfg.data_width);
+            card_eg_seq_item.eg_r2  = seq_item.matrix.geti(row, 2, cfg.data_width);
+            `uvmx_send_drv(card_eg_seq_item)
+         end while (card_eg_seq_item.eg_rdy !== 1);
       end
       else begin
          `uvm_fatal("MSTREAM_PKT_DRV_SEQ", $sformatf("Invalid cfg.drv_mode: %s", cfg.drv_mode.name()))

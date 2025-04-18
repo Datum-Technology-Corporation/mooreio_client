@@ -27,14 +27,14 @@ typedef uvmx_sb_simplex_c #(
 typedef uvmx_sb_simplex_c #(
    .T_EXP_TRN(uvma_mstream_pkt_mon_trn_c),
    .T_ACT_TRN(uvma_mstream_pkt_mon_trn_c)
-) uvme_mstream_st_e2e_eg_sb_c;
+) uvme_mstream_st_e2e_ig_sb_c;
 /**
  * Scoreboard specialization for End-to-end Egress.
  */
 typedef uvmx_sb_simplex_c #(
    .T_EXP_TRN(uvma_mstream_pkt_mon_trn_c),
    .T_ACT_TRN(uvma_mstream_pkt_mon_trn_c)
-) uvme_mstream_st_e2e_ig_sb_c;
+) uvme_mstream_st_e2e_eg_sb_c;
 
 
 // pragma uvmx tdefs begin

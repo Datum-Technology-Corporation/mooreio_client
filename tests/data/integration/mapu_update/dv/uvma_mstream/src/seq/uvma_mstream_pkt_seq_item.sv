@@ -60,7 +60,21 @@ class uvma_mstream_pkt_seq_item_c extends uvmx_seq_item_c #(
       super.new(name);
    endfunction
 
+   // pragma uvmx pkt_seq_item_build_dox begin
+   /**
+    * Initializes objects and arrays.
+    */
+   // pragma uvmx pkt_seq_item_build_dox end
+   virtual function void build();
+      // pragma uvmx pkt_seq_item_build begin
+      matrix = uvml_math_mtx_c::type_id::create("matrix");
+      // pragma uvmx pkt_seq_item_build end
+   endfunction
+
    // pragma uvmx pkt_seq_item_post_randomize_work begin
+   virtual function void post_randomize();
+      matrix.round_to_int();
+   endfunction
    // pragma uvmx pkt_seq_item_post_randomize_work end
 
    // pragma uvmx pkt_seq_item_do_print begin
@@ -89,12 +103,6 @@ class uvma_mstream_pkt_seq_item_c extends uvmx_seq_item_c #(
    // pragma uvmx pkt_seq_item_get_metadata end
 
    // pragma uvmx pkt_seq_item_methods begin
-   /**
-    * Initializes objects and arrays.
-    */
-   virtual function void build();
-      matrix = uvml_math_mtx_c::type_id::create("matrix");
-   endfunction
    // pragma uvmx pkt_seq_item_methods end
 
 endclass

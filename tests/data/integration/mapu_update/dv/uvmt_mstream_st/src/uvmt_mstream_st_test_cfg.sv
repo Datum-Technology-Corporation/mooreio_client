@@ -116,9 +116,11 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx test_cfg_build_dox begin
    /**
-    * Initializes objects and arrays.
+    * Creates objects and arrays.
     */
+   // pragma uvmx test_cfg_build_dox end
    virtual function void build();
       sys_clk_agent_cfg = uvma_clk_cfg_c::type_id::create("sys_clk_agent_cfg");
       reset_n_agent_cfg = uvma_reset_cfg_c::type_id::create("reset_n_agent_cfg");

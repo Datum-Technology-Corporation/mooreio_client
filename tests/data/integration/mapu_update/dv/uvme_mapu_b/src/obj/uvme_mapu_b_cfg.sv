@@ -90,9 +90,11 @@ class uvme_mapu_b_cfg_c extends uvmx_block_sb_env_cfg_c;
       super.new(name);
    endfunction
 
+   // pragma uvmx cfg_build_dox begin
    /**
     * Initializes objects and arrays.
     */
+   // pragma uvmx cfg_build_dox end
    virtual function void build();
       agent_cfg = uvma_mapu_b_cfg_c::type_id::create("agent_cfg");
       egress_scoreboard_cfg = uvmx_sb_simplex_cfg_c::type_id::create("egress_scoreboard_cfg");

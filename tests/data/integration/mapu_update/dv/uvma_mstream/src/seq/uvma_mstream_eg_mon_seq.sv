@@ -34,20 +34,20 @@ class uvma_mstream_eg_mon_seq_c extends uvma_mstream_base_seq_c;
       uvma_mstream_pkt_mon_trn_c  pkt;
       int unsigned  row_count;
       forever begin
-        row_count = 0;
-        `uvmx_create_mon_trn(pkt, uvma_mstream_pkt_mon_trn_c)
-        do begin
-           `uvmx_get_mon_trn(eg_trn, eg_mon_trn_fifo)
-           if ((eg_trn.eg_vld === 1) && (eg_trn.eg_rdy === 1)) begin
-              pkt.from(eg_trn);
-              pkt.direciton = UVMA_MSTREAM_DIR_EG;
-              pkt.matrix.seti(row_count, 0, cfg.data_width, eg_trn.eg_r0);
-              pkt.matrix.seti(row_count, 1, cfg.data_width, eg_trn.eg_r1);
-              pkt.matrix.seti(row_count, 2, cfg.data_width, eg_trn.eg_r2);
-              row_count++;
-           end
-        end while (row_count<3);
-        `uvmx_write_mon_trn(pkt, eg_pkt_mon_trn_fifo)
+         row_count = 0;
+         `uvmx_create_mon_trn(pkt, uvma_mstream_pkt_mon_trn_c)
+         pkt.dir = UVMA_MSTREAM_DIR_EG;
+         do begin
+            `uvmx_get_mon_trn(eg_trn, eg_mon_trn_fifo)
+            if ((eg_trn.eg_vld === 1) && (eg_trn.eg_rdy === 1)) begin
+               pkt.from(eg_trn);
+               pkt.matrix.seti(row_count, 0, cfg.data_width, eg_trn.eg_r0);
+               pkt.matrix.seti(row_count, 1, cfg.data_width, eg_trn.eg_r1);
+               pkt.matrix.seti(row_count, 2, cfg.data_width, eg_trn.eg_r2);
+               row_count++;
+            end
+         end while (row_count<3);
+         `uvmx_write_mon_trn(pkt, eg_pkt_mon_trn_fifo)
       end
       // pragma uvmx eg_mon_seq_monitor end
    endtask

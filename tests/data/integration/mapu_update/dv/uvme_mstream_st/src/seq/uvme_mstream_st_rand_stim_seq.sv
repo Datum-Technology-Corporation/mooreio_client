@@ -86,6 +86,8 @@ class uvme_mstream_st_rand_stim_seq_c extends uvme_mstream_st_base_seq_c;
    // pragma uvmx functional_rand_stim_seq_create_sequences_dox end
    virtual function void create_sequences();
       // pragma uvmx functional_rand_stim_seq_create_sequences begin
+      ig_seq = uvma_mstream_pkt_rand_stim_seq_c::type_id::create("ig_seq");
+      eg_seq = uvma_mstream_pkt_rand_stim_seq_c::type_id::create("eg_seq");
       // pragma uvmx functional_rand_stim_seq_create_sequences end
    endfunction
 

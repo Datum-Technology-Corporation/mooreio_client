@@ -59,11 +59,9 @@ class uvme_mapu_b_cntxt_c extends uvmx_block_env_cntxt_c #(
       // pragma uvmx cntxt_build end
    endfunction
 
-   // pragma uvmx cntxt_do_reset_dox begin
    /**
     * Returns all state variables to initial values.
     */
-   // pragma uvmx cntxt_do_reset_dox end
    virtual function void do_reset(uvme_mapu_b_cfg_c cfg);
       // pragma uvmx cntxt_do_reset begin
       agent_cntxt.reset();

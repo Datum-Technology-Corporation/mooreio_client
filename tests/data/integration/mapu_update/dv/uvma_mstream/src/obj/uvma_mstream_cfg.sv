@@ -37,6 +37,7 @@ class uvma_mstream_cfg_c extends uvmx_agent_cfg_c;
       `uvm_field_enum(uvmx_reset_type_enum, reset_type, UVM_DEFAULT)
       `uvm_field_enum(uvm_sequencer_arb_mode, sqr_arb_mode, UVM_DEFAULT)
       `uvm_field_int(data_width, UVM_DEFAULT + UVM_DEC)
+      `uvm_field_int(rx_drv_ton_pct, UVM_DEFAULT + UVM_DEC)
       // pragma uvmx cfg_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -45,6 +46,7 @@ class uvma_mstream_cfg_c extends uvmx_agent_cfg_c;
     * Describes fields randomization space.
     */
    constraint settings_space_cons {
+       rx_drv_ton_pct inside {[1:100]};
    }
 
    /**
@@ -59,7 +61,7 @@ class uvma_mstream_cfg_c extends uvmx_agent_cfg_c;
     * Restricts settings randomization space.
     */
    constraint rules_cons {
-      // ...
+      soft rx_drv_ton_pct inside {[50:100]};
    }
    // pragma uvmx cfg_constraints end
 
@@ -69,6 +71,16 @@ class uvma_mstream_cfg_c extends uvmx_agent_cfg_c;
     */
    function new(string name="uvma_mstream_cfg");
       super.new(name);
+   endfunction
+
+   // pragma uvmx cfg_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx cfg_seq_build_dox end
+   virtual function void build();
+      // pragma uvmx cfg_build begin
+      // pragma uvmx cfg_build end
    endfunction
 
    // pragma uvmx cfg_post_randomize_work begin

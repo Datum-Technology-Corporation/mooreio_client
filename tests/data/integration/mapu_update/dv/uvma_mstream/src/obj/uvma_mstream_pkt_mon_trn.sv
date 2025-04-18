@@ -11,7 +11,7 @@
  * Packet: Monitored matrix
  * @ingroup uvma_mstream_obj
  */
-class uvma_mstream_pkt_mon_trn_c extends uvmx_seq_item_c #(
+class uvma_mstream_pkt_mon_trn_c extends uvmx_mon_trn_c #(
    .T_CFG  (uvma_mstream_cfg_c  ),
    .T_CNTXT(uvma_mstream_cntxt_c)
 );
@@ -39,6 +39,18 @@ class uvma_mstream_pkt_mon_trn_c extends uvmx_seq_item_c #(
     */
    function new(string name="uvma_mstream_pkt_mon_trn");
       super.new(name);
+   endfunction
+
+   // pragma uvmx pkt_mon_trn_build_dox begin
+   /**
+    * Initializes objects and arrays.
+    */
+   // pragma uvmx pkt_mon_trn_build_dox end
+   virtual function void build();
+      // pragma uvmx pkt_mon_trn_build begin
+      matrix = uvml_math_mtx_c::type_id::create("matrix");
+      matrix.build(3, 3);
+      // pragma uvmx pkt_mon_trn_build end
    endfunction
 
    // pragma uvmx pkt_mon_trn_do_compare begin
@@ -84,15 +96,6 @@ class uvma_mstream_pkt_mon_trn_c extends uvmx_seq_item_c #(
    // pragma uvmx pkt_mon_trn_get_metadata end
 
    // pragma uvmx pkt_mon_trn_methods begin
-   /**
-    * Initializes objects and arrays.
-    */
-   virtual function void build();
-      // pragma uvmx mon_trn_build begin
-      matrix = uvml_math_mtx_c::type_id::create("matrix");
-      matrix.build(3, 3);
-      // pragma uvmx mon_trn_build end
-   endfunction
    // pragma uvmx pkt_mon_trn_methods end
 
 endclass

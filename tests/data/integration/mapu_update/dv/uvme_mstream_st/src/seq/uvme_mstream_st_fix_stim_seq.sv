@@ -64,26 +64,28 @@ class uvme_mstream_st_fix_stim_seq_c extends uvme_mstream_st_base_seq_c;
    virtual task body();
      uvma_mstream_pkt_seq_item_c  seq_item;
      const int unsigned  gap_size = 5;
-     `uvmx_create_on(seq_item, p_sequencer.host_sequencer)
+     `uvmx_create_on(seq_item, host_sequencer)
+     seq_item.ton_pct = 100;
      seq_item.matrix.load('{
          '{1,0,2},
          '{3,2,1},
          '{2,1,0}
       });
-     `uvm_info("FIX_STIM_SEQ", $sformatf("Starting item #1:\n%s", seq_item.sprint()), UVM_MEDIUM)
+     `uvm_info("FIX_STIM_SEQ", $sformatf("Starting ingress item:\n%s", seq_item.sprint()), UVM_MEDIUM)
      `uvmx_send(seq_item)
-     `uvm_info("FIX_STIM_SEQ", $sformatf("Finished item #1:\n%s", seq_item.sprint()), UVM_MEDIUM)
-     `uvm_info("FIX_STIM_SEQ", $sformatf("Waiting %0d gap cycle(s) before item #2", gap_size), UVM_MEDIUM)
-     repeat (gap_size) clk();
-     `uvmx_create_on(seq_item, p_sequencer.card_sequencer)
+     `uvm_info("FIX_STIM_SEQ", $sformatf("Finished ingress item:\n%s", seq_item.sprint()), UVM_MEDIUM)
+     `uvm_info("FIX_STIM_SEQ", $sformatf("Waiting %0d gap cycle(s) before egress item", gap_size), UVM_MEDIUM)
+     repeat (gap_size) cntxt.passive_agent_cntxt.clk();
+     `uvmx_create_on(seq_item, card_sequencer)
+     seq_item.ton_pct = 100;
      seq_item.matrix.load('{
          '{2,1,0},
          '{1,0,2},
          '{2,1,0}
       });
-     `uvm_info("FIX_STIM_SEQ", $sformatf("Starting item #2:\n%s", seq_item.sprint()), UVM_MEDIUM)
+     `uvm_info("FIX_STIM_SEQ", $sformatf("Starting egress item:\n%s", seq_item.sprint()), UVM_MEDIUM)
      `uvmx_send(seq_item)
-     `uvm_info("FIX_STIM_SEQ", $sformatf("Finished item #2:\n%s", seq_item.sprint()), UVM_MEDIUM)
+     `uvm_info("FIX_STIM_SEQ", $sformatf("Finished egress item:\n%s", seq_item.sprint()), UVM_MEDIUM)
    endtask
    // pragma uvmx fix_stim_seq_body end
 

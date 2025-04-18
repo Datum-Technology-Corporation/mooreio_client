@@ -80,37 +80,41 @@ class uvme_mstream_st_prd_c extends uvmx_agent_prd_c #(
    // pragma uvmx prd_predict_dox end
    virtual task predict();
       // pragma uvmx prd_predict begin
-      uvma_mstream_pkt_seq_item_c  agent_ig_trn;
-      uvma_mstream_pkt_seq_item_c  agent_eg_trn;
-      uvma_mstream_pkt_mon_trn_c  e2e_ig_trn;
-      uvma_mstream_pkt_mon_trn_c  e2e_eg_trn;
       fork
          forever begin
+            uvma_mstream_pkt_seq_item_c  in_trn;
             uvma_mstream_pkt_mon_trn_c  out_trn;
-            `uvmx_prd_get(agent_ig_fifo, agent_ig_trn)
+            `uvmx_prd_get(agent_ig_fifo, in_trn)
             `uvmx_prd_create_trn(out_trn, uvma_mstream_pkt_mon_trn_c)
-            out_trn.from(agent_ig_trn);
-            out_trn.matrix.copy(agent_ig_trn.matrix);
+            out_trn.from(in_trn);
+            out_trn.matrix.copy(in_trn.matrix);
+            out_trn.dir = UVMA_MSTREAM_DIR_IG;
             `uvmx_prd_send(agent_ig_ap, out_trn)
          end
          forever begin
+            uvma_mstream_pkt_seq_item_c  in_trn;
             uvma_mstream_pkt_mon_trn_c  out_trn;
-            `uvmx_prd_get(agent_eg_fifo, agent_eg_trn)
+            `uvmx_prd_get(agent_eg_fifo, in_trn)
             `uvmx_prd_create_trn(out_trn, uvma_mstream_pkt_mon_trn_c)
-            out_trn.from(agent_eg_trn);
-            out_trn.matrix.copy(agent_eg_trn.matrix);
+            out_trn.from(in_trn);
+            out_trn.matrix.copy(in_trn.matrix);
+            out_trn.dir = UVMA_MSTREAM_DIR_EG;
             `uvmx_prd_send(agent_eg_ap, out_trn)
          end
          forever begin
+            uvma_mstream_pkt_mon_trn_c  in_trn;
             uvma_mstream_pkt_mon_trn_c  out_trn;
-            `uvmx_prd_get(e2e_ig_fifo, e2e_ig_trn)
-            out_trn.copy(e2e_ig_trn);
+            `uvmx_prd_get(e2e_ig_fifo, in_trn)
+            `uvmx_prd_create_trn(out_trn, uvma_mstream_pkt_mon_trn_c)
+            out_trn.copy(in_trn);
             `uvmx_prd_send(e2e_ig_ap, out_trn)
          end
          forever begin
+            uvma_mstream_pkt_mon_trn_c  in_trn;
             uvma_mstream_pkt_mon_trn_c  out_trn;
-            `uvmx_prd_get(e2e_eg_fifo, e2e_eg_trn)
-            out_trn.copy(e2e_eg_trn);
+            `uvmx_prd_get(e2e_eg_fifo, in_trn)
+            `uvmx_prd_create_trn(out_trn, uvma_mstream_pkt_mon_trn_c)
+            out_trn.copy(in_trn);
             `uvmx_prd_send(e2e_eg_ap, out_trn)
          end
       join

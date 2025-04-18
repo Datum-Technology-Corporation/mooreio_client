@@ -97,10 +97,10 @@ class uvme_mstream_st_env_c extends uvmx_agent_env_c #(
       passive_agent.ig_pkt_mon_trn_ap.connect(scoreboard.agent_ig_scoreboard.act_export);
       predictor.agent_eg_ap.connect(scoreboard.agent_eg_scoreboard.exp_export);
       passive_agent.eg_pkt_mon_trn_ap.connect(scoreboard.agent_eg_scoreboard.act_export);
-      predictor.e2e_ig_ap.connect(scoreboard.e2e_eg_scoreboard.exp_export);
-      card_agent.ig_pkt_mon_trn_ap.connect(scoreboard.e2e_eg_scoreboard.act_export);
-      predictor.e2e_eg_ap.connect(scoreboard.e2e_ig_scoreboard.exp_export);
-      host_agent.eg_pkt_mon_trn_ap.connect(scoreboard.e2e_ig_scoreboard.act_export);
+      predictor.e2e_ig_ap.connect(scoreboard.e2e_ig_scoreboard.exp_export);
+      card_agent.ig_pkt_mon_trn_ap.connect(scoreboard.e2e_ig_scoreboard.act_export);
+      predictor.e2e_eg_ap.connect(scoreboard.e2e_eg_scoreboard.exp_export);
+      host_agent.eg_pkt_mon_trn_ap.connect(scoreboard.e2e_eg_scoreboard.act_export);
       // pragma uvmx env_connect_scoreboard begin
       // pragma uvmx env_connect_scoreboard end
    endfunction

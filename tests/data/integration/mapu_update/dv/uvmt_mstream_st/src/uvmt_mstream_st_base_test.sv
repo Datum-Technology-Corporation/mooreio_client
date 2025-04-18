@@ -66,9 +66,40 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
     */
    function new(string name="uvmt_mstream_st_base_test", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx cfg_constructor begin
-      // pragma uvmx cfg_constructor end
    endfunction
+
+   // pragma uvmx base_test_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx base_test_build_dox end
+   virtual function void build();
+      // pragma uvmx base_test_build begin
+      // pragma uvmx base_test_build end
+   endfunction
+
+   /**
+    * Creates Clock and Reset Sequences.
+    */
+   virtual function void create_clk_reset_sequences();
+      sys_clk_seq = uvma_clk_start_seq_c::type_id::create("sys_clk_seq");
+      reset_n_seq = uvma_reset_pulse_seq_c::type_id::create("reset_n_seq");
+      // pragma uvmx cfg_create_clk_reset_sequences begin
+      // pragma uvmx cfg_create_clk_reset_sequences end
+   endfunction
+
+   // pragma uvmx base_test_create_sequences_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx base_test_create_sequences_dox end
+   virtual function void create_sequences();
+      // pragma uvmx base_test_create_sequences begin
+      // pragma uvmx base_test_create_sequences end
+   endfunction
+
+   // pragma uvmx base_test_post_randomize_work begin
+   // pragma uvmx base_test_post_randomize_work end
 
    /**
     * Creates agent components.
@@ -100,16 +131,6 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
    endfunction
 
    /**
-    * Creates Clock and Reset Sequences.
-    */
-   virtual function void create_clk_reset_sequences();
-      sys_clk_seq = uvma_clk_start_seq_c::type_id::create("sys_clk_seq");
-      reset_n_seq = uvma_reset_pulse_seq_c::type_id::create("reset_n_seq");
-      // pragma uvmx cfg_create_clk_reset_sequences begin
-      // pragma uvmx cfg_create_clk_reset_sequences end
-   endfunction
-
-/**
     * Runs sys_clk_seq.
     */
    virtual task pre_reset_phase(uvm_phase phase);
@@ -130,6 +151,36 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
       `uvm_info("TEST", $sformatf("Finished 'reset_n_seq':\n%s", reset_n_seq.sprint()), UVM_NONE)
       phase.drop_objection(this);
    endtask
+
+   // pragma uvmx base_test_check_phase begin
+   /**
+    * TODO Implement or remove uvmt_mstream_st_base_test_c::check_phase()
+    */
+   virtual function void check_phase(uvm_phase phase);
+      /* Example:
+         if (env_cntxt.agent_ig_scoreboard_cntxt.match_count == 0)) begin
+            `uvm_error("TEST", "Scoreboard 'Agent Ingress' did not observe any matches"))
+         end
+         if (env_cntxt.agent_eg_scoreboard_cntxt.match_count == 0)) begin
+            `uvm_error("TEST", "Scoreboard 'Agent Egress' did not observe any matches"))
+         end
+         if (env_cntxt.e2e_eg_scoreboard_cntxt.match_count == 0)) begin
+            `uvm_error("TEST", "Scoreboard 'End-to-end Ingress' did not observe any matches"))
+         end
+         if (env_cntxt.e2e_ig_scoreboard_cntxt.match_count == 0)) begin
+            `uvm_error("TEST", "Scoreboard 'End-to-end Egress' did not observe any matches"))
+         end
+      */
+   endfunction
+   // pragma uvmx base_test_check_phase end
+
+   // pragma uvmx base_test_report_phase begin
+   /**
+    * TODO Implement ore remove uvmt_mstream_st_base_test_c::report_phase()
+    */
+   virtual function void report_phase(uvm_phase phase);
+   endfunction
+   // pragma uvmx base_test_report_phase end
 
    // pragma uvmx base_test_methods begin
    // pragma uvmx base_test_methods end

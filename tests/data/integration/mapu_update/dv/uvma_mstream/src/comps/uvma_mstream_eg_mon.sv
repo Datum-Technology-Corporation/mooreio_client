@@ -54,8 +54,7 @@ class uvma_mstream_eg_mon_c extends uvmx_mp_mon_c #(
     */
    virtual function bit is_idle(ref uvma_mstream_eg_mon_trn_c current_trn, ref uvma_mstream_eg_mon_trn_c last_trn);
       // pragma uvmx eg_mon_is_idle begin
-      // TODO Implement uvma_mstream_eg_mon_c::is_idle()
-      return super.is_idle(current_trn, last_trn);
+      return !current_trn.eg_vld;
       // pragma uvmx eg_mon_is_idle end
    endfunction
 

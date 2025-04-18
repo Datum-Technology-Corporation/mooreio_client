@@ -58,9 +58,21 @@ class uvmt_mstream_st_rand_stim_test_c extends uvmt_mstream_st_base_test_c;
       super.new(name, parent);
    endfunction
 
+   // pragma uvmx rand_stim_test_build_dox begin
+   /**
+    * Empty
+    */
+   // pragma uvmx rand_stim_test_build_dox end
+   virtual function void build();
+      // pragma uvmx rand_stim_test_build begin
+      // pragma uvmx rand_stim_test_build end
+   endfunction
+
+   // pragma uvmx rand_stim_test_create_sequences_dox begin
    /**
     * Creates sequences rand_stim_seq.
     */
+   // pragma uvmx rand_stim_test_create_sequences_dox end
    virtual function void create_sequences();
       rand_stim_seq = uvme_mstream_st_rand_stim_seq_c::type_id::create("rand_stim_seq");
       // pragma uvmx rand_stim_create_sequences begin
@@ -86,36 +98,41 @@ class uvmt_mstream_st_rand_stim_test_c extends uvmt_mstream_st_base_test_c;
       phase.drop_objection(this);
    endtask
 
-   // pragma uvmx rand_stim_test_methods begin
+   // pragma uvmx rand_stim_test_check_phase begin
    /**
-    * Ensures that test goals were met.
+    * TODO Implement or remove uvmt_mstream_st_rand_stim_test_c::check_phase()
     */
    virtual function void check_phase(uvm_phase phase);
       if (env_cntxt.agent_ig_scoreboard_cntxt.match_count != rand_stim_seq.num_items) begin
-         `uvm_error("TEST", $sformatf("Scoreboard 'agent_ig' did not see %0d (act: %0d) matches during simulation", rand_stim_seq.num_items, env_cntxt.agent_ig_scoreboard_cntxt.match_count))
+         `uvm_error("TEST", $sformatf("Scoreboard 'Agent Ingress' observed %0d matches when expecting %0d", env_cntxt.agent_ig_scoreboard_cntxt.match_count, rand_stim_seq.num_items))
       end
       if (env_cntxt.agent_eg_scoreboard_cntxt.match_count != rand_stim_seq.num_items) begin
-         `uvm_error("TEST", $sformatf("Scoreboard 'agent_eg' did not see %0d (act: %0d) matches during simulation", rand_stim_seq.num_items, env_cntxt.agent_eg_scoreboard_cntxt.match_count))
+         `uvm_error("TEST", $sformatf("Scoreboard 'Agent Egress' observed %0d matches when expecting %0d", env_cntxt.agent_eg_scoreboard_cntxt.match_count, rand_stim_seq.num_items))
       end
       if (env_cntxt.e2e_ig_scoreboard_cntxt.match_count != rand_stim_seq.num_items) begin
-         `uvm_error("TEST", $sformatf("Scoreboard 'e2e_ig' did not see %0d (act: %0d) matches during simulation", rand_stim_seq.num_items, env_cntxt.e2e_ig_scoreboard_cntxt.match_count))
+         `uvm_error("TEST", $sformatf("Scoreboard 'End-to-end Ingress' observed %0d matches when expecting %0d", env_cntxt.e2e_ig_scoreboard_cntxt.match_count, rand_stim_seq.num_items))
       end
       if (env_cntxt.e2e_eg_scoreboard_cntxt.match_count != rand_stim_seq.num_items) begin
-         `uvm_error("TEST", $sformatf("Scoreboard 'e2e_eg' did not see %0d (act: %0d) matches during simulation", rand_stim_seq.num_items, env_cntxt.e2e_eg_scoreboard_cntxt.match_count))
+         `uvm_error("TEST", $sformatf("Scoreboard 'End-to-end Egress' observed %0d matches when expecting %0d", env_cntxt.e2e_eg_scoreboard_cntxt.match_count, rand_stim_seq.num_items))
       end
    endfunction
+   // pragma uvmx rand_stim_test_check_phase end
 
+   // pragma uvmx rand_stim_test_report_phase begin
    /**
-    * Prints end-of-test goals report.
+    * TODO Implement ore remove uvmt_mstream_st_rand_stim_test_c::report_phase()
     */
    virtual function void report_phase(uvm_phase phase);
-      `uvmx_test_report({
-         $sformatf("Scoreboard 'agent_ig' saw %0d matches during simulation", env_cntxt.agent_ig_scoreboard_cntxt.match_count),
-         $sformatf("Scoreboard 'agent_eg' saw %0d matches during simulation", env_cntxt.agent_eg_scoreboard_cntxt.match_count),
-         $sformatf("Scoreboard 'e2e_ig' saw %0d matches during simulation", env_cntxt.e2e_ig_scoreboard_cntxt.match_count),
-         $sformatf("Scoreboard 'e2e_eg' saw %0d matches during simulation", env_cntxt.e2e_eg_scoreboard_cntxt.match_count)
-      })
+     `uvmx_test_report({
+        $sformatf("Scoreboard 'Agent Ingress' observed %0d matches", env_cntxt.agent_ig_scoreboard_cntxt.match_count),
+        $sformatf("Scoreboard 'Agent Egress' observed %0d matches", env_cntxt.agent_eg_scoreboard_cntxt.match_count),
+        $sformatf("Scoreboard 'End-to-end Ingress' observed %0d matches", env_cntxt.e2e_ig_scoreboard_cntxt.match_count),
+        $sformatf("Scoreboard 'End-to-end Egress' observed %0d matches", env_cntxt.e2e_eg_scoreboard_cntxt.match_count)
+     })
    endfunction
+   // pragma uvmx rand_stim_test_report_phase end
+
+   // pragma uvmx rand_stim_test_methods begin
    // pragma uvmx rand_stim_test_methods end
 
 endclass

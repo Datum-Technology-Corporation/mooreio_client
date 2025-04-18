@@ -30,4 +30,4 @@ targets:
   default:
     dut: default
     cmp:
-      UVMT_MSTREAM_B_DATA_WIDTH: 32
+      UVMT_MSTREAM_ST_DATA_WIDTH: 32

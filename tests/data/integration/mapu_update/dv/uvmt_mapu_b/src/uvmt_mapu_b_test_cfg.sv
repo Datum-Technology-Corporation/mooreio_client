@@ -136,11 +136,9 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
       // pragma uvmx test_cfg_build end
    endfunction
 
-   // pragma uvmx test_cfg_process_cli_args_dox begin
    /**
     * Processes Command Line Interface arguments.
     */
-   // pragma uvmx test_cfg_process_cli_args_dox end
    virtual function void process_cli_args();
       `uvmx_cli_arg_parse("NUM_ITEMS", cli_num_items_override)
       if (cli_num_items_override) begin

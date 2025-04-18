@@ -21,8 +21,8 @@ class uvme_mstream_st_cntxt_c extends uvmx_agent_env_cntxt_c #(
    uvma_mstream_cntxt_c  passive_agent_cntxt; ///< Passive Agent context.
    uvmx_sb_simplex_cntxt_c  agent_ig_scoreboard_cntxt; ///< Agent Ingress Scoreboard context
    uvmx_sb_simplex_cntxt_c  agent_eg_scoreboard_cntxt; ///< Agent Egress Scoreboard context
-   uvmx_sb_simplex_cntxt_c  e2e_eg_scoreboard_cntxt; ///< End-to-end Ingress Scoreboard context
-   uvmx_sb_simplex_cntxt_c  e2e_ig_scoreboard_cntxt; ///< End-to-end Egress Scoreboard context
+   uvmx_sb_simplex_cntxt_c  e2e_ig_scoreboard_cntxt; ///< End-to-end Ingress Scoreboard context
+   uvmx_sb_simplex_cntxt_c  e2e_eg_scoreboard_cntxt; ///< End-to-end Egress Scoreboard context
    /// @}
 
    // pragma uvmx cntxt_fields begin
@@ -50,17 +50,19 @@ class uvme_mstream_st_cntxt_c extends uvmx_agent_env_cntxt_c #(
       super.new(name);
    endfunction
 
+   // pragma uvmx cntxt_build_dox begin
    /**
     * Creates objects.
     */
+   // pragma uvmx cntxt_build_dox end
    virtual function void build(uvme_mstream_st_cfg_c cfg);
       host_agent_cntxt = uvma_mstream_cntxt_c::type_id::create("host_agent_cntxt");
       card_agent_cntxt = uvma_mstream_cntxt_c::type_id::create("card_agent_cntxt");
       passive_agent_cntxt = uvma_mstream_cntxt_c::type_id::create("passive_agent_cntxt");
       agent_ig_scoreboard_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("agent_ig_scoreboard_cntxt");
       agent_eg_scoreboard_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("agent_eg_scoreboard_cntxt");
-      e2e_eg_scoreboard_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("e2e_eg_scoreboard_cntxt");
       e2e_ig_scoreboard_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("e2e_ig_scoreboard_cntxt");
+      e2e_eg_scoreboard_cntxt = uvmx_sb_simplex_cntxt_c::type_id::create("e2e_eg_scoreboard_cntxt");
       // pragma uvmx cntxt_build begin
       // pragma uvmx cntxt_build end
    endfunction

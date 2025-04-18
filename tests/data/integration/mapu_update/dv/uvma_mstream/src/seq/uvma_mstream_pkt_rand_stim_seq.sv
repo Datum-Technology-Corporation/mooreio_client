@@ -105,7 +105,7 @@ class uvma_mstream_pkt_rand_stim_seq_c extends uvma_mstream_pkt_base_seq_c;
          `uvm_info("MSTREAM_RAND_STIM_SEQ", $sformatf("Waiting %0d gap cycle(s) before item %0d/%0d", gap_size, (ii+1), num_items), UVM_HIGH)
          clk(gap_size);
          `uvm_info("MSTREAM_RAND_STIM_SEQ", $sformatf("Starting item #%0d of %0d with gap size %0d", (ii+1), num_items, gap_size), UVM_MEDIUM)
-          `uvmx_do_with(seq_item, {
+          `uvmx_do_with(pkt, {
              matrix.max_val == max_val;
           })
          `uvm_info("MSTREAM_RAND_STIM_SEQ", $sformatf("Finished item #%0d of %0d with gap size %0d", (ii+1), num_items, gap_size), UVM_HIGH)

@@ -20,8 +20,8 @@ class uvme_mstream_st_sb_c extends uvmx_block_sb_c #(
    /// @{
    uvme_mstream_st_agent_ig_sb_c  agent_ig_scoreboard; ///< Agent Ingress: Compares ingress sequence item against egress monitored transaction
    uvme_mstream_st_agent_eg_sb_c  agent_eg_scoreboard; ///< Agent Egress: Compares egress sequence item against egress monitored transaction
-   uvme_mstream_st_e2e_eg_sb_c  e2e_eg_scoreboard; ///< End-to-end Ingress: Compares monitored ingress transactions from transmitter and receiver
-   uvme_mstream_st_e2e_ig_sb_c  e2e_ig_scoreboard; ///< End-to-end Egress: Compares monitored egress transactions from transmitter and receiver
+   uvme_mstream_st_e2e_ig_sb_c  e2e_ig_scoreboard; ///< End-to-end Ingress: Compares monitored ingress transactions from transmitter and receiver
+   uvme_mstream_st_e2e_eg_sb_c  e2e_eg_scoreboard; ///< End-to-end Egress: Compares monitored egress transactions from transmitter and receiver
    /// @}
 
    // pragma uvmx sb_fields begin
@@ -47,8 +47,8 @@ class uvme_mstream_st_sb_c extends uvmx_block_sb_c #(
    virtual function void assign_cfg();
       uvm_config_db#(uvmx_sb_simplex_cfg_c)::set(this, "agent_ig_scoreboard", "cfg", cfg.agent_ig_scoreboard_cfg);
       uvm_config_db#(uvmx_sb_simplex_cfg_c)::set(this, "agent_eg_scoreboard", "cfg", cfg.agent_eg_scoreboard_cfg);
-      uvm_config_db#(uvmx_sb_simplex_cfg_c)::set(this, "e2e_eg_scoreboard", "cfg", cfg.e2e_eg_scoreboard_cfg);
       uvm_config_db#(uvmx_sb_simplex_cfg_c)::set(this, "e2e_ig_scoreboard", "cfg", cfg.e2e_ig_scoreboard_cfg);
+      uvm_config_db#(uvmx_sb_simplex_cfg_c)::set(this, "e2e_eg_scoreboard", "cfg", cfg.e2e_eg_scoreboard_cfg);
       // pragma uvmx sb_assign_cfg begin
       // pragma uvmx sb_assign_cfg end
    endfunction
@@ -59,8 +59,8 @@ class uvme_mstream_st_sb_c extends uvmx_block_sb_c #(
    virtual function void assign_cntxt();
       uvm_config_db#(uvmx_sb_simplex_cntxt_c)::set(this, "agent_ig_scoreboard", "cntxt", cntxt.agent_ig_scoreboard_cntxt);
       uvm_config_db#(uvmx_sb_simplex_cntxt_c)::set(this, "agent_eg_scoreboard", "cntxt", cntxt.agent_eg_scoreboard_cntxt);
-      uvm_config_db#(uvmx_sb_simplex_cntxt_c)::set(this, "e2e_eg_scoreboard", "cntxt", cntxt.e2e_eg_scoreboard_cntxt);
       uvm_config_db#(uvmx_sb_simplex_cntxt_c)::set(this, "e2e_ig_scoreboard", "cntxt", cntxt.e2e_ig_scoreboard_cntxt);
+      uvm_config_db#(uvmx_sb_simplex_cntxt_c)::set(this, "e2e_eg_scoreboard", "cntxt", cntxt.e2e_eg_scoreboard_cntxt);
       // pragma uvmx sb_assign_cntxt begin
       // pragma uvmx sb_assign_cntxt end
    endfunction
@@ -71,8 +71,8 @@ class uvme_mstream_st_sb_c extends uvmx_block_sb_c #(
    virtual function void create_components();
       agent_ig_scoreboard = uvme_mstream_st_agent_ig_sb_c::type_id::create("agent_ig_scoreboard", this);
       agent_eg_scoreboard = uvme_mstream_st_agent_eg_sb_c::type_id::create("agent_eg_scoreboard", this);
-      e2e_eg_scoreboard = uvme_mstream_st_e2e_eg_sb_c::type_id::create("e2e_eg_scoreboard", this);
       e2e_ig_scoreboard = uvme_mstream_st_e2e_ig_sb_c::type_id::create("e2e_ig_scoreboard", this);
+      e2e_eg_scoreboard = uvme_mstream_st_e2e_eg_sb_c::type_id::create("e2e_eg_scoreboard", this);
       // pragma uvmx sb_create_components begin
       // pragma uvmx sb_create_components end
    endfunction
