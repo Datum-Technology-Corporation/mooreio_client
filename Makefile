@@ -50,6 +50,8 @@ MAGENTA = "\033[35m"
 CYAN = "\033[36m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
+TERM_WIDTH := $(shell tput cols)
+FILLER := $(shell printf "%*s" $(TERM_WIDTH) "" | tr " " "*")
 
 
 #######################################################################################################################
@@ -62,9 +64,9 @@ PACKAGE_NAME := mooreio_client
 #######################################################################################################################
 define print_banner
 	@echo
-	@echo $(BOLD)$(GREEN)***********************************************************************************************************************
-	@echo $(CYAN)[$(MAGENTA)MIO$(CYAN)-$(MAGENTA)CLIENT$(CYAN)-$(MAGENTA)MAKE$(CYAN)]$(RESET)$(BOLD)$(1) ...
-	@echo $(GREEN)***********************************************************************************************************************$(RESET)
+	@echo $(BOLD)$(GREEN)$(FILLER)$(RESET)
+	@echo $(CYAN)[$(MAGENTA)MIO$(CYAN)-$(MAGENTA)WEB$(CYAN)-$(MAGENTA)MAKE$(CYAN)]$(RESET)$(BOLD)$(1) ...
+	@echo $(GREEN)$(FILLER)$(RESET)
 endef
 
 
