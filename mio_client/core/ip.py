@@ -581,17 +581,17 @@ class Ip(Model):
             self._has_scripts = True
             self._resolved_scripts_path = self.root_path / self.structure.scripts_path
             if not self.rmh.directory_exists(self.resolved_scripts_path):
-                raise Exception(f"IP '{self}' scripts path '{self.resolved_scripts_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' scripts path '{self.resolved_scripts_path}' does not exist")
         if self.structure.docs_path != UNDEFINED_CONST:
             self._has_docs = True
             self._resolved_docs_path = self.root_path / self.structure.docs_path
             if not self.rmh.directory_exists(self.resolved_docs_path):
-                raise Exception(f"IP '{self}' docs path '{self.resolved_docs_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' docs path '{self.resolved_docs_path}' does not exist")
         if self.structure.examples_path != UNDEFINED_CONST:
             self._has_examples = True
             self._resolved_examples_path = self.root_path / self.structure.examples_path
             if not self.rmh.directory_exists(self.resolved_examples_path):
-                raise Exception(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
         # Check targets
         if 'default' not in self.targets:
             default_target = Target()
@@ -600,11 +600,11 @@ class Ip(Model):
 
     def check_hdl_src(self, path: Path, simulator: str=""):
         if not self.rmh.directory_exists(path):
-            raise Exception(f"IP '{self}' src path '{path}' does not exist")
+            self.rmh.warning(f"IP '{self}' src path '{path}' does not exist")
         for directory in self.hdl_src.directories:
             directory_path = path / directory
             if not self.rmh.directory_exists(directory_path):
-                raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' HDL src path '{directory_path}' does not exist")
             else:
                 if simulator == "":
                     self.resolved_hdl_directories.append(directory_path)
@@ -615,7 +615,7 @@ class Ip(Model):
         if self.hdl_src.tests_path != UNDEFINED_CONST:
             tests_directory_path = path / self.hdl_src.tests_path
             if not self.rmh.directory_exists(tests_directory_path):
-                raise Exception(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
             else:
                 if simulator == "":
                     self.resolved_hdl_directories.append(tests_directory_path)

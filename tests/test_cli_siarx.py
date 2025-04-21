@@ -174,3 +174,13 @@ class TestCliSiArx(TestBase):
     @pytest.mark.dsim
     def test_cli_siarx_update_project_sim_mpb_rand_stim_dsim(self, capsys):
         self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mpb_st', 'bit_bash')
+
+
+    ###################################################################################################################
+    # MTX
+    ###################################################################################################################
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_gen_project_cmpelab_mtx_dsim(self, capsys):
+        self.cli_siarx_gen_project_cmpelab_ip(capsys, 'dsim', "uvmt_mtx_ss")
