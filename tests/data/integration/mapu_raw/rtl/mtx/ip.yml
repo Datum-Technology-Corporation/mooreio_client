@@ -6,6 +6,9 @@ ip:
   full_name: "Matrix Sub-System"
   version: "1.0.0"
 
+dependencies:
+  "acme/mapu": "*"
+
 structure:
    docs_path   : "docs"
    hdl_src_path: "src"

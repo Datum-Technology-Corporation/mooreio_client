@@ -2,6 +2,7 @@
 # All rights reserved.
 #######################################################################################################################
 import base64
+import heapq
 import os
 import tarfile
 from collections import defaultdict, deque
@@ -736,27 +737,32 @@ class Ip(Model):
     def __hash__(self):
         return hash(self.archive_name)
     
-    def get_dependencies(self, src_dest_map: Dict[Ip, Ip]):
+    def get_dependencies(self, src_dest_map: Dict[Ip, List[Ip]]):
+        src_dest_map[self] = []
         for dep in self.resolved_dependencies:
             dependency = self.resolved_dependencies[dep]
-            src_dest_map[self] = dependency
+            src_dest_map[self].append(dependency)
             dependency.get_dependencies(src_dest_map)
-    
+        if self.has_dut:
+            src_dest_map[self].append(self.resolved_dut)
+            self.resolved_dut.get_dependencies(src_dest_map)
+
     def get_dependencies_in_order(self) -> List[Ip]:
         """
         Apply a topological sorting algorithm to determine the order of compilation (Khan's algorithm)
         :return: List of IPs in order of compilation
         """
-        all_ip = self.ip_database.get_all_ip()
         dependencies = {}
         self.get_dependencies(dependencies)
+        all_ip = list(dependencies.keys())
         # Create a graph and a dictionary to keep track of in-degrees of nodes
         graph = defaultdict(list)
         in_degree = {package: 0 for package in all_ip}
         # Populate the graph and in-degrees based on dependencies
-        for dep in dependencies:
-            graph[dep].append(dependencies[dep])
-            in_degree[dependencies[dep]] += 1
+        for dep_ip in dependencies:
+            for dep in dependencies[dep_ip]:
+                graph[dep_ip].append(dep)
+                in_degree[dep] += 1
         # Find all nodes with in-degree 0
         queue = deque([ip for ip in all_ip if in_degree[ip] == 0])
         topo_order = []
@@ -770,7 +776,6 @@ class Ip(Model):
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
         # If topological sort includes all nodes, return the order
-        # TODO Remove IP that aren't related to this IP
         if len(topo_order) == len(all_ip):
             # Remove self from the topological order if it exists
             if self in topo_order:
