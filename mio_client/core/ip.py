@@ -2,7 +2,6 @@
 # All rights reserved.
 #######################################################################################################################
 import base64
-import heapq
 import os
 import tarfile
 from collections import defaultdict, deque

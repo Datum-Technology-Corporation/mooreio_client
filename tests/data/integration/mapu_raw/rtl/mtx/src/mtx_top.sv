@@ -11,7 +11,7 @@
 
 
 /**
- *
+ * Matrix Sub-System Top.
  */
 module mtx_top # (
    parameter NUM_CH = 32,
@@ -20,6 +20,16 @@ module mtx_top # (
    input sys_clk, sys_rst_n, test_mode_en
 );
 
+   generate
+      for (genvar ii=0; ii<NUM_CH; ii++) begin
+         mapu_top #(
+            .DATA_WIDTH(DATA_WIDTH)
+         ) mapu_u[ii] (
+            .clk(sys_clk),
+            .reset_n(sys_rst_n)
+         );
+      end
+   endgenerate
 
 endmodule: mtx_top
 
