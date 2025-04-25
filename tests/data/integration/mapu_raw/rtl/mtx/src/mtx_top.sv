@@ -21,10 +21,10 @@ module mtx_top # (
 );
 
    generate
-      for (genvar ii=0; ii<NUM_CH; ii++) begin
+      for (genvar ii=0; ii<NUM_CH; ii++) begin : gen_mapu_u
          mapu_top #(
             .DATA_WIDTH(DATA_WIDTH)
-         ) mapu_u[ii] (
+         ) mapu_u (
             .clk(sys_clk),
             .reset_n(sys_rst_n)
          );
