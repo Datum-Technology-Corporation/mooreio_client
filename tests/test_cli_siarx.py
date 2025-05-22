@@ -20,6 +20,7 @@ class TestCliSiArx(TestBase):
         mio_client.cli.TEST_MODE = True
         self.mapu_raw_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "mapu_raw"))
         self.mapu_update_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "mapu_update"))
+        self.rvmcu_raw_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "rvmcu_raw"))
         self.assert_directory_exists(self.mapu_raw_path)
 
     def reset_workspace(self):
@@ -30,6 +31,12 @@ class TestCliSiArx(TestBase):
         self.remove_file(self.mapu_raw_path / "mio.toml")
         self.remove_directory(self.mapu_update_path / ".mio")
         self.remove_directory(self.mapu_update_path / "sim")
+        # TEMPORARY RV-MCU
+        self.remove_directory(self.rvmcu_raw_path / ".mio")
+        self.remove_directory(self.rvmcu_raw_path / "sim")
+        self.remove_directory(self.rvmcu_raw_path / "docs")
+        self.remove_directory(self.rvmcu_raw_path / "dv")
+        self.remove_file(self.rvmcu_raw_path / "mio.toml")
 
     def siarx(self, capsys, project_path: Path, project_id: str) -> OutputCapture:
         result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'x', f'--project-id={project_id}'])
@@ -184,3 +191,15 @@ class TestCliSiArx(TestBase):
     @pytest.mark.dsim
     def test_cli_siarx_gen_project_cmpelab_mtx_dsim(self, capsys):
         self.cli_siarx_gen_project_cmpelab_ip(capsys, 'dsim', "uvmt_mtx_ss")
+
+
+
+    ###################################################################################################################
+    # *TEMPORARY* RV-MCU
+    ###################################################################################################################
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    def test_cli_siarx_gen_project_rvmcu(self, capsys):
+        self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
+        result = self.siarx(capsys, self.rvmcu_raw_path, '1000')
