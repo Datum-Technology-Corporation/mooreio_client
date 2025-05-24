@@ -109,9 +109,9 @@ class uvme_mstream_st_env_c extends uvmx_agent_env_c #(
     * Connects environment coverage model to agent/predictor.
     */
    virtual function void connect_coverage_model();
-      host_agent.seq_item_ap.connect(cov_model.stim_op_seq_item_fifo.analysis_export);
-      predictor.e2e_ig_ap.connect(cov_model.ig_mon_trn_fifo.analysis_export);
-      predictor.e2e_eg_ap.connect(cov_model.eg_mon_trn_fifo.analysis_export);
+      host_agent.seq_item_ap.connect(cov_model.stim_op_fifo.analysis_export);
+      predictor.e2e_ig_ap.connect(cov_model.ig_fifo.analysis_export);
+      predictor.e2e_eg_ap.connect(cov_model.eg_fifo.analysis_export);
       // pragma uvmx env_connect_coverage_model begin
       // pragma uvmx env_connect_coverage_model end
    endfunction

@@ -8,7 +8,7 @@
 
 
 /**
- * Abstract Sequence from which all Matrix APU Block Environment Virtual Sequences extend.
+ * Abstract Sequence from which all Matrix APU Block Environment Sequences extend.
  * @ingroup uvme_mapu_b_seq
  */
 class uvme_mapu_b_base_seq_c extends uvmx_block_env_seq_c #(

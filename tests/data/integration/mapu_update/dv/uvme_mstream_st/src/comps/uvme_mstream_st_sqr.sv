@@ -38,8 +38,6 @@ class uvme_mstream_st_sqr_c extends uvmx_block_env_sqr_c #(
     */
    function new(string name="uvme_mstream_st_sqr", uvm_component parent=null);
       super.new(name, parent);
-      // pragma uvmx sqr_constructor begin
-      // pragma uvmx sqr_constructor end
    endfunction
 
    // pragma uvmx sqr_methods begin

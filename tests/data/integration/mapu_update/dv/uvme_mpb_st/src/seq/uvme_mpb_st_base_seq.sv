@@ -8,7 +8,7 @@
 
 
 /**
- * Abstract Sequence from which all Matrix Peripheral Bus Agent Self-Test Environment Virtual Sequences extend.
+ * Abstract Sequence from which all Matrix Peripheral Bus Agent Self-Test Environment Sequences extend.
  * @ingroup uvme_mpb_st_seq
  */
 class uvme_mpb_st_base_seq_c extends uvmx_agent_env_seq_c #(

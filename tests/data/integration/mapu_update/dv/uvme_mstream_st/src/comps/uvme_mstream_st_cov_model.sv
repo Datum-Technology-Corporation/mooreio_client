@@ -18,9 +18,9 @@ class uvme_mstream_st_cov_model_c extends uvmx_agent_env_cov_model_c #(
 
    /// @name FIFOs
    /// @{
-   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_seq_item_c)  stim_op_seq_item_fifo; ///< Agent operation
-   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  ig_mon_trn_fifo; ///< Ingress
-   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  eg_mon_trn_fifo; ///< Egress
+   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_seq_item_c)  stim_op_fifo; ///< Agent operation
+   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  ig_fifo; ///< Ingress
+   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  eg_fifo; ///< Egress
    /// @}
 
    // pragma uvmx cov_model_fields begin
@@ -58,11 +58,22 @@ class uvme_mstream_st_cov_model_c extends uvmx_agent_env_cov_model_c #(
     * Creates TLM FIFOs.
     */
    virtual function void create_fifos();
-      stim_op_seq_item_fifo = new("stim_op_seq_item_fifo", this);
-      ig_mon_trn_fifo = new("ig_mon_trn_fifo", this);
-      eg_mon_trn_fifo = new("eg_mon_trn_fifo", this);
+      stim_op_fifo = new("stim_op_fifo", this);
+      ig_fifo = new("ig_fifo", this);
+      eg_fifo = new("eg_fifo", this);
       // pragma uvmx cov_model_create_fifos begin
       // pragma uvmx cov_model_create_fifos end
+   endfunction
+
+   // pragma uvmx cov_model_sample_cfg_dox begin
+   /**
+    * TODO Implement uvme_mstream_st_cov_model_c::sample_cfg()
+    */
+   // pragma uvmx cov_model_sample_cfg_dox end
+   virtual function void sample_cfg();
+      // pragma uvmx cov_model_sample_cfg begin
+      // ...
+      // pragma uvmx cov_model_sample_cfg end
    endfunction
 
    // pragma uvmx cov_model_sample_dox begin

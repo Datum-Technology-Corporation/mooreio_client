@@ -18,7 +18,7 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
    rand int unsigned  num_items; ///< Number of items
    rand int unsigned  min_gap; ///< Minimum inter-item gap
    rand int unsigned  max_gap; ///< Maximum inter-item gap
-   rand int unsigned  sys_clk_frequency; ///< System frequency (Hz).
+   rand int unsigned  system_clk_frequency; ///< System frequency (Hz).
    /// @}
 
    /// @name Command Line Interface arguments
@@ -33,8 +33,8 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
 
    /// @name Agents
    /// @{
-   rand uvma_clk_cfg_c  sys_clk_agent_cfg  ; ///< System agent configuration.
-   rand uvma_reset_cfg_c  reset_n_agent_cfg; ///<  Reset Agent configuration.
+   rand uvma_clk_cfg_c  system_clk_agent_cfg  ; ///< System agent configuration.
+   rand uvma_reset_cfg_c  rst_agent_cfg; ///<  Reset Agent configuration.
    /// @}
 
    // pragma uvmx test_cfg_fields begin
@@ -77,24 +77,24 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
     * Sets safe defaults parameters.
     */
    constraint defaults_cons {
-      sys_clk_frequency == uvmt_mstream_st_default_sys_clk_frequency;
-      startup_timeout == uvmt_mstream_st_default_startup_timeout;
-      heartbeat_period == uvmt_mstream_st_default_heartbeat_period;
-      heartbeat_refresh_period == uvmt_mstream_st_default_heartbeat_refresh_period;
-      simulation_timeout == uvmt_mstream_st_default_simulation_timeout;
+      soft system_clk_frequency == uvmt_mstream_st_default_system_clk_frequency;
+      soft simulation_timeout == uvmt_mstream__default_simulation_timeout;
+      soft startup_timeout == uvmt_mstream__default_startup_timeout;
+      soft heartbeat_period == uvmt_mstream__default_heartbeat_period;
+      soft heartbeat_refresh_period == uvmt_mstream__default_heartbeat_refresh_period;
    }
 
    /**
     * Sets agents configuration.
     */
    constraint agents_cons {
-      sys_clk_agent_cfg.enabled == 1;
-      sys_clk_agent_cfg.is_active == UVM_ACTIVE;
+      system_clk_agent_cfg.enabled == 1;
+      system_clk_agent_cfg.is_active == UVM_ACTIVE;
       reset_type == UVMX_RESET_SYNC;
-      reset_n_agent_cfg.reset_type == UVMX_RESET_SYNC;
-      reset_n_agent_cfg.polarity == UVMX_RESET_ACTIVE_LOW;
-      reset_n_agent_cfg.enabled == 1;
-      reset_n_agent_cfg.is_active == UVM_ACTIVE;
+      rst_agent_cfg.reset_type == UVMX_RESET_SYNC;
+      rst_agent_cfg.polarity == UVMX_RESET_ACTIVE_LOW;
+      rst_agent_cfg.enabled == 1;
+      rst_agent_cfg.is_active == UVM_ACTIVE;
    }
 
    // pragma uvmx test_cfg_constraints begin
@@ -122,8 +122,8 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
     */
    // pragma uvmx test_cfg_build_dox end
    virtual function void build();
-      sys_clk_agent_cfg = uvma_clk_cfg_c::type_id::create("sys_clk_agent_cfg");
-      reset_n_agent_cfg = uvma_reset_cfg_c::type_id::create("reset_n_agent_cfg");
+      system_clk_agent_cfg = uvma_clk_cfg_c::type_id::create("system_clk_agent_cfg");
+      rst_agent_cfg = uvma_reset_cfg_c::type_id::create("rst_agent_cfg");
       // pragma uvmx test_cfg_build begin
       // pragma uvmx test_cfg_build end
    endfunction

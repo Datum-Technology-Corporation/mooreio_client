@@ -20,8 +20,8 @@ class uvme_mstream_st_prd_c extends uvmx_agent_prd_c #(
    /// @{
    uvm_tlm_analysis_fifo #(uvma_mstream_pkt_seq_item_c)  agent_ig_fifo; ///< Agent Ingress Monitor Transactions to be processed.
    uvm_tlm_analysis_fifo #(uvma_mstream_pkt_seq_item_c)  agent_eg_fifo; ///< Agent Egress Monitor Transactions to be processed.
-   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  e2e_ig_fifo; ///< Eng-to-End Ingress Monitor Transactions to be processed.
-   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  e2e_eg_fifo; ///< Eng-to-End Egress Monitor Transactions to be processed.
+   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  e2e_ig_fifo; ///< End-to-End Ingress Monitor Transactions to be processed.
+   uvm_tlm_analysis_fifo #(uvma_mstream_pkt_mon_trn_c)  e2e_eg_fifo; ///< End-to-End Egress Monitor Transactions to be processed.
    /// @}
 
    /// @name Ports

@@ -40,8 +40,8 @@ class uvma_mpb_sec_p_drv_c extends uvmx_mp_drv_c #(
     * Drives SEC Parallel driver clocking block (sec_p_drv_cb) at the beginning of each clock cycle.
     */
    virtual task drive_item(ref uvma_mpb_sec_p_seq_item_c item);
-      `uvmx_mp_drv_signal(item, rdy)
-      `uvmx_mp_drv_signal(item, rdata)
+      mp.sec_p_drv_cb.rdy <= item.rdy;
+      mp.sec_p_drv_cb.rdata <= item.rdata;
       // pragma uvmx sec_p_drv_drive_item begin
       // pragma uvmx sec_p_drv_drive_item end
    endtask
@@ -50,10 +50,10 @@ class uvma_mpb_sec_p_drv_c extends uvmx_mp_drv_c #(
     * Samples the SEC Parallel Driver clocking block (sec_p_drv_cb) at the end of each clock cycle.
     */
    virtual task sample_post_clk(ref uvma_mpb_sec_p_seq_item_c item);
-      `uvmx_mp_mon_signal(item, vld)
-      `uvmx_mp_mon_signal(item, wr)
-      `uvmx_mp_mon_signal(item, wdata)
-      `uvmx_mp_mon_signal(item, addr)
+      item.vld = mp.sec_p_drv_cb.vld;
+      item.wr = mp.sec_p_drv_cb.wr;
+      item.wdata = mp.sec_p_drv_cb.wdata;
+      item.addr = mp.sec_p_drv_cb.addr;
       // pragma uvmx sec_p_drv_sample_post_clk begin
       // pragma uvmx sec_p_drv_sample_post_clk end
    endtask

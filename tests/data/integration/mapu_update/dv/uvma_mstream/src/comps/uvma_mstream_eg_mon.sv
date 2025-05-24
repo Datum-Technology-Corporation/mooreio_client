@@ -40,11 +40,11 @@ class uvma_mstream_eg_mon_c extends uvmx_mp_mon_c #(
     * Samples #trn from the Egress monitor clocking block (eg_mon_cb) on each clock cycle.
     */
    virtual task sample_trn(ref uvma_mstream_eg_mon_trn_c trn);
-      `uvmx_mp_mon_signal(trn, eg_vld)
-      `uvmx_mp_mon_signal(trn, eg_rdy)
-      `uvmx_mp_mon_signal(trn, eg_r0)
-      `uvmx_mp_mon_signal(trn, eg_r1)
-      `uvmx_mp_mon_signal(trn, eg_r2)
+      trn.eg_vld = mp.eg_mon_cb.eg_vld;
+      trn.eg_rdy = mp.eg_mon_cb.eg_rdy;
+      trn.eg_r0 = mp.eg_mon_cb.eg_r0;
+      trn.eg_r1 = mp.eg_mon_cb.eg_r1;
+      trn.eg_r2 = mp.eg_mon_cb.eg_r2;
       // pragma uvmx eg_mon_sample_trn begin
       // pragma uvmx eg_mon_sample_trn end
    endtask

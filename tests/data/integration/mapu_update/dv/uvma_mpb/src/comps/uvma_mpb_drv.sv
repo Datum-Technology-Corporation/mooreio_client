@@ -49,6 +49,20 @@ class uvma_mpb_drv_c extends uvmx_drv_c #(
       // pragma uvmx drv_create_drivers end
    endfunction
 
+   /**
+    * Drives signals initial values.
+    */
+   virtual task drive_reset_values();
+      if (cfg.drv_mode == UVMA_MPB_DRV_MODE_MAIN) begin
+         cntxt.vif.drive_main_initial_values();
+      end
+      if (cfg.drv_mode == UVMA_MPB_DRV_MODE_SEC) begin
+         cntxt.vif.drive_sec_initial_values();
+      end
+      // pragma uvmx drv_drive_reset_values begin
+      // pragma uvmx drv_drive_reset_values end
+   endtask
+
    // pragma uvmx drv_methods begin
    // pragma uvmx drv_methods end
 

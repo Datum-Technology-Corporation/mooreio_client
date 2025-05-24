@@ -40,11 +40,11 @@ class uvma_mstream_ig_mon_c extends uvmx_mp_mon_c #(
     * Samples #trn from the Ingress monitor clocking block (ig_mon_cb) on each clock cycle.
     */
    virtual task sample_trn(ref uvma_mstream_ig_mon_trn_c trn);
-      `uvmx_mp_mon_signal(trn, ig_vld)
-      `uvmx_mp_mon_signal(trn, ig_rdy)
-      `uvmx_mp_mon_signal(trn, ig_r0)
-      `uvmx_mp_mon_signal(trn, ig_r1)
-      `uvmx_mp_mon_signal(trn, ig_r2)
+      trn.ig_vld = mp.ig_mon_cb.ig_vld;
+      trn.ig_rdy = mp.ig_mon_cb.ig_rdy;
+      trn.ig_r0 = mp.ig_mon_cb.ig_r0;
+      trn.ig_r1 = mp.ig_mon_cb.ig_r1;
+      trn.ig_r2 = mp.ig_mon_cb.ig_r2;
       // pragma uvmx ig_mon_sample_trn begin
       // pragma uvmx ig_mon_sample_trn end
    endtask

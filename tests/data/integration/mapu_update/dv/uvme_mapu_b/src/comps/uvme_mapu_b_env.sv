@@ -99,11 +99,11 @@ class uvme_mapu_b_env_c extends uvmx_block_env_c #(
     * Connects environment coverage model to agent/predictor.
     */
    virtual function void connect_coverage_model();
-      agent.seq_item_ap.connect(cov_model.agent_op_seq_item_fifo.analysis_export);
-      agent.ig_mon_trn_ap.connect(cov_model.agent_ig_mon_trn_fifo.analysis_export);
-      predictor.eg_ap.connect(cov_model.predictor_eg_mon_trn_fifo.analysis_export);
-      agent.cp_seq_item_ap.connect(cov_model.agent_cp_stim_seq_item_fifo.analysis_export);
-      agent.cp_mon_trn_ap.connect(cov_model.agent_cp_mon_mon_trn_fifo.analysis_export);
+      agent.seq_item_ap.connect(cov_model.agent_op_fifo.analysis_export);
+      agent.ig_mon_trn_ap.connect(cov_model.agent_ig_fifo.analysis_export);
+      predictor.eg_ap.connect(cov_model.predictor_eg_fifo.analysis_export);
+      agent.cp_seq_item_ap.connect(cov_model.agent_cp_stim_fifo.analysis_export);
+      agent.cp_mon_trn_ap.connect(cov_model.agent_cp_mon_fifo.analysis_export);
       // pragma uvmx env_connect_coverage_model begin
       // pragma uvmx env_connect_coverage_model end
    endfunction

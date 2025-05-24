@@ -8,7 +8,7 @@
 
 
 /**
- * @defgroup uvme_mpb_st_pkg  Block UVM Environment
+ * @defgroup uvme_mpb_st_pkg Matrix Peripheral Bus Block UVM Environment
  * @{
  * @defgroup uvme_mpb_st_comps Components
  * @defgroup uvme_mpb_st_misc  Miscellaneous

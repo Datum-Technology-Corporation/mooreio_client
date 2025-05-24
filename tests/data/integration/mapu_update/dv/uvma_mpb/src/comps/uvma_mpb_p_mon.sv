@@ -40,12 +40,12 @@ class uvma_mpb_p_mon_c extends uvmx_mp_mon_c #(
     * Samples #trn from the Parallel monitor clocking block (p_mon_cb) on each clock cycle.
     */
    virtual task sample_trn(ref uvma_mpb_p_mon_trn_c trn);
-      `uvmx_mp_mon_signal(trn, vld)
-      `uvmx_mp_mon_signal(trn, rdy)
-      `uvmx_mp_mon_signal(trn, wr)
-      `uvmx_mp_mon_signal(trn, rdata)
-      `uvmx_mp_mon_signal(trn, wdata)
-      `uvmx_mp_mon_signal(trn, addr)
+      trn.vld = mp.p_mon_cb.vld;
+      trn.rdy = mp.p_mon_cb.rdy;
+      trn.wr = mp.p_mon_cb.wr;
+      trn.rdata = mp.p_mon_cb.rdata;
+      trn.wdata = mp.p_mon_cb.wdata;
+      trn.addr = mp.p_mon_cb.addr;
       // pragma uvmx p_mon_sample_trn begin
       // pragma uvmx p_mon_sample_trn end
    endtask

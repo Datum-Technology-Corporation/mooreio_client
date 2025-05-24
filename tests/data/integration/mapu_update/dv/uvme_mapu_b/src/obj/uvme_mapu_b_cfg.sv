@@ -11,7 +11,7 @@
  * Object encapsulating all parameters for creating, connecting and running the Matrix APU Block environment (uvme_mapu_b_env_c).
  * @ingroup uvme_mapu_b_obj
  */
-class uvme_mapu_b_cfg_c extends uvmx_block_sb_env_cfg_c;
+class uvme_mapu_b_cfg_c extends uvmx_block_env_cfg_c;
 
    /// @name Settings
    /// @{
@@ -20,7 +20,7 @@ class uvme_mapu_b_cfg_c extends uvmx_block_sb_env_cfg_c;
 
    /// @name Bus Widths
    /// @{
-   rand int unsigned  data_width; ///< Data Width
+   rand int unsigned  data_width; ///< Data Width: Matrix elements data width
    /// @}
 
     /// @name Objects
@@ -60,6 +60,24 @@ class uvme_mapu_b_cfg_c extends uvmx_block_sb_env_cfg_c;
     */
    constraint parameter_sync_cons {
      agent_cfg.data_width == data_width;
+   }
+
+   /**
+    * Sets configuration fields for basic agent configuration.
+    */
+   constraint agent_cons {
+      soft agent_cfg.enabled     == enabled;
+      soft agent_cfg.is_active   == is_active;
+      soft agent_cfg.bypass_mode == 0;
+   }
+
+   /**
+    * Sets all configuration fields for Egress scoreboard.
+    */
+   constraint egress_sb_cons {
+      soft egress_scoreboard_cfg.enabled     == scoreboarding_enabled;
+      soft egress_scoreboard_cfg.mode        == UVMX_SB_MODE_IN_ORDER;
+      soft egress_scoreboard_cfg.log_enabled == 1;
    }
 
    // pragma uvmx cfg_constraints begin

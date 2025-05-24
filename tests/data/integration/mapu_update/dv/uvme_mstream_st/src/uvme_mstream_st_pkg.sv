@@ -8,7 +8,7 @@
 
 
 /**
- * @defgroup uvme_mstream_st_pkg  Block UVM Environment
+ * @defgroup uvme_mstream_st_pkg Matrix Stream Interface Block UVM Environment
  * @{
  * @defgroup uvme_mstream_st_comps Components
  * @defgroup uvme_mstream_st_misc  Miscellaneous

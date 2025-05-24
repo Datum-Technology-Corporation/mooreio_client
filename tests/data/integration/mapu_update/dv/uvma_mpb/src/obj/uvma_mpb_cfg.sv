@@ -20,8 +20,8 @@ class uvma_mpb_cfg_c extends uvmx_agent_cfg_c;
 
    /// @name Bus Widths
    /// @{
-   rand int unsigned  data_width; ///< Data Width
-   rand int unsigned  addr_width; ///< Address Width
+   rand int unsigned  data_width; ///< Data Width: Bus width for data
+   rand int unsigned  addr_width; ///< Address Width: Bus width for address
    /// @}
 
    // pragma uvmx cfg_fields begin

@@ -18,19 +18,22 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_env_cov_model_c #(
 
    /// @name FIFOs
    /// @{
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_op_seq_item_c)  agent_op_seq_item_fifo; ///< Agent operation
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_ig_mon_trn_c)  agent_ig_mon_trn_fifo; ///< Agent ingress
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  predictor_eg_mon_trn_fifo; ///< Predictor egress
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_seq_item_c)  agent_cp_stim_seq_item_fifo; ///< Agent Control Plane stimulus
-   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_mon_trn_c)  agent_cp_mon_mon_trn_fifo; ///< Agent Control Plane monitoring
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_op_seq_item_c)  agent_op_fifo; ///< Agent operation
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_ig_mon_trn_c)  agent_ig_fifo; ///< Agent ingress
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_eg_mon_trn_c)  predictor_eg_fifo; ///< Predictor egress
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_seq_item_c)  agent_cp_stim_fifo; ///< Agent Control Plane stimulus
+   uvm_tlm_analysis_fifo #(uvma_mapu_b_cp_mon_trn_c)  agent_cp_mon_fifo; ///< Agent Control Plane monitoring
    /// @}
 
    // pragma uvmx cov_model_fields begin
-   uvma_mapu_b_op_seq_item_c   agent_op_seq_item; ///< Sequence Item being sampled.
-   uvma_mapu_b_ig_mon_trn_c    agent_ig_mon_trn; ///< Ingress Monitor Transaction being sampled.
-   uvma_mapu_b_eg_mon_trn_c    predictor_eg_mon_trn; ///< Egress Monitor Transaction being sampled.
-   uvma_mapu_b_cp_seq_item_c   agent_cp_seq_item; ///< Control Plane Sequence Item being sampled.
-   uvma_mapu_b_cp_mon_trn_c    agent_cp_mon_trn; ///< Control Plane Monitor Transaction being sampled.
+   /// @name Objects
+   /// @{
+   uvma_mapu_b_op_seq_item_c  agent_op_seq_item; ///< Agent operation Sequence Item being sampled.
+   uvma_mapu_b_ig_mon_trn_c  agent_ig_mon_trn; ///< Agent ingress Monitor Transaction being sampled.
+   uvma_mapu_b_eg_mon_trn_c  predictor_eg_mon_trn; ///< Predictor egress Monitor Transaction being sampled.
+   uvma_mapu_b_cp_seq_item_c  agent_cp_stim_seq_item; ///< Agent Control Plane stimulus Sequence Item being sampled.
+   uvma_mapu_b_cp_mon_trn_c  agent_cp_mon_mon_trn; ///< Agent Control Plane monitoring Monitor Transaction being sampled.
+   /// @}
    // pragma uvmx cov_model_fields end
 
 
@@ -89,15 +92,15 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_env_cov_model_c #(
    /**
     * Control Plane Sequence Item functional coverage.
     */
-   covergroup mapu_b_cp_seq_item_cg;
-      i_op_cp : coverpoint agent_cp_seq_item.i_op;
+   covergroup agent_cp_stim_seq_item_cg;
+      i_op_cp : coverpoint agent_cp_stim_seq_item.i_op;
    endgroup
 
    /**
     * Control Plane Monitor Transaction functional coverage.
     */
-   covergroup mapu_b_cp_mon_trn_cg;
-      o_of_cp : coverpoint agent_cp_mon_trn.o_of;
+   covergroup agent_cp_mon_mon_trn_cg;
+      o_of_cp : coverpoint agent_cp_mon_mon_trn.o_of;
    endgroup
    // pragma uvmx cov_model_covergroups end
 
@@ -113,8 +116,8 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_env_cov_model_c #(
       mapu_b_op_seq_item_cg  = new();
       mapu_b_ig_mon_trn_cg   = new();
       mapu_b_eg_mon_trn_cg   = new();
-      mapu_b_cp_seq_item_cg  = new();
-      mapu_b_cp_mon_trn_cg   = new();
+      agent_cp_stim_seq_item_cg  = new();
+      agent_cp_mon_mon_trn_cg   = new();
       // pragma uvmx cov_model_constructor end
    endfunction
 
@@ -122,18 +125,27 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_env_cov_model_c #(
     * Creates TLM FIFOs.
     */
    virtual function void create_fifos();
-      agent_op_seq_item_fifo = new("agent_op_seq_item_fifo", this);
-      agent_ig_mon_trn_fifo = new("agent_ig_mon_trn_fifo", this);
-      predictor_eg_mon_trn_fifo = new("predictor_eg_mon_trn_fifo", this);
-      agent_cp_stim_seq_item_fifo = new("agent_cp_stim_seq_item_fifo", this);
-      agent_cp_mon_mon_trn_fifo = new("agent_cp_mon_mon_trn_fifo", this);
+      agent_op_fifo = new("agent_op_fifo", this);
+      agent_ig_fifo = new("agent_ig_fifo", this);
+      predictor_eg_fifo = new("predictor_eg_fifo", this);
+      agent_cp_stim_fifo = new("agent_cp_stim_fifo", this);
+      agent_cp_mon_fifo = new("agent_cp_mon_fifo", this);
       // pragma uvmx cov_model_create_fifos begin
       // pragma uvmx cov_model_create_fifos end
    endfunction
 
+   // pragma uvmx cov_model_sample_cfg_dox begin
+   /**
+    * TODO Implement uvme_mapu_b_cov_model_c::sample_cfg()
+    */
+   // pragma uvmx cov_model_sample_cfg_dox end
+   virtual function void sample_cfg();
+      // pragma uvmx cov_model_sample_cfg begin
+      // ...
+      // pragma uvmx cov_model_sample_cfg end
+   endfunction
+
    // pragma uvmx cov_model_sample_dox begin
-   virtual function void sample_cfg  (); mapu_b_cfg_cg  .sample(); endfunction
-   virtual function void sample_cntxt(); mapu_b_cntxt_cg.sample(); endfunction
    /**
     * TODO Implement uvme_mapu_b_cov_model_c::sample()
     */
@@ -142,24 +154,24 @@ class uvme_mapu_b_cov_model_c extends uvmx_block_env_cov_model_c #(
       // pragma uvmx cov_model_sample begin
       fork
          forever begin
-            agent_op_seq_item_fifo.get(agent_op_seq_item);
-            mapu_b_op_seq_item_cg.sample();
+            agent_op_fifo.get(agent_op_seq_item);
+            // ...
          end
          forever begin
-            agent_ig_mon_trn_fifo.get(agent_ig_mon_trn);
-            mapu_b_ig_mon_trn_cg.sample();
+            agent_ig_fifo.get(agent_ig_mon_trn);
+            // ...
          end
          forever begin
-            predictor_eg_mon_trn_fifo.get(predictor_eg_mon_trn);
-            mapu_b_eg_mon_trn_cg.sample();
+            predictor_eg_fifo.get(predictor_eg_mon_trn);
+            // ...
          end
          forever begin
-            agent_cp_stim_seq_item_fifo.get(agent_cp_seq_item);
-            mapu_b_cp_seq_item_cg.sample();
+            agent_cp_stim_fifo.get(agent_cp_stim_seq_item);
+            // ...
          end
          forever begin
-            agent_cp_mon_mon_trn_fifo.get(agent_cp_mon_trn);
-            mapu_b_cp_mon_trn_cg.sample();
+            agent_cp_mon_fifo.get(agent_cp_mon_mon_trn);
+            // ...
          end
       join
       // pragma uvmx cov_model_sample end

@@ -87,15 +87,15 @@ class uvme_mapu_b_prd_c extends uvmx_block_prd_c #(
       endcase
       // 3.
       if (!eg_trn.get_may_drop()) begin
-         foreach (eg_trn.matrix.mi[ii]) begin
-            foreach (eg_trn.matrix.mi[ii][jj]) begin
+         foreach (eg_trn.matrix.m[ii]) begin
+            foreach (eg_trn.matrix.m[ii][jj]) begin
                if (cfg.data_width == 32) begin
-                  if (eg_trn.matrix.mi[ii][jj] > 32'h7FFF_FFFF) begin
+                  if (eg_trn.matrix.m[ii][jj] > 32'h7FFF_FFFF) begin
                      overflow = 1;
                   end
                end
                else if (cfg.data_width == 64) begin
-                  if (eg_trn.matrix.mi[ii][jj] < 0) begin
+                  if (eg_trn.matrix.m[ii][jj] < 0) begin
                      overflow = 1;
                   end
                end

@@ -11,7 +11,9 @@
  * Module encapsulating assertions targeting Matrix APU Block Agent interface.
  * @ingroup uvma_mapu_b_pkg
  */
-module uvma_mapu_b_if_chkr (
+module uvma_mapu_b_if_chkr #(
+   parameter int unsigned  DATA_WIDTH = `UVMA_MAPU_B_DATA_WIDTH_MAX
+) (
    uvma_mapu_b_if  agent_if ///< Target interface
 );
 

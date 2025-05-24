@@ -11,7 +11,10 @@
  * Module encapsulating assertions targeting Matrix Peripheral Bus Agent interface.
  * @ingroup uvma_mpb_pkg
  */
-module uvma_mpb_if_chkr (
+module uvma_mpb_if_chkr #(
+   parameter int unsigned  DATA_WIDTH = `UVMA_MPB_DATA_WIDTH_MAX,
+   parameter int unsigned  ADDR_WIDTH = `UVMA_MPB_ADDR_WIDTH_MAX
+) (
    uvma_mpb_if  agent_if ///< Target interface
 );
 

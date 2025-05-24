@@ -13,8 +13,8 @@
  * @ingroup uvma_mpb_pkg
  */
 interface uvma_mpb_if #(
-   parameter int unsigned DATA_WIDTH = `UVMA_MPB_DATA_WIDTH_MAX,
-   parameter int unsigned ADDR_WIDTH = `UVMA_MPB_ADDR_WIDTH_MAX
+   parameter int unsigned  DATA_WIDTH = `UVMA_MPB_DATA_WIDTH_MAX,
+   parameter int unsigned  ADDR_WIDTH = `UVMA_MPB_ADDR_WIDTH_MAX
 ) (
    input  clk, ///< Clock: System clock
    input  reset_n ///< Reset: System reset
@@ -58,19 +58,23 @@ interface uvma_mpb_if #(
    /// @}
 
 
-   /// @name Accessors
-   /// @{
-   `uvmx_if_reset(reset_n)
-   `uvmx_if_cb(p_mon_mp, p_mon_cb)
-   `uvmx_if_cb(main_p_drv_mp, main_p_drv_cb)
-   `uvmx_if_cb(sec_p_drv_mp, sec_p_drv_cb)
-   `uvmx_if_signal_out(vld, , p_mon_mp.p_mon_cb, main_p_drv_mp.main_p_drv_cb)
-   `uvmx_if_signal_out(wr, , p_mon_mp.p_mon_cb, main_p_drv_mp.main_p_drv_cb)
-   `uvmx_if_signal_out(wdata,  [(DATA_WIDTH-1):0], p_mon_mp.p_mon_cb, main_p_drv_mp.main_p_drv_cb)
-   `uvmx_if_signal_out(addr,  [(ADDR_WIDTH-1):0], p_mon_mp.p_mon_cb, main_p_drv_mp.main_p_drv_cb)
-   `uvmx_if_signal_out(rdy, , p_mon_mp.p_mon_cb, sec_p_drv_mp.sec_p_drv_cb)
-   `uvmx_if_signal_out(rdata,  [(DATA_WIDTH-1):0], p_mon_mp.p_mon_cb, sec_p_drv_mp.sec_p_drv_cb)
-   /// @}
+   /**
+    * Drives MAIN signals initial values.
+    */
+   task drive_main_initial_values();
+      main_p_drv_mp.main_p_drv_cb.vld <= 0;
+      main_p_drv_mp.main_p_drv_cb.wr <= 0;
+      main_p_drv_mp.main_p_drv_cb.wdata <= 0;
+      main_p_drv_mp.main_p_drv_cb.addr <= 0;
+   endtask
+
+   /**
+    * Drives SEC signals initial values.
+    */
+   task drive_sec_initial_values();
+      sec_p_drv_mp.sec_p_drv_cb.rdy <= 0;
+      sec_p_drv_mp.sec_p_drv_cb.rdata <= 0;
+   endtask
 
 
    // pragma uvmx interface begin

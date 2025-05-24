@@ -40,10 +40,10 @@ class uvma_mpb_main_p_drv_c extends uvmx_mp_drv_c #(
     * Drives MAIN Parallel driver clocking block (main_p_drv_cb) at the beginning of each clock cycle.
     */
    virtual task drive_item(ref uvma_mpb_main_p_seq_item_c item);
-      `uvmx_mp_drv_signal(item, vld)
-      `uvmx_mp_drv_signal(item, wr)
-      `uvmx_mp_drv_signal(item, wdata)
-      `uvmx_mp_drv_signal(item, addr)
+      mp.main_p_drv_cb.vld <= item.vld;
+      mp.main_p_drv_cb.wr <= item.wr;
+      mp.main_p_drv_cb.wdata <= item.wdata;
+      mp.main_p_drv_cb.addr <= item.addr;
       // pragma uvmx main_p_drv_drive_item begin
       // pragma uvmx main_p_drv_drive_item end
    endtask
@@ -52,8 +52,8 @@ class uvma_mpb_main_p_drv_c extends uvmx_mp_drv_c #(
     * Samples the MAIN Parallel Driver clocking block (main_p_drv_cb) at the end of each clock cycle.
     */
    virtual task sample_post_clk(ref uvma_mpb_main_p_seq_item_c item);
-      `uvmx_mp_mon_signal(item, rdy)
-      `uvmx_mp_mon_signal(item, rdata)
+      item.rdy = mp.main_p_drv_cb.rdy;
+      item.rdata = mp.main_p_drv_cb.rdata;
       // pragma uvmx main_p_drv_sample_post_clk begin
       // pragma uvmx main_p_drv_sample_post_clk end
    endtask

@@ -40,8 +40,8 @@ class uvma_mapu_b_cp_drv_c extends uvmx_mp_drv_c #(
     * Drives Control Plane driver clocking block (cp_drv_cb) at the beginning of each clock cycle.
     */
    virtual task drive_item(ref uvma_mapu_b_cp_seq_item_c item);
-      `uvmx_mp_drv_signal(item, i_en)
-      `uvmx_mp_drv_signal(item, i_op)
+      mp.cp_drv_cb.i_en <= item.i_en;
+      mp.cp_drv_cb.i_op <= item.i_op;
       // pragma uvmx cp_drv_drive_item begin
       // pragma uvmx cp_drv_drive_item end
    endtask
@@ -50,7 +50,7 @@ class uvma_mapu_b_cp_drv_c extends uvmx_mp_drv_c #(
     * Samples the Control Plane Driver clocking block (cp_drv_cb) at the end of each clock cycle.
     */
    virtual task sample_post_clk(ref uvma_mapu_b_cp_seq_item_c item);
-      `uvmx_mp_mon_signal(item, o_of)
+      item.o_of = mp.cp_drv_cb.o_of;
       // pragma uvmx cp_drv_sample_post_clk begin
       // pragma uvmx cp_drv_sample_post_clk end
    endtask

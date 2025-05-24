@@ -40,7 +40,7 @@ class uvma_mstream_host_eg_drv_c extends uvmx_mp_drv_c #(
     * Drives HOST Egress driver clocking block (host_eg_drv_cb) at the beginning of each clock cycle.
     */
    virtual task drive_item(ref uvma_mstream_host_eg_seq_item_c item);
-      `uvmx_mp_drv_signal(item, eg_rdy)
+      mp.host_eg_drv_cb.eg_rdy <= item.eg_rdy;
       // pragma uvmx host_eg_drv_drive_item begin
       // pragma uvmx host_eg_drv_drive_item end
    endtask
@@ -49,10 +49,10 @@ class uvma_mstream_host_eg_drv_c extends uvmx_mp_drv_c #(
     * Samples the HOST Egress Driver clocking block (host_eg_drv_cb) at the end of each clock cycle.
     */
    virtual task sample_post_clk(ref uvma_mstream_host_eg_seq_item_c item);
-      `uvmx_mp_mon_signal(item, eg_vld)
-      `uvmx_mp_mon_signal(item, eg_r0)
-      `uvmx_mp_mon_signal(item, eg_r1)
-      `uvmx_mp_mon_signal(item, eg_r2)
+      item.eg_vld = mp.host_eg_drv_cb.eg_vld;
+      item.eg_r0 = mp.host_eg_drv_cb.eg_r0;
+      item.eg_r1 = mp.host_eg_drv_cb.eg_r1;
+      item.eg_r2 = mp.host_eg_drv_cb.eg_r2;
       // pragma uvmx host_eg_drv_sample_post_clk begin
       // pragma uvmx host_eg_drv_sample_post_clk end
    endtask

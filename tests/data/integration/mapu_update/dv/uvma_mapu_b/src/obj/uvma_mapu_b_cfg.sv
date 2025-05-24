@@ -20,7 +20,7 @@ class uvma_mapu_b_cfg_c extends uvmx_block_agent_cfg_c;
 
    /// @name Bus Widths
    /// @{
-   rand int unsigned  data_width; ///< Data Width
+   rand int unsigned  data_width; ///< Data Width: Matrix elements data width
    /// @}
 
    // pragma uvmx cfg_fields begin

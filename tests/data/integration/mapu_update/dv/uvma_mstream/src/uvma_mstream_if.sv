@@ -13,7 +13,7 @@
  * @ingroup uvma_mstream_pkg
  */
 interface uvma_mstream_if #(
-   parameter int unsigned DATA_WIDTH = `UVMA_MSTREAM_DATA_WIDTH_MAX
+   parameter int unsigned  DATA_WIDTH = `UVMA_MSTREAM_DATA_WIDTH_MAX
 ) (
    input  sys_clk, ///< System: System clock
    input  reset_n ///< Reset: System reset
@@ -27,6 +27,7 @@ interface uvma_mstream_if #(
    wire [(DATA_WIDTH-1):0]  ig_r1; ///< Ingress Data Row 1: Ingress data row 1
    wire [(DATA_WIDTH-1):0]  ig_r2; ///< Ingress Data Row 2: Ingress data row 2
    /// @}
+
    /// @name Egress signals
    /// @{
    wire  eg_vld; ///< Egress Valid: Egress data valid
@@ -89,26 +90,27 @@ interface uvma_mstream_if #(
    /// @}
 
 
-   /// @name Accessors
-   /// @{
-   `uvmx_if_reset(reset_n)
-   `uvmx_if_cb(ig_mon_mp, ig_mon_cb)
-   `uvmx_if_cb(host_ig_drv_mp, host_ig_drv_cb)
-   `uvmx_if_cb(card_ig_drv_mp, card_ig_drv_cb)
-   `uvmx_if_cb(eg_mon_mp, eg_mon_cb)
-   `uvmx_if_cb(host_eg_drv_mp, host_eg_drv_cb)
-   `uvmx_if_cb(card_eg_drv_mp, card_eg_drv_cb)
-   `uvmx_if_signal_out(ig_vld, , ig_mon_mp.ig_mon_cb, host_ig_drv_mp.host_ig_drv_cb)
-   `uvmx_if_signal_out(ig_r0,  [(DATA_WIDTH-1):0], ig_mon_mp.ig_mon_cb, host_ig_drv_mp.host_ig_drv_cb)
-   `uvmx_if_signal_out(ig_r1,  [(DATA_WIDTH-1):0], ig_mon_mp.ig_mon_cb, host_ig_drv_mp.host_ig_drv_cb)
-   `uvmx_if_signal_out(ig_r2,  [(DATA_WIDTH-1):0], ig_mon_mp.ig_mon_cb, host_ig_drv_mp.host_ig_drv_cb)
-   `uvmx_if_signal_out(eg_rdy, , eg_mon_mp.eg_mon_cb, host_eg_drv_mp.host_eg_drv_cb)
-   `uvmx_if_signal_out(ig_rdy, , ig_mon_mp.ig_mon_cb, card_ig_drv_mp.card_ig_drv_cb)
-   `uvmx_if_signal_out(eg_vld, , eg_mon_mp.eg_mon_cb, card_eg_drv_mp.card_eg_drv_cb)
-   `uvmx_if_signal_out(eg_r0,  [(DATA_WIDTH-1):0], eg_mon_mp.eg_mon_cb, card_eg_drv_mp.card_eg_drv_cb)
-   `uvmx_if_signal_out(eg_r1,  [(DATA_WIDTH-1):0], eg_mon_mp.eg_mon_cb, card_eg_drv_mp.card_eg_drv_cb)
-   `uvmx_if_signal_out(eg_r2,  [(DATA_WIDTH-1):0], eg_mon_mp.eg_mon_cb, card_eg_drv_mp.card_eg_drv_cb)
-   /// @}
+   /**
+    * Drives HOST signals initial values.
+    */
+   task drive_host_initial_values();
+      host_ig_drv_mp.host_ig_drv_cb.ig_vld <= 0;
+      host_ig_drv_mp.host_ig_drv_cb.ig_r0 <= 0;
+      host_ig_drv_mp.host_ig_drv_cb.ig_r1 <= 0;
+      host_ig_drv_mp.host_ig_drv_cb.ig_r2 <= 0;
+      host_eg_drv_mp.host_eg_drv_cb.eg_rdy <= 0;
+   endtask
+
+   /**
+    * Drives CARD signals initial values.
+    */
+   task drive_card_initial_values();
+      card_ig_drv_mp.card_ig_drv_cb.ig_rdy <= 0;
+      card_eg_drv_mp.card_eg_drv_cb.eg_vld <= 0;
+      card_eg_drv_mp.card_eg_drv_cb.eg_r0 <= 0;
+      card_eg_drv_mp.card_eg_drv_cb.eg_r1 <= 0;
+      card_eg_drv_mp.card_eg_drv_cb.eg_r2 <= 0;
+   endtask
 
 
    // pragma uvmx interface begin

@@ -15,8 +15,8 @@ module uvmt_mstream_st_dut_wrap (
    uvma_mstream_if  host_if, ///< HOST Agent interface
    uvma_mstream_if  card_if, ///< CARD Agent interface
    uvma_mstream_if  passive_if, ///< Passive Agent interface
-   uvma_clk_if  sys_clk_if, ///< System interface
-   uvma_reset_if  reset_n_if ///< Reset interface
+   uvma_clk_if  system_clk_if, ///< System interface
+   uvma_reset_if  rst_if ///< Reset interface
 );
 
    // Ingress

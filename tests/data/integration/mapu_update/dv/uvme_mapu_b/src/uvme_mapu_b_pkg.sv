@@ -8,7 +8,7 @@
 
 
 /**
- * @defgroup uvme_mapu_b_pkg  Block UVM Environment
+ * @defgroup uvme_mapu_b_pkg Matrix APU Block UVM Environment
  * @{
  * @defgroup uvme_mapu_b_comps Components
  * @defgroup uvme_mapu_b_misc  Miscellaneous

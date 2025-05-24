@@ -80,6 +80,7 @@ class uvmt_mpb_st_fix_stim_test_c extends uvmt_mpb_st_base_test_c;
     */
    virtual task main_phase(uvm_phase phase);
       phase.raise_objection(this);
+
       `uvm_info("TEST", $sformatf("Starting 'fix_stim_seq':\n%s", fix_stim_seq.sprint()), UVM_NONE)
       fix_stim_seq.start(sequencer);
       `uvm_info("TEST", $sformatf("Finished 'fix_stim_seq':\n%s", fix_stim_seq.sprint()), UVM_NONE)

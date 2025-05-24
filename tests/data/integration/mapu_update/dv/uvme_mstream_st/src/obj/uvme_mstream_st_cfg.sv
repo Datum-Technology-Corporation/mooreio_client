@@ -15,7 +15,7 @@ class uvme_mstream_st_cfg_c extends uvmx_agent_env_cfg_c;
 
    /// @name Bus Widths
    /// @{
-   rand int unsigned  data_width; ///< Data Width
+   rand int unsigned  data_width; ///< Data Width: Matrix elements data width
    /// @}
 
     /// @name Objects

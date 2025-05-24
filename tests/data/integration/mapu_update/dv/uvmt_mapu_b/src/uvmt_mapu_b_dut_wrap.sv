@@ -13,8 +13,8 @@
  */
 module uvmt_mapu_b_dut_wrap (
    uvma_mapu_b_if  agent_if, ///< Block signals
-   uvma_clk_if  clk_if, ///< Clock interface
-   uvma_reset_if  reset_n_if ///< Reset interface
+   uvma_clk_if  clock_if, ///< Clock interface
+   uvma_reset_if  rst_if ///< Reset interface
 );
 
    /**
@@ -36,8 +36,8 @@ module uvmt_mapu_b_dut_wrap (
       .i_en(agent_if.i_en),
       .i_op(agent_if.i_op),
       .o_of(agent_if.o_of),
-      .clk(clk_if.clk),
-      .reset_n(reset_n_if.reset_n)
+      .clk(clock_if.clk),
+      .reset_n(rst_if.reset_n)
    );
 
    // pragma uvmx dut_wrap begin

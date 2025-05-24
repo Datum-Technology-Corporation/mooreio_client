@@ -35,7 +35,7 @@ class uvme_mstream_st_sb_c extends uvmx_block_sb_c #(
 
 
    /**
-    * Creates covergroups.
+    * Default constructor.
     */
    function new(string name="uvme_mstream_st_sb", uvm_component parent=null);
       super.new(name, parent);

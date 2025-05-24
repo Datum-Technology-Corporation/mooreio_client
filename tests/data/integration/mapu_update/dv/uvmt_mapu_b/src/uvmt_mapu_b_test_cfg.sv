@@ -19,7 +19,7 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
    rand int unsigned  num_errors; ///< Number of errors
    rand int unsigned  min_gap; ///< Minimum inter-item gap
    rand int unsigned  max_gap; ///< Maximum inter-item gap
-   rand int unsigned  clk_frequency; ///< Clock frequency (Hz).
+   rand int unsigned  clock_frequency; ///< Clock frequency (Hz).
    /// @}
 
    /// @name Command Line Interface arguments
@@ -36,8 +36,8 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
 
    /// @name Agents
    /// @{
-   rand uvma_clk_cfg_c  clk_agent_cfg  ; ///< Clock agent configuration.
-   rand uvma_reset_cfg_c  reset_n_agent_cfg; ///<  Reset Agent configuration.
+   rand uvma_clk_cfg_c  clock_agent_cfg; ///< Clock agent configuration.
+   rand uvma_reset_cfg_c  rst_agent_cfg; ///<  Reset Agent configuration.
    /// @}
 
    // pragma uvmx test_cfg_fields begin
@@ -50,7 +50,7 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
       `uvm_field_int(num_errors, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(min_gap, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(max_gap, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_int(clk_frequency, UVM_DEFAULT + UVM_DEC)
+      `uvm_field_int(clock_frequency, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(cli_num_items_override, UVM_DEFAULT)
       `uvm_field_int(cli_num_items, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(cli_num_errors_override, UVM_DEFAULT)
@@ -60,12 +60,12 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
       `uvm_field_int(cli_max_gap_override, UVM_DEFAULT)
       `uvm_field_int(cli_max_gap, UVM_DEFAULT + UVM_DEC)
       `uvm_field_enum(uvmx_reset_type_enum, reset_type, UVM_DEFAULT)
+      `uvm_field_int(simulation_timeout, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(startup_timeout, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(heartbeat_period, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(heartbeat_refresh_period, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_int(simulation_timeout, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_object(clk_agent_cfg, UVM_DEFAULT)
-      `uvm_field_object(reset_n_agent_cfg, UVM_DEFAULT)
+      `uvm_field_object(clock_agent_cfg, UVM_DEFAULT)
+      `uvm_field_object(rst_agent_cfg, UVM_DEFAULT)
       // pragma uvmx test_cfg_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -84,24 +84,24 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
     * Sets safe defaults parameters.
     */
    constraint defaults_cons {
-      clk_frequency == uvmt_mapu_b_default_clk_frequency;
-      startup_timeout == uvmt_mapu_b_default_startup_timeout;
-      heartbeat_period == uvmt_mapu_b_default_heartbeat_period;
-      heartbeat_refresh_period == uvmt_mapu_b_default_heartbeat_refresh_period;
-      simulation_timeout == uvmt_mapu_b_default_simulation_timeout;
+      soft clock_frequency == uvmt_mapu_b_default_clock_frequency;
+      soft simulation_timeout == uvmt_mapu_b_default_simulation_timeout;
+      soft startup_timeout == uvmt_mapu_b_default_startup_timeout;
+      soft heartbeat_period == uvmt_mapu_b_default_heartbeat_period;
+      soft heartbeat_refresh_period == uvmt_mapu_b_default_heartbeat_refresh_period;
    }
 
    /**
     * Sets agents configuration.
     */
    constraint agents_cons {
-      clk_agent_cfg.enabled == 1;
-      clk_agent_cfg.is_active == UVM_ACTIVE;
+      clock_agent_cfg.enabled == 1;
+      clock_agent_cfg.is_active == UVM_ACTIVE;
       reset_type == UVMX_RESET_SYNC;
-      reset_n_agent_cfg.reset_type == UVMX_RESET_SYNC;
-      reset_n_agent_cfg.polarity == UVMX_RESET_ACTIVE_LOW;
-      reset_n_agent_cfg.enabled == 1;
-      reset_n_agent_cfg.is_active == UVM_ACTIVE;
+      rst_agent_cfg.reset_type == UVMX_RESET_SYNC;
+      rst_agent_cfg.polarity == UVMX_RESET_ACTIVE_LOW;
+      rst_agent_cfg.enabled == 1;
+      rst_agent_cfg.is_active == UVM_ACTIVE;
    }
 
    // pragma uvmx test_cfg_constraints begin
@@ -130,8 +130,8 @@ class uvmt_mapu_b_test_cfg_c extends uvmx_block_test_cfg_c;
     */
    // pragma uvmx test_cfg_build_dox end
    virtual function void build();
-      clk_agent_cfg = uvma_clk_cfg_c::type_id::create("clk_agent_cfg");
-      reset_n_agent_cfg = uvma_reset_cfg_c::type_id::create("reset_n_agent_cfg");
+      clock_agent_cfg = uvma_clk_cfg_c::type_id::create("clock_agent_cfg");
+      rst_agent_cfg = uvma_reset_cfg_c::type_id::create("rst_agent_cfg");
       // pragma uvmx test_cfg_build begin
       // pragma uvmx test_cfg_build end
    endfunction

@@ -40,11 +40,11 @@ class uvma_mapu_b_dpo_mon_c extends uvmx_mp_mon_c #(
     * Samples #trn from the Data Plane Output monitor clocking block (dpo_mon_cb) on each clock cycle.
     */
    virtual task sample_trn(ref uvma_mapu_b_dpo_mon_trn_c trn);
-      `uvmx_mp_mon_signal(trn, o_vld)
-      `uvmx_mp_mon_signal(trn, i_rdy)
-      `uvmx_mp_mon_signal(trn, o_r0)
-      `uvmx_mp_mon_signal(trn, o_r1)
-      `uvmx_mp_mon_signal(trn, o_r2)
+      trn.o_vld = mp.dpo_mon_cb.o_vld;
+      trn.i_rdy = mp.dpo_mon_cb.i_rdy;
+      trn.o_r0 = mp.dpo_mon_cb.o_r0;
+      trn.o_r1 = mp.dpo_mon_cb.o_r1;
+      trn.o_r2 = mp.dpo_mon_cb.o_r2;
       // pragma uvmx dpo_mon_sample_trn begin
       // pragma uvmx dpo_mon_sample_trn end
    endtask
@@ -62,13 +62,10 @@ class uvma_mapu_b_dpo_mon_c extends uvmx_mp_mon_c #(
     * Trims data outside configured widths.
     */
    virtual function void process_trn(ref uvma_mapu_b_dpo_mon_trn_c trn);
-      foreach (trn.o_r0[ii]) begin
-         `uvmx_trim(trn.o_r0, cfg.data_width)
-      end      foreach (trn.o_r1[ii]) begin
-         `uvmx_trim(trn.o_r1, cfg.data_width)
-      end      foreach (trn.o_r2[ii]) begin
-         `uvmx_trim(trn.o_r2, cfg.data_width)
-      end      // pragma uvmx dpo_mon_process_trn begin
+      `uvmx_trim(trn.o_r0, cfg.data_width)
+      `uvmx_trim(trn.o_r1, cfg.data_width)
+      `uvmx_trim(trn.o_r2, cfg.data_width)
+      // pragma uvmx dpo_mon_process_trn begin
       // pragma uvmx dpo_mon_process_trn end
    endfunction
 

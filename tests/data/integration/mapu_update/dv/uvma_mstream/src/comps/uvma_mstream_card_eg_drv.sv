@@ -40,10 +40,10 @@ class uvma_mstream_card_eg_drv_c extends uvmx_mp_drv_c #(
     * Drives CARD Egress driver clocking block (card_eg_drv_cb) at the beginning of each clock cycle.
     */
    virtual task drive_item(ref uvma_mstream_card_eg_seq_item_c item);
-      `uvmx_mp_drv_signal(item, eg_vld)
-      `uvmx_mp_drv_signal(item, eg_r0)
-      `uvmx_mp_drv_signal(item, eg_r1)
-      `uvmx_mp_drv_signal(item, eg_r2)
+      mp.card_eg_drv_cb.eg_vld <= item.eg_vld;
+      mp.card_eg_drv_cb.eg_r0 <= item.eg_r0;
+      mp.card_eg_drv_cb.eg_r1 <= item.eg_r1;
+      mp.card_eg_drv_cb.eg_r2 <= item.eg_r2;
       // pragma uvmx card_eg_drv_drive_item begin
       // pragma uvmx card_eg_drv_drive_item end
    endtask
@@ -52,7 +52,7 @@ class uvma_mstream_card_eg_drv_c extends uvmx_mp_drv_c #(
     * Samples the CARD Egress Driver clocking block (card_eg_drv_cb) at the end of each clock cycle.
     */
    virtual task sample_post_clk(ref uvma_mstream_card_eg_seq_item_c item);
-      `uvmx_mp_mon_signal(item, eg_rdy)
+      item.eg_rdy = mp.card_eg_drv_cb.eg_rdy;
       // pragma uvmx card_eg_drv_sample_post_clk begin
       // pragma uvmx card_eg_drv_sample_post_clk end
    endtask

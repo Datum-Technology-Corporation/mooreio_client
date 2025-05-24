@@ -62,6 +62,17 @@ class uvme_mpb_st_cov_model_c extends uvmx_agent_env_cov_model_c #(
       // pragma uvmx cov_model_create_fifos end
    endfunction
 
+   // pragma uvmx cov_model_sample_cfg_dox begin
+   /**
+    * TODO Implement uvme_mpb_st_cov_model_c::sample_cfg()
+    */
+   // pragma uvmx cov_model_sample_cfg_dox end
+   virtual function void sample_cfg();
+      // pragma uvmx cov_model_sample_cfg begin
+      // ...
+      // pragma uvmx cov_model_sample_cfg end
+   endfunction
+
    // pragma uvmx cov_model_sample_dox begin
    /**
     * TODO Implement uvme_mpb_st_cov_model_c::sample()

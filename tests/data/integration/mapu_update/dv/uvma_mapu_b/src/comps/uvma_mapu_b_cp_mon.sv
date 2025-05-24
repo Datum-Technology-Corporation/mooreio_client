@@ -40,9 +40,9 @@ class uvma_mapu_b_cp_mon_c extends uvmx_mp_mon_c #(
     * Samples #trn from the Control Plane monitor clocking block (cp_mon_cb) on each clock cycle.
     */
    virtual task sample_trn(ref uvma_mapu_b_cp_mon_trn_c trn);
-      `uvmx_mp_mon_signal(trn, i_en)
-      `uvmx_mp_mon_signal(trn, i_op)
-      `uvmx_mp_mon_signal(trn, o_of)
+      trn.i_en = mp.cp_mon_cb.i_en;
+      trn.i_op = mp.cp_mon_cb.i_op;
+      trn.o_of = mp.cp_mon_cb.o_of;
       // pragma uvmx cp_mon_sample_trn begin
       // pragma uvmx cp_mon_sample_trn end
    endtask

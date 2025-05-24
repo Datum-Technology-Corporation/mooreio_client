@@ -92,6 +92,7 @@ class uvmt_mstream_st_rand_stim_test_c extends uvmt_mstream_st_base_test_c;
     */
    virtual task main_phase(uvm_phase phase);
       phase.raise_objection(this);
+
       `uvm_info("TEST", $sformatf("Starting 'rand_stim_seq':\n%s", rand_stim_seq.sprint()), UVM_NONE)
       rand_stim_seq.start(sequencer);
       `uvm_info("TEST", $sformatf("Finished 'rand_stim_seq':\n%s", rand_stim_seq.sprint()), UVM_NONE)

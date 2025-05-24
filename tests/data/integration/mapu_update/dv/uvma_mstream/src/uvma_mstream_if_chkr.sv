@@ -11,7 +11,9 @@
  * Module encapsulating assertions targeting Matrix Stream Interface Agent interface.
  * @ingroup uvma_mstream_pkg
  */
-module uvma_mstream_if_chkr (
+module uvma_mstream_if_chkr #(
+   parameter int unsigned  DATA_WIDTH = `UVMA_MSTREAM_DATA_WIDTH_MAX
+) (
    uvma_mstream_if  agent_if ///< Target interface
 );
 

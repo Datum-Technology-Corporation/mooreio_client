@@ -80,6 +80,7 @@ class uvmt_mpb_st_bit_bash_test_c extends uvmt_mpb_st_base_test_c;
     */
    virtual task main_phase(uvm_phase phase);
       phase.raise_objection(this);
+
       `uvm_info("TEST", $sformatf("Starting 'bit_bash_seq':\n%s", bit_bash_seq.sprint()), UVM_NONE)
       bit_bash_seq.start(sequencer);
       `uvm_info("TEST", $sformatf("Finished 'bit_bash_seq':\n%s", bit_bash_seq.sprint()), UVM_NONE)

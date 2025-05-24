@@ -15,8 +15,8 @@ module uvmt_mpb_st_dut_wrap (
    uvma_mpb_if  main_if, ///< MAIN Agent interface
    uvma_mpb_if  sec_if, ///< SEC Agent interface
    uvma_mpb_if  passive_if, ///< Passive Agent interface
-   uvma_clk_if  clk_if, ///< Clock interface
-   uvma_reset_if  reset_n_if ///< Reset interface
+   uvma_clk_if  clock_if, ///< Clock interface
+   uvma_reset_if  rst_if ///< Reset interface
 );
 
    assign sec_if.vld = main_if.vld;

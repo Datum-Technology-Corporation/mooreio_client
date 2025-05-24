@@ -56,7 +56,6 @@ package uvma_mapu_b_pkg;
 
    // Sequence Items and Monitor Transactions
    `include "uvma_mapu_b_op_seq_item.sv"
-   `include "uvma_mapu_b_op_seq_item.sv"
    `include "uvma_mapu_b_ig_mon_trn.sv"
    `include "uvma_mapu_b_eg_mon_trn.sv"
    `include "uvma_mapu_b_dpi_seq_item.sv"

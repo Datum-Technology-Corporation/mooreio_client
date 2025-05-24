@@ -10,7 +10,6 @@
 typedef class uvma_mapu_b_cfg_c;
 typedef class uvma_mapu_b_cntxt_c;
 typedef class uvma_mapu_b_op_seq_item_c;
-typedef class uvma_mapu_b_op_seq_item_c;
 typedef class uvma_mapu_b_ig_mon_trn_c;
 typedef class uvma_mapu_b_eg_mon_trn_c;
 typedef class uvma_mapu_b_dpi_seq_item_c;

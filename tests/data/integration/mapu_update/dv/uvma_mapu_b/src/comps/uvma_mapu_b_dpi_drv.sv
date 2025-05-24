@@ -40,10 +40,10 @@ class uvma_mapu_b_dpi_drv_c extends uvmx_mp_drv_c #(
     * Drives Data Plane Input driver clocking block (dpi_drv_cb) at the beginning of each clock cycle.
     */
    virtual task drive_item(ref uvma_mapu_b_dpi_seq_item_c item);
-      `uvmx_mp_drv_signal(item, i_vld)
-      `uvmx_mp_drv_signal(item, i_r0)
-      `uvmx_mp_drv_signal(item, i_r1)
-      `uvmx_mp_drv_signal(item, i_r2)
+      mp.dpi_drv_cb.i_vld <= item.i_vld;
+      mp.dpi_drv_cb.i_r0 <= item.i_r0;
+      mp.dpi_drv_cb.i_r1 <= item.i_r1;
+      mp.dpi_drv_cb.i_r2 <= item.i_r2;
       // pragma uvmx dpi_drv_drive_item begin
       // pragma uvmx dpi_drv_drive_item end
    endtask
@@ -52,7 +52,7 @@ class uvma_mapu_b_dpi_drv_c extends uvmx_mp_drv_c #(
     * Samples the Data Plane Input Driver clocking block (dpi_drv_cb) at the end of each clock cycle.
     */
    virtual task sample_post_clk(ref uvma_mapu_b_dpi_seq_item_c item);
-      `uvmx_mp_mon_signal(item, o_rdy)
+      item.o_rdy = mp.dpi_drv_cb.o_rdy;
       // pragma uvmx dpi_drv_sample_post_clk begin
       // pragma uvmx dpi_drv_sample_post_clk end
    endtask

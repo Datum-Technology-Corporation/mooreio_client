@@ -22,14 +22,14 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
 
    /// @name Agents
    /// @{
-   uvma_clk_agent_c  sys_clk_agent; ///< System agent.
-   uvma_reset_agent_c  reset_n_agent; ///< Reset agent.
+   uvma_clk_agent_c  system_clk_agent; ///< System agent.
+   uvma_reset_agent_c  rst_agent; ///< Reset agent.
    /// @}
 
    /// @name Default Sequences
    /// @{
-   rand uvma_clk_start_seq_c  sys_clk_seq; ///< Starts System generation during pre_reset_phase.
-   rand uvma_reset_pulse_seq_c  reset_n_seq; ///< Asserts Reset during reset_phase.
+   rand uvma_clk_start_seq_c  system_clk_seq; ///< Starts System generation during pre_reset_phase.
+   rand uvma_reset_pulse_seq_c  rst_seq; ///< Asserts Reset during reset_phase.
    /// @}
 
    // pragma uvmx base_test_fields begin
@@ -47,7 +47,7 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
     * Sets clock frequency
     */
    constraint clk_cons {
-      sys_clk_seq.frequency == test_cfg.sys_clk_frequency;
+      system_clk_seq.frequency == test_cfg.system_clk_frequency;
    }
 
    /**
@@ -82,8 +82,8 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
     * Creates Clock and Reset Sequences.
     */
    virtual function void create_clk_reset_sequences();
-      sys_clk_seq = uvma_clk_start_seq_c::type_id::create("sys_clk_seq");
-      reset_n_seq = uvma_reset_pulse_seq_c::type_id::create("reset_n_seq");
+      system_clk_seq = uvma_clk_start_seq_c::type_id::create("system_clk_seq");
+      rst_seq = uvma_reset_pulse_seq_c::type_id::create("rst_seq");
       // pragma uvmx cfg_create_clk_reset_sequences begin
       // pragma uvmx cfg_create_clk_reset_sequences end
    endfunction
@@ -105,8 +105,8 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
     * Creates agent components.
     */
    virtual function void create_components();
-      sys_clk_agent = uvma_clk_agent_c::type_id::create("sys_clk_agent", this);
-      reset_n_agent = uvma_reset_agent_c::type_id::create("reset_n_agent", this);
+      system_clk_agent = uvma_clk_agent_c::type_id::create("system_clk_agent", this);
+      rst_agent = uvma_reset_agent_c::type_id::create("rst_agent", this);
       // pragma uvmx cfg_create_components begin
       // pragma uvmx cfg_create_components end
    endfunction
@@ -115,7 +115,7 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
     * Connects the reset agent to the environment's reset port.
     */
    virtual function void connect_env_reset();
-      reset_n_agent.reset_mon_trn_ap.connect(env.reset_mon_trn_export);
+      rst_agent.reset_mon_trn_ap.connect(env.reset_mon_trn_export);
       // pragma uvmx cfg_connect_env_reset begin
       // pragma uvmx cfg_connect_env_reset end
    endfunction
@@ -124,31 +124,31 @@ class uvmt_mstream_st_base_test_c extends uvmx_agent_test_c #(
     * Assigns configuration objects to agents.
     */
    virtual function void assign_cfg();
-      uvm_config_db#(uvma_clk_cfg_c)::set(this, "sys_clk_agent", "cfg", test_cfg.sys_clk_agent_cfg);
-      uvm_config_db#(uvma_reset_cfg_c)::set(this, "reset_n_agent", "cfg", test_cfg.reset_n_agent_cfg);
+      uvm_config_db#(uvma_clk_cfg_c)::set(this, "system_clk_agent", "cfg", test_cfg.system_clk_agent_cfg);
+      uvm_config_db#(uvma_reset_cfg_c)::set(this, "rst_agent", "cfg", test_cfg.rst_agent_cfg);
       // pragma uvmx cfg_assign_cfg begin
       // pragma uvmx cfg_assign_cfg end
    endfunction
 
    /**
-    * Runs sys_clk_seq.
+    * Runs system_clk_seq.
     */
    virtual task pre_reset_phase(uvm_phase phase);
       phase.raise_objection(this);
-      `uvm_info("TEST", $sformatf("Starting 'sys_clk_seq':\n%s", sys_clk_seq.sprint()), UVM_NONE)
-      sys_clk_seq.start(sys_clk_agent.sequencer);
-      `uvm_info("TEST", $sformatf("Finished 'sys_clk_seq':\n%s", sys_clk_seq.sprint()), UVM_NONE)
+      `uvm_info("TEST", $sformatf("Starting 'system_clk_seq':\n%s", system_clk_seq.sprint()), UVM_NONE)
+      system_clk_seq.start(system_clk_agent.sequencer);
+      `uvm_info("TEST", $sformatf("Finished 'system_clk_seq':\n%s", system_clk_seq.sprint()), UVM_NONE)
       phase.drop_objection(this);
    endtask
 
    /**
-    * Runs reset_n_seq.
+    * Runs rst_seq.
     */
    virtual task reset_phase(uvm_phase phase);
       phase.raise_objection(this);
-      `uvm_info("TEST", $sformatf("Starting 'reset_n_seq':\n%s", reset_n_seq.sprint()), UVM_NONE)
-      reset_n_seq.start(reset_n_agent.sequencer);
-      `uvm_info("TEST", $sformatf("Finished 'reset_n_seq':\n%s", reset_n_seq.sprint()), UVM_NONE)
+      `uvm_info("TEST", $sformatf("Starting 'rst_seq':\n%s", rst_seq.sprint()), UVM_NONE)
+      rst_seq.start(rst_agent.sequencer);
+      `uvm_info("TEST", $sformatf("Finished 'rst_seq':\n%s", rst_seq.sprint()), UVM_NONE)
       phase.drop_objection(this);
    endtask
 
