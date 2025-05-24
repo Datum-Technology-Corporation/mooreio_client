@@ -57,6 +57,19 @@ class TestCliSiArx(TestBase):
         result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.mapu_update_path, '2')
 
+    def cli_siarx_gen_project_cmp_ip(self, capsys, app: str, ip: str):
+        self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
+        result = self.siarx(capsys, self.mapu_raw_path, '2')
+        result = self.cmp_ip(capsys, self.mapu_raw_path, app, ip)
+
+    def cli_siarx_gen_project_cmp_elab_ip(self, capsys, app: str, ip: str):
+        self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
+        result = self.siarx(capsys, self.mapu_raw_path, '2')
+        result = self.cmp_ip(capsys, self.mapu_raw_path, app, ip)
+        result = self.elab_ip(capsys, self.mapu_raw_path, app, ip)
+
     def cli_siarx_gen_project_cmpelab_ip(self, capsys, app: str, ip: str):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
@@ -189,6 +202,18 @@ class TestCliSiArx(TestBase):
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
+    def test_cli_siarx_gen_project_cmp_mtx_dsim(self, capsys):
+        self.cli_siarx_gen_project_cmp_ip(capsys, 'dsim', "uvmt_mtx_ss")
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_gen_project_cmp_elab_mtx_dsim(self, capsys):
+        self.cli_siarx_gen_project_cmp_elab_ip(capsys, 'dsim', "uvmt_mtx_ss")
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
     def test_cli_siarx_gen_project_cmpelab_mtx_dsim(self, capsys):
         self.cli_siarx_gen_project_cmpelab_ip(capsys, 'dsim', "uvmt_mtx_ss")
 
@@ -203,3 +228,4 @@ class TestCliSiArx(TestBase):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.rvmcu_raw_path, '1000')
+

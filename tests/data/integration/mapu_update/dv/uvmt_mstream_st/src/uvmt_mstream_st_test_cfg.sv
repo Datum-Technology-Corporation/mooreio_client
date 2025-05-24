@@ -46,7 +46,7 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
       `uvm_field_int(num_items, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(min_gap, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(max_gap, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_int(sys_clk_frequency, UVM_DEFAULT + UVM_DEC)
+      `uvm_field_int(system_clk_frequency, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(cli_num_items_override, UVM_DEFAULT)
       `uvm_field_int(cli_num_items, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(cli_min_gap_override, UVM_DEFAULT)
@@ -54,12 +54,12 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
       `uvm_field_int(cli_max_gap_override, UVM_DEFAULT)
       `uvm_field_int(cli_max_gap, UVM_DEFAULT + UVM_DEC)
       `uvm_field_enum(uvmx_reset_type_enum, reset_type, UVM_DEFAULT)
+      `uvm_field_int(simulation_timeout, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(startup_timeout, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(heartbeat_period, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(heartbeat_refresh_period, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_int(simulation_timeout, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_object(sys_clk_agent_cfg, UVM_DEFAULT)
-      `uvm_field_object(reset_n_agent_cfg, UVM_DEFAULT)
+      `uvm_field_object(system_clk_agent_cfg, UVM_DEFAULT)
+      `uvm_field_object(rst_agent_cfg, UVM_DEFAULT)
       // pragma uvmx test_cfg_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -78,10 +78,10 @@ class uvmt_mstream_st_test_cfg_c extends uvmx_agent_test_cfg_c;
     */
    constraint defaults_cons {
       soft system_clk_frequency == uvmt_mstream_st_default_system_clk_frequency;
-      soft simulation_timeout == uvmt_mstream__default_simulation_timeout;
-      soft startup_timeout == uvmt_mstream__default_startup_timeout;
-      soft heartbeat_period == uvmt_mstream__default_heartbeat_period;
-      soft heartbeat_refresh_period == uvmt_mstream__default_heartbeat_refresh_period;
+      soft simulation_timeout == uvmt_mstream_st_default_simulation_timeout;
+      soft startup_timeout == uvmt_mstream_st_default_startup_timeout;
+      soft heartbeat_period == uvmt_mstream_st_default_heartbeat_period;
+      soft heartbeat_refresh_period == uvmt_mstream_st_default_heartbeat_refresh_period;
    }
 
    /**

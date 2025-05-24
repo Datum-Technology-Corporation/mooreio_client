@@ -28,6 +28,10 @@ setup(
         'Bug Tracker': 'https://github.com/Datum-Technology-Corporation/mooreio_client/issues',
     },
     packages=find_packages(),
+    include_package_data=True,  # Required for MANIFEST.in to take effect
+    package_data={
+        'mio_client': ['data/*'],  # Adjust if subfolders or file patterns
+    },
     install_requires=parse_requirements('requirements.txt'),
     extras_require={
         'dev': parse_requirements('requirements-dev.txt')

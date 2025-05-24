@@ -201,7 +201,7 @@ class uvme_mpb_st_reg_block_c extends uvmx_reg_block_c;
    virtual function void create_maps();
       default_map = create_map(
          .name     ("default_map"),
-         .base_addr(base_address),
+         .base_addr(0),
          .n_bytes  (4),
          .endian   (UVM_LITTLE_ENDIAN)
       );

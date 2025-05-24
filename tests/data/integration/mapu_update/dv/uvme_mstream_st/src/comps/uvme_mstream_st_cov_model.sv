@@ -85,15 +85,15 @@ class uvme_mstream_st_cov_model_c extends uvmx_agent_env_cov_model_c #(
       // pragma uvmx cov_model_sample begin
       fork
          forever begin
-            stim_op_seq_item_fifo.get(stim_op_seq_item);
+            stim_op_fifo.get(stim_op_seq_item);
             // ...
          end
          forever begin
-            ig_mon_trn_fifo.get(ig_mon_trn);
+            ig_fifo.get(ig_mon_trn);
             // ...
          end
          forever begin
-            eg_mon_trn_fifo.get(eg_mon_trn);
+            eg_fifo.get(eg_mon_trn);
             // ...
          end
       join

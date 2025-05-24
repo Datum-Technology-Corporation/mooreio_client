@@ -33,14 +33,14 @@ class uvmt_mpb_st_test_cfg_c extends uvmx_agent_test_cfg_c #(
 
    `uvm_object_utils_begin(uvmt_mpb_st_test_cfg_c)
       // pragma uvmx test_cfg_uvm_field_macros begin
-      `uvm_field_int(clk_frequency, UVM_DEFAULT + UVM_DEC)
+      `uvm_field_int(clock_frequency, UVM_DEFAULT + UVM_DEC)
       `uvm_field_enum(uvmx_reset_type_enum, reset_type, UVM_DEFAULT)
+      `uvm_field_int(simulation_timeout, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(startup_timeout, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(heartbeat_period, UVM_DEFAULT + UVM_DEC)
       `uvm_field_int(heartbeat_refresh_period, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_int(simulation_timeout, UVM_DEFAULT + UVM_DEC)
-      `uvm_field_object(clk_agent_cfg, UVM_DEFAULT)
-      `uvm_field_object(reset_n_agent_cfg, UVM_DEFAULT)
+      `uvm_field_object(clock_agent_cfg, UVM_DEFAULT)
+      `uvm_field_object(rst_agent_cfg, UVM_DEFAULT)
       // pragma uvmx test_cfg_uvm_field_macros end
    `uvm_object_utils_end
 
@@ -51,10 +51,10 @@ class uvmt_mpb_st_test_cfg_c extends uvmx_agent_test_cfg_c #(
     */
    constraint defaults_cons {
       soft clock_frequency == uvmt_mpb_st_default_clock_frequency;
-      soft simulation_timeout == uvmt_mpb__default_simulation_timeout;
-      soft startup_timeout == uvmt_mpb__default_startup_timeout;
-      soft heartbeat_period == uvmt_mpb__default_heartbeat_period;
-      soft heartbeat_refresh_period == uvmt_mpb__default_heartbeat_refresh_period;
+      soft simulation_timeout == uvmt_mpb_st_default_simulation_timeout;
+      soft startup_timeout == uvmt_mpb_st_default_startup_timeout;
+      soft heartbeat_period == uvmt_mpb_st_default_heartbeat_period;
+      soft heartbeat_refresh_period == uvmt_mpb_st_default_heartbeat_refresh_period;
    }
 
    /**
