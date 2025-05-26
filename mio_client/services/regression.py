@@ -28,11 +28,11 @@ from ..core.service import Service, ServiceType
 from ..core.ip import Ip
 from ..core.model import Model, VALID_NAME_REGEX
 from ..core.phase import Phase
-from .simulation import LogicSimulatorSimulationConfiguration, LogicSimulatorCompilationConfiguration, \
-    LogicSimulatorElaborationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration, \
+from .simulation import LogicSimulatorSimulationRequest, LogicSimulatorCompilationRequest, \
+    LogicSimulatorElaborationRequest, LogicSimulatorCompilationAndElaborationRequest, \
     LogicSimulatorSimulationReport, LogicSimulator, LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, \
     LogicSimulatorCompilationAndElaborationReport, SimulatorMetricsDSim, DSimCloudJob, DSimCloudSimulationConfiguration, \
-    UvmVerbosity, LogicSimulatorCoverageMergeConfiguration, LogicSimulatorCoverageMergeReport
+    UvmVerbosity, LogicSimulatorCoverageMergeRequest, LogicSimulatorCoverageMergeReport
 
 
 #######################################################################################################################
@@ -148,8 +148,8 @@ class Regression:
             self.test_sets[name] = test_set
             return test_set
     
-    def render_cmp_config(self, target_name: str="default") -> LogicSimulatorCompilationConfiguration:
-        config = LogicSimulatorCompilationConfiguration()
+    def render_cmp_config(self, target_name: str="default") -> LogicSimulatorCompilationRequest:
+        config = LogicSimulatorCompilationRequest()
         config.use_custom_logs_path = True
         config.custom_logs_path = self.results_path
         config.max_errors = self.max_errors
@@ -158,14 +158,14 @@ class Regression:
         config.target = target_name
         return config
     
-    def render_elab_config(self, target_name: str="default") -> LogicSimulatorElaborationConfiguration:
-        config = LogicSimulatorElaborationConfiguration()
+    def render_elab_config(self, target_name: str="default") -> LogicSimulatorElaborationRequest:
+        config = LogicSimulatorElaborationRequest()
         config.use_custom_logs_path = True
         config.custom_logs_path = self.results_path
         return config
     
-    def render_cmp_elab_config(self, target_name: str="default") -> LogicSimulatorCompilationAndElaborationConfiguration:
-        config = LogicSimulatorCompilationAndElaborationConfiguration()
+    def render_cmp_elab_config(self, target_name: str="default") -> LogicSimulatorCompilationAndElaborationRequest:
+        config = LogicSimulatorCompilationAndElaborationRequest()
         config.use_custom_logs_path = True
         config.custom_sim_results_path = self.results_path
         config.max_errors = self.max_errors
@@ -174,8 +174,8 @@ class Regression:
         config.target = target_name
         return config
     
-    def render_sim_configs(self, target_name: str="default") -> Dict[int, LogicSimulatorSimulationConfiguration]:
-        sim_configs: Dict[int, LogicSimulatorSimulationConfiguration] = {}
+    def render_sim_configs(self, target_name: str="default") -> Dict[int, LogicSimulatorSimulationRequest]:
+        sim_configs: Dict[int, LogicSimulatorSimulationRequest] = {}
         for set_name in self.test_sets:
             for group_name in self.test_sets[set_name].test_groups:
                 for test_spec in self.test_sets[set_name].test_groups[group_name].test_specs:
@@ -189,7 +189,7 @@ class Regression:
                                 random_int = randint(1, ((1 << 31) - 1))
                             seeds.append(random_int)
                     for seed in seeds:
-                        config = LogicSimulatorSimulationConfiguration()
+                        config = LogicSimulatorSimulationRequest()
                         config.use_custom_logs_path = True
                         config.custom_logs_path = self.results_path
                         config.seed = seed
@@ -398,10 +398,10 @@ class RegressionConfiguration:
         self.target: str = ""
         self.dry_mode: bool = False
         self.app: LogicSimulators = LogicSimulators.UNDEFINED
-        self.compilation_config: LogicSimulatorCompilationConfiguration = None
-        self.elaboration_config: LogicSimulatorElaborationConfiguration = None
-        self.compilation_and_elaboration_config: LogicSimulatorCompilationAndElaborationConfiguration = None
-        self.simulation_configs: Dict[int, LogicSimulatorSimulationConfiguration] = {}
+        self.compilation_config: LogicSimulatorCompilationRequest = None
+        self.elaboration_config: LogicSimulatorElaborationRequest = None
+        self.compilation_and_elaboration_config: LogicSimulatorCompilationAndElaborationRequest = None
+        self.simulation_configs: Dict[int, LogicSimulatorSimulationRequest] = {}
 
 class RegressionSimulationReport:
     def __init__(self):
@@ -614,7 +614,7 @@ class RegressionRunner:
             for simulation_report in self.report.simulation_reports:
                 self.report.success &= simulation_report.sim_report.success
     
-    def launch_simulation(self, config: LogicSimulatorSimulationConfiguration):
+    def launch_simulation(self, config: LogicSimulatorSimulationRequest):
         sim_report: LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, config, self.scheduler)
         test_spec: ResolvedTestSpec = self.regression.test_specs[config.seed]
         regression_sim_report: RegressionSimulationReport = RegressionSimulationReport()
@@ -674,7 +674,7 @@ class RegressionRunner:
 
     def merge_coverage(self):
         if self.report.success and self.regression.cov_enabled:
-            coverage_merge_config: LogicSimulatorCoverageMergeConfiguration = LogicSimulatorCoverageMergeConfiguration()
+            coverage_merge_config: LogicSimulatorCoverageMergeRequest = LogicSimulatorCoverageMergeRequest()
             coverage_merge_config.output_path = self.regression.results_path / "coverage_report"
             coverage_merge_config.create_html_report = True
             coverage_merge_config.html_report_path = self.regression.results_path / "coverage_report"

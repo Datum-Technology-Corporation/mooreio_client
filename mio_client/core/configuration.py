@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 from typing import List, Optional
@@ -101,6 +101,11 @@ class Ip(Model):
     local_paths: [List[constr(pattern=VALID_POSIX_PATH_REGEX)]]
 
 
+class PackageManagement(Model):
+    fsoc_cores_global_paths: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
+    fsoc_cores_local_paths: [List[constr(pattern=VALID_POSIX_PATH_REGEX)]]
+
+
 class Docs(Model):
     root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
     doxygen_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
@@ -117,6 +122,7 @@ class Configuration(Model):
     Model for mio.toml configuration files.
     """
     project: Project
+    package_management: PackageManagement
     logic_simulation: LogicSimulation
     logic_synthesis: LogicSynthesis
     lint: Linting

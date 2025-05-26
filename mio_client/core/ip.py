@@ -196,16 +196,26 @@ class HdlSource(Model):
 class DesignUnderTest(Model):
     type: DutType
     name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = UNDEFINED_CONST
+    full_name: Optional[str] = UNDEFINED_CONST
     version: Optional[SemanticVersionSpec] = SemanticVersionSpec()
     target: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
 
     def model_dump(self, **kwargs):
-        return_dict = {
-            'type': self.type.value,
-            'name': self.name,
-            'version': str(self.version),
-            'target': self.target,
-        }
+        if self.type.value == DutType.FUSE_SOC.value:
+            return_dict = {
+                'type': self.type.value,
+                'name': self.name,
+                'full_name': self.full_name,
+                'version': str(self.version),
+                'target': self.target,
+            }
+        else:
+            return_dict = {
+                'type': self.type.value,
+                'name': self.name,
+                'version': str(self.version),
+                'target': self.target,
+            }
         return return_dict
 
 
@@ -546,6 +556,10 @@ class Ip(Model):
     @property
     def resolved_dut(self) -> Ip:
         return self._resolved_dut
+
+    @property
+    def dut_needs_prep(self) -> bool:
+        return self.dut.type != DutType.MIO_IP.value
 
     @property
     def uninstalled(self) -> bool:
@@ -967,20 +981,26 @@ class IpDataBase():
         if reset_list_of_dependencies_to_find_online:
             self._dependencies_to_find_online = []
             self._need_to_find_dependencies_on_remote = False
-        if ip.has_dut and not ip.dependencies_resolved:
-            dut_definition = Ip.parse_ip_definition(ip.dut.name)
-            dut_definition.version_spec = ip.dut.version
-            dut_definition.is_dut = True
-            dut_dependency = self.find_ip_definition(dut_definition, raise_exception_if_not_found=False)
-            if dut_dependency is None:
-                ip.add_dependency_to_find_on_remote(dut_definition)
-                self._need_to_find_dependencies_on_remote = True
-                self._ip_with_missing_dependencies[ip.uid] = ip
-                self._dependencies_to_find_online.append(dut_definition)
+        if ip.has_dut:
+            if ip.dut.type == DutType.MIO_IP.value and not ip.dependencies_resolved:
+                dut_definition = Ip.parse_ip_definition(ip.dut.name)
+                dut_definition.version_spec = ip.dut.version
+                dut_definition.is_dut = True
+                dut_dependency = self.find_ip_definition(dut_definition, raise_exception_if_not_found=False)
+                if dut_dependency is None:
+                    ip.add_dependency_to_find_on_remote(dut_definition)
+                    self._need_to_find_dependencies_on_remote = True
+                    self._ip_with_missing_dependencies[ip.uid] = ip
+                    self._dependencies_to_find_online.append(dut_definition)
+                else:
+                    ip.add_resolved_dependency(dut_definition, dut_dependency)
+                    if recursive:
+                        self.resolve_dependencies(dut_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
             else:
-                ip.add_resolved_dependency(dut_definition, dut_dependency)
-                if recursive:
-                    self.resolve_dependencies(dut_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
+                # Custom DUT
+                if ip.dut.type == DutType.FUSE_SOC.value:
+                    # TODO Add checks for FuseSoC core spec
+                    pass
         for ip_definition_str, ip_version_spec in ip.dependencies.items():
             if not ip.dependencies_resolved:
                 ip_definition = Ip.parse_ip_definition(ip_definition_str)

@@ -4,17 +4,18 @@
 import re
 from typing import List, Dict
 
+from ..services.fsoc import FuseSocSetupCoreRequest
 from ..core.configuration import LogicSimulators
 from ..services.regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner, Regression
-from ..core.ip import Ip, IpDefinition, IpPkgType
+from ..core.ip import Ip, IpDefinition, IpPkgType, DutType
 from ..core.command import Command
 from ..core.phase import Phase
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
-from ..services.simulation import LogicSimulator, LogicSimulatorCompilationConfiguration, \
-    LogicSimulatorElaborationConfiguration, \
-    LogicSimulatorCompilationAndElaborationConfiguration, LogicSimulatorSimulationConfiguration, UvmVerbosity, \
-    LogicSimulatorCoverageMergeConfiguration, LogicSimulatorCoverageMergeReport
+from ..services.simulation import LogicSimulator, LogicSimulatorCompilationRequest, \
+    LogicSimulatorElaborationRequest, \
+    LogicSimulatorCompilationAndElaborationRequest, LogicSimulatorSimulationRequest, UvmVerbosity, \
+    LogicSimulatorCoverageMergeRequest, LogicSimulatorCoverageMergeReport
 from ..services.simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
@@ -127,11 +128,11 @@ class SimulateCommand(Command):
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
         self._do_simulate: bool = False
-        self._compilation_configuration: LogicSimulatorCompilationConfiguration
-        self._elaboration_configuration: LogicSimulatorElaborationConfiguration
-        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
-        self._simulation_configuration: LogicSimulatorSimulationConfiguration
-        self._coverage_merge_configuration: LogicSimulatorCoverageMergeConfiguration
+        self._compilation_configuration: LogicSimulatorCompilationRequest
+        self._elaboration_configuration: LogicSimulatorElaborationRequest
+        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationRequest
+        self._simulation_configuration: LogicSimulatorSimulationRequest
+        self._coverage_merge_configuration: LogicSimulatorCoverageMergeRequest
         self._compilation_report: LogicSimulatorCompilationReport
         self._elaboration_report: LogicSimulatorElaborationReport
         self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
@@ -172,23 +173,23 @@ class SimulateCommand(Command):
         return self._do_simulate
 
     @property
-    def compilation_configuration(self) -> LogicSimulatorCompilationConfiguration:
+    def compilation_configuration(self) -> LogicSimulatorCompilationRequest:
         return self._compilation_configuration
 
     @property
-    def elaboration_configuration(self) -> LogicSimulatorElaborationConfiguration:
+    def elaboration_configuration(self) -> LogicSimulatorElaborationRequest:
         return self._elaboration_configuration
 
     @property
-    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationConfiguration:
+    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationRequest:
         return self._compilation_and_elaboration_configuration
 
     @property
-    def simulation_configuration(self) -> LogicSimulatorSimulationConfiguration:
+    def simulation_configuration(self) -> LogicSimulatorSimulationRequest:
         return self._simulation_configuration
 
     @property
-    def coverage_merge_configuration(self) -> LogicSimulatorCoverageMergeConfiguration:
+    def coverage_merge_configuration(self) -> LogicSimulatorCoverageMergeRequest:
         return self._coverage_merge_configuration
 
     @property
@@ -351,6 +352,8 @@ class SimulateCommand(Command):
     def phase_main(self, phase: Phase):
         if self.do_prepare_dut:
             self.prepare_dut(phase)
+            if phase.error:
+                return
         if self.do_compile:
             self.compile(phase)
             if not self.compilation_report.success:
@@ -368,10 +371,36 @@ class SimulateCommand(Command):
             self.simulate(phase)
 
     def prepare_dut(self, phase: Phase):
+        if self.ip.dut.type == DutType.FUSE_SOC.value:
+            try:
+                self._fsoc = self.rmh.service_database.find_service(ServiceType.PACKAGE_MANAGEMENT, "fsoc")
+            except Exception as e:
+                phase.error = Exception(f"FuseSoC is not available")
+            else:
+                self._fsoc_request = FuseSocSetupCoreRequest(
+                    core_name=self.ip.dut.name, system_name=self.ip.dut.full_name, target=self.ip.dut.target,
+                    simulator=self.app.value
+                )
+                self._fsoc_report = self._fsoc.setup_core(self._fsoc_request)
+                if not self._fsoc_report.success:
+                    phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
+
+    def fsoc_add_to_compilation_request(self, compilation_request: LogicSimulatorCompilationRequest):
+        compilation_request.has_custom_dut = True
+        compilation_request.custom_dut_type = "FuseSoC"
+        compilation_request.custom_dut_directories = self._fsoc_report.directories
+        compilation_request.custom_dut_sv_files = self._fsoc_report.sv_files
+        compilation_request.custom_dut_vhdl_files = self._fsoc_report.vhdl_files
+        compilation_request.custom_dut_defines_values = self._fsoc_report.defines_values
+        compilation_request.custom_dut_defines_boolean = self._fsoc_report.defines_boolean
+
+    def fsoc_add_to_simulation_request(self, simulation_request: LogicSimulatorSimulationRequest):
         pass
 
     def compile(self, phase: Phase):
-        self._compilation_configuration = LogicSimulatorCompilationConfiguration()
+        self._compilation_configuration = LogicSimulatorCompilationRequest()
+        if self.ip.dut.type == DutType.FUSE_SOC.value:
+            self.fsoc_add_to_compilation_request(self._compilation_configuration)
         if self.parsed_cli_arguments.errors:
             self.compilation_configuration.max_errors = self.parsed_cli_arguments.errors
         if self.parsed_cli_arguments.waves:
@@ -384,11 +413,15 @@ class SimulateCommand(Command):
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
     def elaborate(self, phase: Phase):
-        self._elaboration_configuration = LogicSimulatorElaborationConfiguration()
+        self._elaboration_configuration = LogicSimulatorElaborationRequest()
+        if self.ip.dut.type == DutType.FUSE_SOC.value:
+            self.fsoc_add_to_compilation_request(self._elaboration_configuration)
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
-        self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationConfiguration()
+        self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationRequest()
+        if self.ip.dut.type == DutType.FUSE_SOC.value:
+            self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
         if self.parsed_cli_arguments.errors:
             self._compilation_and_elaboration_configuration.max_errors = self.parsed_cli_arguments.errors
         if self.parsed_cli_arguments.waves:
@@ -403,7 +436,9 @@ class SimulateCommand(Command):
                                                                                         self.scheduler)
 
     def simulate(self, phase: Phase):
-        self._simulation_configuration = LogicSimulatorSimulationConfiguration()
+        self._simulation_configuration = LogicSimulatorSimulationRequest()
+        if self.ip.dut.type == DutType.FUSE_SOC.value:
+            self.fsoc_add_to_simulation_request(self._simulation_configuration)
         self.simulation_configuration.seed = self.parsed_cli_arguments.seed if self.parsed_cli_arguments.seed is not None else 1
         self.simulation_configuration.verbosity = self.parsed_cli_arguments.verbosity if self.parsed_cli_arguments.verbosity is not None else UvmVerbosity.MEDIUM
         self.simulation_configuration.max_errors = self.parsed_cli_arguments.errors if self.parsed_cli_arguments.errors is not None else 10
@@ -416,7 +451,7 @@ class SimulateCommand(Command):
         self.simulation_configuration.target = self.ip_definition.target
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
         if self.simulation_configuration.enable_coverage:
-            self._coverage_merge_configuration = LogicSimulatorCoverageMergeConfiguration()
+            self._coverage_merge_configuration = LogicSimulatorCoverageMergeRequest()
             self.coverage_merge_configuration.target_name = self.ip_definition.target
             self.coverage_merge_configuration.output_path = self.simulation_report.coverage_directory
             self.coverage_merge_configuration.create_html_report = True
@@ -428,6 +463,10 @@ class SimulateCommand(Command):
 
     def phase_report(self, phase: Phase):
         self._success = True
+        if self.do_prepare_dut:
+            if self.ip.dut_needs_prep:
+                if self.ip.dut.type == DutType.FUSE_SOC.value:
+                    self._success &= self._fsoc_report.success
         if self.do_compile:
             self._success &= self.compilation_report.success
         if self.do_elaborate:
@@ -458,7 +497,12 @@ class SimulateCommand(Command):
             phase.error = Exception(f"Logic Simulation failed.")
 
     def print_prepare_dut_report(self, phase: Phase):
-        pass
+        if self.ip.dut_needs_prep:
+            if self.ip.dut.type == DutType.FUSE_SOC.value:
+                if self._fsoc_report.success:
+                    self.rmh.info(f"FuseSoC core '{self._fsoc_request.core_name}' setup completed successfully.")
+                else:
+                    print(f"\033[31mFuseSoC core '{self._fsoc_request.core_name}' setup failed.\033[0m")
 
     def print_compilation_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.compilation_report.num_errors}E\033[0m" if self.compilation_report.num_errors > 0 else "0E"
@@ -580,9 +624,9 @@ class RegressionCommand(Command):
         self._do_compile: bool = False
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
-        self._compilation_configuration: LogicSimulatorCompilationConfiguration
-        self._elaboration_configuration: LogicSimulatorElaborationConfiguration
-        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationConfiguration
+        self._compilation_configuration: LogicSimulatorCompilationRequest
+        self._elaboration_configuration: LogicSimulatorElaborationRequest
+        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationRequest
         self._regression_configuration: RegressionConfiguration
         self._compilation_report: LogicSimulatorCompilationReport
         self._elaboration_report: LogicSimulatorElaborationReport
@@ -649,15 +693,15 @@ class RegressionCommand(Command):
         return self._do_compile_and_elaborate
 
     @property
-    def compilation_configuration(self) -> LogicSimulatorCompilationConfiguration:
+    def compilation_configuration(self) -> LogicSimulatorCompilationRequest:
         return self._compilation_configuration
 
     @property
-    def elaboration_configuration(self) -> LogicSimulatorElaborationConfiguration:
+    def elaboration_configuration(self) -> LogicSimulatorElaborationRequest:
         return self._elaboration_configuration
 
     @property
-    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationConfiguration:
+    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationRequest:
         return self._compilation_and_elaboration_configuration
 
     @property

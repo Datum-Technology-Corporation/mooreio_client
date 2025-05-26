@@ -21,6 +21,8 @@ class TestCliSim(TestBase):
     def reset_workspace(self):
         self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", ".mio")))
         self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest", "sim")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "fsoc", ".mio")))
+        self.remove_directory(Path(os.path.join(os.path.dirname(__file__), "data", "fsoc", "sim")))
 
     def cli_cmp_ip(self, capsys, app: str):
         self.reset_workspace()
@@ -111,6 +113,17 @@ class TestCliSim(TestBase):
         self.clean_ip(capsys, test_project_path, "def_ss_tb")
         self.deep_clean(capsys, test_project_path)
 
+    def cli_prep_dut_fsoc(self, capsys, app: str):
+        self.reset_workspace()
+        test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "fsoc"))
+        self.prep_dut_ip(capsys, test_project_path, app, "tb")
+
+    def cli_cmpelab_fsoc(self, capsys, app: str):
+        self.reset_workspace()
+        test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "fsoc"))
+        self.cmpelab_ip(capsys, test_project_path, app, "tb")
+
+
     # DSim
     @pytest.mark.single_process
     @pytest.mark.dsim
@@ -140,6 +153,16 @@ class TestCliSim(TestBase):
     @pytest.mark.dsim
     def test_cli_sim_targets_ip_dsim(self, capsys):
         self.cli_sim_targets_ip(capsys, "dsim")
+
+    @pytest.mark.single_process
+    @pytest.mark.dsim
+    def test_cli_prep_dut_fsoc_dsim(self, capsys):
+        self.cli_prep_dut_fsoc(capsys, "dsim")
+    @pytest.mark.single_process
+    @pytest.mark.dsim
+    def test_cli_cmpelab_fsoc_dsim(self, capsys):
+        self.cli_cmpelab_fsoc(capsys, "dsim")
+
 
     # Vivado
     @pytest.mark.single_process

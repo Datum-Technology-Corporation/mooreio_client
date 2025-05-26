@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 
@@ -12,8 +12,8 @@ from semantic_version import SimpleSpec
 from ..core.phase import Phase
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
-from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration, \
-    LogicSimulatorLibraryDeletionConfiguration, LogicSimulatorLibraryDeletionReport
+from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionRequest, \
+    LogicSimulatorLibraryDeletionRequest, LogicSimulatorLibraryDeletionReport
 from ..core.command import Command
 from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
@@ -135,7 +135,7 @@ class PackageCommand(Command):
     def phase_main(self, phase):
         try:
             if (len(self.ip.ip.encrypted) > 0) or self.ip.ip.mlicensed:
-                encryption_config = LogicSimulatorEncryptionConfiguration()
+                encryption_config = LogicSimulatorEncryptionRequest()
                 tgz_path = self.ip.create_encrypted_compressed_tarball(encryption_config)
             else:
                 tgz_path = self.ip.create_unencrypted_compressed_tarball()
@@ -233,7 +233,7 @@ class PublishCommand(Command):
 
     def phase_main(self, phase):
         try:
-            encryption_config = LogicSimulatorEncryptionConfiguration()
+            encryption_config = LogicSimulatorEncryptionRequest()
             self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip, encryption_config, self.customer)
         except Exception as e:
             phase.error = Exception(f"Failed to publish IP '{self.ip}': {e}")
@@ -485,7 +485,7 @@ class CleanCommand(Command):
         self._deep_clean: bool
         self._scheduler: JobScheduler
         self._simulators: list[LogicSimulator] = []
-        self._configuration: LogicSimulatorLibraryDeletionConfiguration = LogicSimulatorLibraryDeletionConfiguration()
+        self._configuration: LogicSimulatorLibraryDeletionRequest = LogicSimulatorLibraryDeletionRequest()
         self._reports: Dict[LogicSimulator, LogicSimulatorLibraryDeletionReport] = {}
         self._success: bool = False
 
@@ -514,7 +514,7 @@ class CleanCommand(Command):
         return self._scheduler
 
     @property
-    def configuration(self) -> LogicSimulatorLibraryDeletionConfiguration:
+    def configuration(self) -> LogicSimulatorLibraryDeletionRequest:
         return self._configuration
 
     @property

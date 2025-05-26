@@ -150,7 +150,7 @@ class LogicSimulatorCoverageMergeReport(LogicSimulatorReport):
     merge_log_file_path: Optional[Path] = Path()
 
 
-class LogicSimulatorConfiguration(ABC):
+class LogicSimulatorRequest(ABC):
     def __init__(self):
         self.dry_mode: bool = False
         self.use_relative_paths: bool = False
@@ -158,13 +158,13 @@ class LogicSimulatorConfiguration(ABC):
         self.use_custom_logs_path: bool = False
         self.custom_logs_path: Path = Path()
 
-class LogicSimulatorLibraryCreationConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorLibraryCreationRequest(LogicSimulatorRequest):
     pass
 
-class LogicSimulatorLibraryDeletionConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorLibraryDeletionRequest(LogicSimulatorRequest):
     pass
 
-class LogicSimulatorCompilationConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorCompilationRequest(LogicSimulatorRequest):
     def __init__(self):
         super().__init__()
         self.enable_coverage: bool = False
@@ -175,18 +175,25 @@ class LogicSimulatorCompilationConfiguration(LogicSimulatorConfiguration):
         self.target: str = ""
         self.log_sv_cmd: bool = True
         self.log_vhdl_cmd: bool = True
+        self.has_custom_dut: bool = False
+        self.custom_dut_type: str = "N/A"
+        self.custom_dut_directories: List[Path] = []
+        self.custom_dut_sv_files: List[Path] = []
+        self.custom_dut_vhdl_files: List[Path] = []
+        self.custom_dut_defines_values: Dict[str, str] = {}
+        self.custom_dut_defines_boolean: List[str] = []
 
-class LogicSimulatorElaborationConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorElaborationRequest(LogicSimulatorRequest):
     def __init__(self):
         super().__init__()
         self.log_cmd: bool = True
 
-class LogicSimulatorCompilationAndElaborationConfiguration(LogicSimulatorCompilationConfiguration):
+class LogicSimulatorCompilationAndElaborationRequest(LogicSimulatorCompilationRequest):
     def __init__(self):
         super().__init__()
         self.log_cmd: bool = True
 
-class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorSimulationRequest(LogicSimulatorRequest):
     def __init__(self):
         super().__init__()
         self.target: str = ""
@@ -212,14 +219,14 @@ class LogicSimulatorSimulationConfiguration(LogicSimulatorConfiguration):
             args_str += f" +{arg}={self.user_args_value[arg]}"
         return f"{self.test_name} seed={self.seed}{args_str}"
 
-class LogicSimulatorEncryptionConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorEncryptionRequest(LogicSimulatorRequest):
     def __init__(self):
         super().__init__()
         self.add_license_key_checks: bool = False
         self.mlicense_key: str = UNDEFINED_CONST
         self.mlicense_id: int = -1
 
-class LogicSimulatorCoverageMergeConfiguration(LogicSimulatorConfiguration):
+class LogicSimulatorCoverageMergeRequest(LogicSimulatorRequest):
     def __init__(self):
         super().__init__()
         self.target_name: str = ""
@@ -242,6 +249,12 @@ class LogicSimulatorMasterFileList(LogicSimulatorFileList):
     licensing_vhdl_path: Optional[str] = ""
     defines_boolean: Optional[Dict[str, bool]] = {}
     defines_values: Optional[Dict[str, str]] = {}
+    has_custom_dut: Optional[bool] = False
+    custom_dut_type: Optional[str] = "N/A"
+    custom_dut_directories: Optional[List[Path]] = []
+    custom_dut_files: Optional[List[Path]] = []
+    custom_dut_defines_values: Optional[Dict[str, str]] = {}
+    custom_dut_defines_boolean: Optional[List[str]] = []
 
 
 
@@ -349,7 +362,7 @@ class LogicSimulator(Service, ABC):
     def create_files(self):
         pass
 
-    def create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, scheduler: JobScheduler) -> LogicSimulatorLibraryCreationReport:
+    def create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationRequest, scheduler: JobScheduler) -> LogicSimulatorLibraryCreationReport:
         report = LogicSimulatorLibraryCreationReport(name=f"Library Creation for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
@@ -359,7 +372,7 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, scheduler: JobScheduler) -> LogicSimulatorLibraryDeletionReport:
+    def delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionRequest, scheduler: JobScheduler) -> LogicSimulatorLibraryDeletionReport:
         report = LogicSimulatorLibraryDeletionReport(name=f"Library Deletion for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
@@ -368,7 +381,7 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, scheduler: JobScheduler) -> LogicSimulatorCompilationReport:
+    def compile(self, ip: Ip, config: LogicSimulatorCompilationRequest, scheduler: JobScheduler) -> LogicSimulatorCompilationReport:
         report = LogicSimulatorCompilationReport(name=f"Compilation for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
@@ -401,7 +414,7 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, scheduler: JobScheduler) -> LogicSimulatorElaborationReport:
+    def elaborate(self, ip: Ip, config: LogicSimulatorElaborationRequest, scheduler: JobScheduler) -> LogicSimulatorElaborationReport:
         report = LogicSimulatorElaborationReport(name=f"Elaboration for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
@@ -424,7 +437,7 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, scheduler: JobScheduler) -> LogicSimulatorCompilationAndElaborationReport:
+    def compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationRequest, scheduler: JobScheduler) -> LogicSimulatorCompilationAndElaborationReport:
         report = LogicSimulatorCompilationAndElaborationReport(name=f"Compilation+Elaboration for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
@@ -454,7 +467,7 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, scheduler: JobScheduler) -> LogicSimulatorSimulationReport:
+    def simulate(self, ip: Ip, config: LogicSimulatorSimulationRequest, scheduler: JobScheduler) -> LogicSimulatorSimulationReport:
         # Init report
         report = LogicSimulatorSimulationReport(name=f"Simulation for '{ip}' using '{self.full_name}'")
         # Init scheduler
@@ -551,7 +564,7 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, scheduler: JobScheduler) -> LogicSimulatorEncryptionReport:
+    def encrypt(self, ip: Ip, config: LogicSimulatorEncryptionRequest, scheduler: JobScheduler) -> LogicSimulatorEncryptionReport:
         report = LogicSimulatorEncryptionReport(name=f"Encryption for '{ip}' using '{self.full_name}'")
         report.path_to_encrypted_files = self.work_temp_path / f'encrypt_{ip.lib_name}'
         self.rmh.copy_directory(ip.resolved_src_path, report.path_to_encrypted_files)
@@ -614,7 +627,7 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeConfiguration, scheduler: JobScheduler) -> LogicSimulatorCoverageMergeReport:
+    def coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeRequest, scheduler: JobScheduler) -> LogicSimulatorCoverageMergeReport:
         report = LogicSimulatorCoverageMergeReport(name=f"Coverage Merge for '{ip}' using '{self.full_name}'")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = config.dry_mode
@@ -626,10 +639,10 @@ class LogicSimulator(Service, ABC):
         report.scheduler_config = scheduler_config
         return report
 
-    def parse_library_creation_logs(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LogicSimulatorLibraryCreationReport) -> None:
+    def parse_library_creation_logs(self, ip: Ip, config: LogicSimulatorLibraryCreationRequest, report: LogicSimulatorLibraryCreationReport) -> None:
         pass
 
-    def parse_compilation_logs(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport) -> None:
+    def parse_compilation_logs(self, ip: Ip, config: LogicSimulatorCompilationRequest, report: LogicSimulatorCompilationReport) -> None:
         if report.has_sv_files_to_compile:
             report.errors   += self.rmh.search_file_for_patterns(report.sv_log_path, self.compilation_error_patterns)
             report.warnings += self.rmh.search_file_for_patterns(report.sv_log_path, self.compilation_warning_patterns)
@@ -643,7 +656,7 @@ class LogicSimulator(Service, ABC):
         report.num_fatals = len(report.fatals)
         report.success &= (report.num_errors == 0) and (report.num_fatals == 0)
 
-    def parse_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport) -> None:
+    def parse_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationRequest, report: LogicSimulatorElaborationReport) -> None:
         report.errors   += self.rmh.search_file_for_patterns(report.log_path, self.elaboration_error_patterns)
         report.warnings += self.rmh.search_file_for_patterns(report.log_path, self.elaboration_warning_patterns)
         report.fatals   += self.rmh.search_file_for_patterns(report.log_path, self.elaboration_fatal_patterns)
@@ -652,7 +665,7 @@ class LogicSimulator(Service, ABC):
         report.num_fatals = len(report.fatals)
         report.success &= (report.num_errors == 0) and (report.num_fatals == 0)
 
-    def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport) -> None:
+    def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationRequest, report: LogicSimulatorCompilationAndElaborationReport) -> None:
         report.errors   += self.rmh.search_file_for_patterns(report.log_path, self.compilation_and_elaboration_error_patterns)
         report.warnings += self.rmh.search_file_for_patterns(report.log_path, self.compilation_and_elaboration_warning_patterns)
         report.fatals   += self.rmh.search_file_for_patterns(report.log_path, self.compilation_and_elaboration_fatal_patterns)
@@ -661,7 +674,7 @@ class LogicSimulator(Service, ABC):
         report.num_fatals = len(report.fatals)
         report.success &= (report.num_errors == 0) and (report.num_fatals == 0)
 
-    def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport) -> None:
+    def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationRequest, report: LogicSimulatorSimulationReport) -> None:
         report.errors   += self.rmh.search_file_for_patterns(report.log_path, self.simulation_error_patterns)
         report.warnings += self.rmh.search_file_for_patterns(report.log_path, self.simulation_warning_patterns)
         report.fatals   += self.rmh.search_file_for_patterns(report.log_path, self.simulation_fatal_patterns)
@@ -670,13 +683,13 @@ class LogicSimulator(Service, ABC):
         report.num_fatals = len(report.fatals)
         report.success &= (report.num_errors == 0) and (report.num_fatals == 0)
 
-    def parse_encryption_logs(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: LogicSimulatorEncryptionReport) -> None:
+    def parse_encryption_logs(self, ip: Ip, config: LogicSimulatorEncryptionRequest, report: LogicSimulatorEncryptionReport) -> None:
         if report.sv_encryption_success and report.vhdl_encryption_success:
             report.success = True
         else:
             report.success = False
 
-    def parse_merge_coverage_logs(self, ip: Ip, config: LogicSimulatorCoverageMergeConfiguration, report: LogicSimulatorCoverageMergeReport) -> None:
+    def parse_merge_coverage_logs(self, ip: Ip, config: LogicSimulatorCoverageMergeRequest, report: LogicSimulatorCoverageMergeReport) -> None:
         report.errors   += self.rmh.search_file_for_patterns(report.merge_log_file_path, self.coverage_merge_error_patterns)
         report.warnings += self.rmh.search_file_for_patterns(report.merge_log_file_path, self.coverage_merge_warning_patterns)
         report.fatals   += self.rmh.search_file_for_patterns(report.merge_log_file_path, self.coverage_merge_fatal_patterns)
@@ -686,10 +699,17 @@ class LogicSimulator(Service, ABC):
         report.success &= (report.num_errors == 0) and (report.num_fatals == 0)
 
     def build_sv_flist(self, ip:Ip,
-                       config:Union[LogicSimulatorCompilationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration],
+                       config:Union[LogicSimulatorCompilationRequest, LogicSimulatorCompilationAndElaborationRequest],
                        report:Union[LogicSimulatorCompilationReport, LogicSimulatorCompilationAndElaborationReport]):
         has_files_to_compile:bool = False
         file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
+        if config.has_custom_dut:
+            file_list.has_custom_dut = True
+            file_list.custom_dut_type = config.custom_dut_type
+            file_list.custom_dut_directories = config.custom_dut_directories
+            file_list.custom_dut_files = config.custom_dut_sv_files
+            file_list.custom_dut_defines_values = config.custom_dut_defines_values
+            file_list.custom_dut_defines_boolean = config.custom_dut_defines_boolean
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
             if dep.ip.mlicensed:
@@ -720,7 +740,7 @@ class LogicSimulator(Service, ABC):
             file_list.defines_values.update(ip.resolved_dut.get_target_cmp_val_defines(dut_target_name))
         file_list.defines_boolean.update(ip.get_target_cmp_bool_defines(config.target))
         file_list.defines_values.update(ip.get_target_cmp_val_defines(config.target))
-        if isinstance(config, LogicSimulatorCompilationConfiguration):
+        if isinstance(config, LogicSimulatorCompilationRequest):
             for define in config.defines_boolean:
                 file_list.defines_boolean[define] = True
             file_list.defines_values.update(config.defines_value)
@@ -777,8 +797,15 @@ class LogicSimulator(Service, ABC):
             else:
                 report.file_list_path = flist_path
 
-    def build_vhdl_flist(self, ip:Ip, config:LogicSimulatorCompilationConfiguration, report:LogicSimulatorCompilationReport):
+    def build_vhdl_flist(self, ip:Ip, config:LogicSimulatorCompilationRequest, report:LogicSimulatorCompilationReport):
         file_list = LogicSimulatorMasterFileList(name=ip.as_ip_definition)
+        if config.has_custom_dut:
+            file_list.has_custom_dut = True
+            file_list.custom_dut_type = config.custom_dut_type
+            file_list.custom_dut_directories = config.custom_dut_directories
+            file_list.custom_dut_files = config.custom_dut_vhdl_files
+            file_list.custom_dut_defines_values = config.custom_dut_defines_values
+            file_list.custom_dut_defines_boolean = config.custom_dut_defines_boolean
         target_name = config.target
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
@@ -855,7 +882,7 @@ class LogicSimulator(Service, ABC):
                 flist.write(filelist_rendered)
             report.vhdl_file_list_path = flist_path
 
-    def get_all_shared_objects(self, ip:Ip, config: LogicSimulatorConfiguration, ordered_dependencies:List[Ip]=None) -> List[Path]:
+    def get_all_shared_objects(self, ip:Ip, config: LogicSimulatorRequest, ordered_dependencies:List[Ip]=None) -> List[Path]:
         needs_license_so = False
         shared_objects: List[Path] = []
         try:
@@ -1001,39 +1028,39 @@ class LogicSimulator(Service, ABC):
         pass
     
     @abstractmethod
-    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationRequest, report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
     @abstractmethod
-    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, report: LogicSimulatorLibraryDeletionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionRequest, report: LogicSimulatorLibraryDeletionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
     @abstractmethod
-    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationRequest, report: LogicSimulatorCompilationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
     @abstractmethod
-    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationRequest, report: LogicSimulatorElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
     @abstractmethod
-    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationRequest, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
     @abstractmethod
-    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationRequest, report: LogicSimulatorSimulationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
     @abstractmethod
-    def get_view_waves_command(self, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport):
+    def get_view_waves_command(self, config: LogicSimulatorSimulationRequest, report: LogicSimulatorSimulationReport):
         pass
 
     @abstractmethod
-    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: LogicSimulatorEncryptionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionRequest, report: LogicSimulatorEncryptionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
     @abstractmethod
-    def do_coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeConfiguration, report: LogicSimulatorCoverageMergeReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeRequest, report: LogicSimulatorCoverageMergeReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
 
@@ -1114,10 +1141,10 @@ class DSimCloudSimulationConfiguration:
         self.max_parallel_tasks: int = 1
         self.results_path: Path = Path()
         self.compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
-        self.compilation_config: LogicSimulatorCompilationConfiguration = None
-        self.elaboration_config: LogicSimulatorElaborationConfiguration = None
-        self.compilation_and_elaboration_config: LogicSimulatorCompilationAndElaborationConfiguration = None
-        self.simulation_configs: List[LogicSimulatorSimulationConfiguration] = []
+        self.compilation_config: LogicSimulatorCompilationRequest = None
+        self.elaboration_config: LogicSimulatorElaborationRequest = None
+        self.compilation_and_elaboration_config: LogicSimulatorCompilationAndElaborationRequest = None
+        self.simulation_configs: List[LogicSimulatorSimulationRequest] = []
 
 class DSimCloudSimulationReport(Model):
     success: Optional[bool] = False
@@ -1270,16 +1297,16 @@ class SimulatorMetricsDSim(LogicSimulator):
         job.env_vars["UVM_HOME"] = f"{dsim_home}/uvm/" + self.rmh.configuration.logic_simulation.uvm_version.value
         job.env_vars["DSIM_LICENSE"] = self.rmh.configuration.logic_simulation.metrics_dsim_license_path
 
-    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration, report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationRequest, report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
 
-    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration, report: LogicSimulatorLibraryDeletionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionRequest, report: LogicSimulatorLibraryDeletionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         if self.rmh.directory_exists(report.work_directory):
             self.rmh.remove_directory(report.work_directory)
         report.success = True
 
-    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationRequest, report: LogicSimulatorCompilationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         defines_str = ""
         for define in report.user_defines_boolean:
             defines_str += f" +define+{define}"
@@ -1356,7 +1383,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         else:
             report.sv_compilation_success = True
 
-    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationRequest, report: LogicSimulatorElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         top_str = ""
         for top in ip.hdl_src.top:
             top_str = f"{top_str} -top {top}"
@@ -1387,7 +1414,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             report.timestamp_start = results_elaborate.timestamp_start
             report.timestamp_end = results_elaborate.timestamp_end
 
-    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationRequest, report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         if not ip.has_vhdl_content:
             defines_str = ""
             for define in report.user_defines_boolean:
@@ -1438,7 +1465,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         else:
             raise Exception(f"Cannot perform Compilation+Elaboration with DSim for IPs containing VHDL content: IP '{ip}'")
 
-    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationRequest, report: LogicSimulatorSimulationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         args_str = ""
         for arg in report.args_boolean:
             args_str += f" +{arg}"
@@ -1495,11 +1522,11 @@ class SimulatorMetricsDSim(LogicSimulator):
             report.timestamp_start = results_simulate.timestamp_start
             report.timestamp_end = results_simulate.timestamp_end
 
-    def get_view_waves_command(self, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport):
+    def get_view_waves_command(self, config: LogicSimulatorSimulationRequest, report: LogicSimulatorSimulationReport):
         viewer_bin_path: Path = Path(os.path.join(self.rmh.configuration.logic_simulation.vscode_installation_path, "code"))
         return f"{viewer_bin_path} {report.waveform_file_path}"
 
-    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration, report: LogicSimulatorEncryptionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionRequest, report: LogicSimulatorEncryptionReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         # TODO Add support for config.relative_paths=True
         if report.has_sv_files_to_encrypt:
             report.sv_encryption_success = True
@@ -1553,7 +1580,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             report.vhdl_encryption_success = True
         report.timestamp_end = datetime.datetime.now()
 
-    def do_coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeConfiguration, report: LogicSimulatorCoverageMergeReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
+    def do_coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeRequest, report: LogicSimulatorCoverageMergeReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         if len(config.input_simulation_reports) > 1:
             merged_db_path: Path = config.output_path / "coverage.db"
             if config.use_relative_paths:
@@ -1605,7 +1632,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         self._cloud_sim_installation_path = self.rmh.configuration.logic_simulation.metrics_dsim_cloud_installation_path
         # 1. Initialize report
         report: DSimCloudSimulationReport = DSimCloudSimulationReport()
-        config_report_map: Dict[LogicSimulatorSimulationReport, LogicSimulatorSimulationConfiguration] = {}
+        config_report_map: Dict[LogicSimulatorSimulationReport, LogicSimulatorSimulationRequest] = {}
         # 2. Create top-level Job object
         job_data: Dict = {
             'name': cloud_simulation_config.name,
@@ -1879,7 +1906,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         if results.return_code != 0:
             raise Exception(f"Failed to kill DSim cloud job id '{job_id}':\n{results.stderr}\n{results.stdout}")
 
-    def parse_compilation_logs(self, ip: Ip, config: LogicSimulatorCompilationConfiguration, report: LogicSimulatorCompilationReport) -> None:
+    def parse_compilation_logs(self, ip: Ip, config: LogicSimulatorCompilationRequest, report: LogicSimulatorCompilationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
                 report.success = True
@@ -1887,7 +1914,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         else:
             super().parse_compilation_logs(ip, config, report)
     
-    def parse_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationConfiguration, report: LogicSimulatorElaborationReport) -> None:
+    def parse_elaboration_logs(self, ip: Ip, config: LogicSimulatorElaborationRequest, report: LogicSimulatorElaborationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
                 report.success = True
@@ -1895,7 +1922,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         else:
             super().parse_elaboration_logs(ip, config, report)
 
-    def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration, report: LogicSimulatorCompilationAndElaborationReport) -> None:
+    def parse_compilation_and_elaboration_logs(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationRequest, report: LogicSimulatorCompilationAndElaborationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
                 report.success = True
@@ -1903,7 +1930,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         else:
             super().parse_compilation_and_elaboration_logs(ip, config, report)
 
-    def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport) -> None:
+    def parse_simulation_logs(self, ip: Ip, config: LogicSimulatorSimulationRequest, report: LogicSimulatorSimulationReport) -> None:
         if self.cloud_mode:
             if self.cloud_sim_state == DSimCloudSimulationState.PARSING_RESULTS:
                 report.success = True
@@ -2056,12 +2083,12 @@ class SimulatorXilinxVivado(LogicSimulator):
         # TODO Get version string from vivado
         return Version('1.0.0')
 
-    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationConfiguration,
+    def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationRequest,
                           report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler,
                           scheduler_config: JobSchedulerConfiguration):
         pass
 
-    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionConfiguration,
+    def do_delete_library(self, ip: Ip, config: LogicSimulatorLibraryDeletionRequest,
                           report: LogicSimulatorLibraryDeletionReport, scheduler: JobScheduler,
                           scheduler_config: JobSchedulerConfiguration):
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
@@ -2069,7 +2096,7 @@ class SimulatorXilinxVivado(LogicSimulator):
             self.rmh.remove_directory(report.work_directory)
         report.success = True
 
-    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationConfiguration,
+    def do_compile(self, ip: Ip, config: LogicSimulatorCompilationRequest,
                    report: LogicSimulatorCompilationReport, scheduler: JobScheduler,
                    scheduler_config: JobSchedulerConfiguration):
         defines_str: str = ""
@@ -2148,7 +2175,7 @@ class SimulatorXilinxVivado(LogicSimulator):
         else:
             report.sv_compilation_success = True
 
-    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationConfiguration,
+    def do_elaborate(self, ip: Ip, config: LogicSimulatorElaborationRequest,
                      report: LogicSimulatorElaborationReport, scheduler: JobScheduler,
                      scheduler_config: JobSchedulerConfiguration):
         so_str = ""
@@ -2182,13 +2209,13 @@ class SimulatorXilinxVivado(LogicSimulator):
         report.timestamp_start = results_elaborate.timestamp_start
         report.timestamp_end = results_elaborate.timestamp_end
 
-    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationConfiguration,
+    def do_compile_and_elaborate(self, ip: Ip, config: LogicSimulatorCompilationAndElaborationRequest,
                                  report: LogicSimulatorCompilationAndElaborationReport, scheduler: JobScheduler,
                                  scheduler_config: JobSchedulerConfiguration):
         raise Exception(
             f"Cannot perform Compilation+Elaboration with Vivado: IP '{ip}'")
 
-    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationConfiguration,
+    def do_simulate(self, ip: Ip, config: LogicSimulatorSimulationRequest,
                     report: LogicSimulatorSimulationReport, scheduler: JobScheduler,
                     scheduler_config: JobSchedulerConfiguration):
         args_str = ""
@@ -2242,11 +2269,11 @@ class SimulatorXilinxVivado(LogicSimulator):
         report.timestamp_start = results_simulate.timestamp_start
         report.timestamp_end = results_simulate.timestamp_end
 
-    def get_view_waves_command(self, config: LogicSimulatorSimulationConfiguration, report: LogicSimulatorSimulationReport):
+    def get_view_waves_command(self, config: LogicSimulatorSimulationRequest, report: LogicSimulatorSimulationReport):
         viewer_bin_path: Path = Path(os.path.join(self.installation_path, "bin", "xsim"))
         return f"{viewer_bin_path} -gui {report.waveform_file_path}"
 
-    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionConfiguration,
+    def do_encrypt(self, ip: Ip, config: LogicSimulatorEncryptionRequest,
                    report: LogicSimulatorEncryptionReport, scheduler: JobScheduler,
                    scheduler_config: JobSchedulerConfiguration):
         if report.has_vhdl_files_to_encrypt:
@@ -2337,7 +2364,7 @@ class SimulatorXilinxVivado(LogicSimulator):
             report.sv_encryption_success = True
         report.timestamp_end = datetime.datetime.now()
 
-    def do_coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeConfiguration,
+    def do_coverage_merge(self, ip: Ip, config: LogicSimulatorCoverageMergeRequest,
                           report: LogicSimulatorCoverageMergeReport, scheduler: JobScheduler,
                           scheduler_config: JobSchedulerConfiguration):
         merged_db_path: Path = config.output_path

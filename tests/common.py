@@ -122,6 +122,13 @@ class TestBase:
             assert "successfully" in result.text
         return result
 
+    def prep_dut_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-D', '-a', app])
+        assert result.return_code == 0
+        return result
+
     def cmp_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")

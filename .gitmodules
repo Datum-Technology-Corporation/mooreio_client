@@ -1,0 +1,4 @@
+[submodule "tests/data/fsoc/rtl/core-v-mcu"]
+	path = tests/data/fsoc/rtl/core-v-mcu
+	url = https://github.com/openhwgroup/core-v-mcu
+	branch = master
