@@ -258,6 +258,7 @@ class SiArxService(Service):
                             self.replace_generated_file_sections_with_user_contents(extracted_file_path, user_file_sections)
                             self.rmh.move_file(extracted_file_path, current_file_path)
                     elif not self.rmh.file_exists(current_file_path):
+                        current_file_path.parent.mkdir(parents=True, exist_ok=True)  # TODO Use rmh to create directories
                         self.rmh.move_file(extracted_file_path, current_file_path)
 
     def find_user_file_sections(self, file: Path) -> Dict:

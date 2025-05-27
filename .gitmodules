@@ -2,8 +2,7 @@
 	path = tests/data/fsoc/rtl/core-v-mcu
 	url = https://github.com/openhwgroup/core-v-mcu
 	branch = master
-
 [submodule "tests/data/integration/rvmcu_raw/rtl/core-v-mcu"]
 	path = tests/data/integration/rvmcu_raw/rtl/core-v-mcu
 	url = https://github.com/Datum-Technology-Corporation/core-v-mcu
-	branch = 3d38e803c1451f25c05e534a5991990cc36d8abe
+	branch = shelled_core

@@ -36,7 +36,7 @@ class TestCliSiArx(TestBase):
         self.remove_directory(self.rvmcu_raw_path / "sim")
         self.remove_directory(self.rvmcu_raw_path / "docs")
         self.remove_directory(self.rvmcu_raw_path / "dv")
-        self.remove_file(self.rvmcu_raw_path / "mio.toml")
+        #self.remove_file(self.rvmcu_raw_path / "mio.toml")
 
     def siarx(self, capsys, project_path: Path, project_id: str) -> OutputCapture:
         result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'x', f'--project-id={project_id}'])

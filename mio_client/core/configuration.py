@@ -103,7 +103,7 @@ class Ip(Model):
 
 class PackageManagement(Model):
     fsoc_cores_global_paths: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
-    fsoc_cores_local_paths: [List[constr(pattern=VALID_POSIX_PATH_REGEX)]]
+    fsoc_cores_local_paths: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
 
 
 class Docs(Model):

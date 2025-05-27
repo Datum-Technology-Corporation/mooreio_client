@@ -982,7 +982,7 @@ class IpDataBase():
             self._dependencies_to_find_online = []
             self._need_to_find_dependencies_on_remote = False
         if ip.has_dut:
-            if ip.dut.type == DutType.MIO_IP.value and not ip.dependencies_resolved:
+            if ip.dut.type == DutType.MIO_IP and not ip.dependencies_resolved:
                 dut_definition = Ip.parse_ip_definition(ip.dut.name)
                 dut_definition.version_spec = ip.dut.version
                 dut_definition.is_dut = True
@@ -998,7 +998,7 @@ class IpDataBase():
                         self.resolve_dependencies(dut_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
             else:
                 # Custom DUT
-                if ip.dut.type == DutType.FUSE_SOC.value:
+                if ip.dut.type == DutType.FUSE_SOC:
                     # TODO Add checks for FuseSoC core spec
                     pass
         for ip_definition_str, ip_version_spec in ip.dependencies.items():
