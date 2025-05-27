@@ -559,7 +559,9 @@ class Ip(Model):
 
     @property
     def dut_needs_prep(self) -> bool:
-        return self.dut.type != DutType.MIO_IP.value
+        if self.has_dut:
+            return self.dut.type != DutType.MIO_IP.value
+        return False
 
     @property
     def uninstalled(self) -> bool:
