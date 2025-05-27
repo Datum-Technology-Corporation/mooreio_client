@@ -195,7 +195,7 @@ class HdlSource(Model):
 
 class DesignUnderTest(Model):
     type: DutType
-    name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = UNDEFINED_CONST
+    name: str = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
     version: Optional[SemanticVersionSpec] = SemanticVersionSpec()
     target: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST

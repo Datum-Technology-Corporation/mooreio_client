@@ -59,7 +59,8 @@ Full Command List (`mio help CMD` for help on a specific command):
 #######################################################################################################################
 # Main
 #######################################################################################################################
-URL_BASE = 'https://mooreio.com'
+#URL_BASE = 'https://mooreio.com'
+URL_BASE = 'http://localhost:8000'
 TEST_MODE = False
 USER_HOME_PATH = pathlib.Path(os.path.expanduser("~/.mio"))
 root_manager: RootManager

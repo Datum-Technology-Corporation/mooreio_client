@@ -371,15 +371,15 @@ class SimulateCommand(Command):
             self.simulate(phase)
 
     def prepare_dut(self, phase: Phase):
-        if self.ip.dut.type == DutType.FUSE_SOC.value:
+        if self.ip.dut.type == DutType.FUSE_SOC:
             try:
                 self._fsoc = self.rmh.service_database.find_service(ServiceType.PACKAGE_MANAGEMENT, "fsoc")
             except Exception as e:
-                phase.error = Exception(f"FuseSoC is not available")
+                phase.error = Exception(f"FuseSoC is not available: {e}")
             else:
                 self._fsoc_request = FuseSocSetupCoreRequest(
                     core_name=self.ip.dut.name, system_name=self.ip.dut.full_name, target=self.ip.dut.target,
-                    simulator=self.app.value
+                    simulator=self.app
                 )
                 self._fsoc_report = self._fsoc.setup_core(self._fsoc_request)
                 if not self._fsoc_report.success:
@@ -399,7 +399,7 @@ class SimulateCommand(Command):
 
     def compile(self, phase: Phase):
         self._compilation_configuration = LogicSimulatorCompilationRequest()
-        if self.ip.dut.type == DutType.FUSE_SOC.value:
+        if self.ip.dut.type == DutType.FUSE_SOC:
             self.fsoc_add_to_compilation_request(self._compilation_configuration)
         if self.parsed_cli_arguments.errors:
             self.compilation_configuration.max_errors = self.parsed_cli_arguments.errors
@@ -414,13 +414,13 @@ class SimulateCommand(Command):
 
     def elaborate(self, phase: Phase):
         self._elaboration_configuration = LogicSimulatorElaborationRequest()
-        if self.ip.dut.type == DutType.FUSE_SOC.value:
+        if self.ip.dut.type == DutType.FUSE_SOC:
             self.fsoc_add_to_compilation_request(self._elaboration_configuration)
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
         self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationRequest()
-        if self.ip.dut.type == DutType.FUSE_SOC.value:
+        if self.ip.dut.type == DutType.FUSE_SOC:
             self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
         if self.parsed_cli_arguments.errors:
             self._compilation_and_elaboration_configuration.max_errors = self.parsed_cli_arguments.errors
@@ -437,7 +437,7 @@ class SimulateCommand(Command):
 
     def simulate(self, phase: Phase):
         self._simulation_configuration = LogicSimulatorSimulationRequest()
-        if self.ip.dut.type == DutType.FUSE_SOC.value:
+        if self.ip.dut.type == DutType.FUSE_SOC:
             self.fsoc_add_to_simulation_request(self._simulation_configuration)
         self.simulation_configuration.seed = self.parsed_cli_arguments.seed if self.parsed_cli_arguments.seed is not None else 1
         self.simulation_configuration.verbosity = self.parsed_cli_arguments.verbosity if self.parsed_cli_arguments.verbosity is not None else UvmVerbosity.MEDIUM

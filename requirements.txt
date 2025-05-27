@@ -14,5 +14,5 @@ toml~=0.10.2
 pydantic-extra-types~=2.9.0
 semver~=3.0.2
 tqdm~=4.67.1
-fusesoc~=1.12.0
-edalize~=0.5.1
+fusesoc~=2.4.3
+edalize~=0.6.1

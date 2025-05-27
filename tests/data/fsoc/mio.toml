@@ -9,4 +9,4 @@ name="fsoc"
 local_paths=["dv/"]
 
 [package_management]
-fsoc_cores_local_paths=["rtl/"]
+fsoc_cores_local_paths=["rtl/core-v-mcu"]

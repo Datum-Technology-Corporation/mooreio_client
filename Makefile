@@ -91,8 +91,14 @@ all: clean test lint build
 
 #######################################################################################################################
 # Environment Setup Targets
-.PHONY: venv reqs clean-venv
+.PHONY: submodules venv reqs clean-venv
 #######################################################################################################################
+# Update the Git submodules
+submodules:
+	$(call print_banner, Updating Git submodules)
+	git submodule sync
+	git submodule update --init --recursive
+
 # Set up a virtual environment and install dependencies
 venv/bin/activate: requirements-dev.txt
 	$(call print_banner, Setting up virtual environment and installing dependencies)
