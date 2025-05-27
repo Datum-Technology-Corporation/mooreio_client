@@ -24,8 +24,8 @@ VALID_LOGIC_SIMULATION_TIMESCALE_REGEX= re.compile(r'^\d+(ms|us|ns|ps|fs)/\d+(ms
 PosixPath = constr(pattern=VALID_POSIX_PATH_REGEX)
 PosixDirName = constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
 OptionalPosixPath = PosixPath | None
-PosixPathList = conlist(item_type=constr(pattern=VALID_POSIX_PATH_REGEX), min_length=1)
-HdlNameList = conlist(item_type=constr(pattern=VALID_NAME_REGEX), min_length=1)
+PosixPathList = conlist(item_type=constr(pattern=VALID_POSIX_PATH_REGEX), min_length=0)
+HdlNameList = conlist(item_type=constr(pattern=VALID_NAME_REGEX), min_length=0)
 HdlName = constr(pattern=VALID_NAME_REGEX)
 OrgName = constr(pattern=VALID_IP_OWNER_NAME_REGEX)
 
