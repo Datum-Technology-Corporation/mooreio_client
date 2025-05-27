@@ -756,7 +756,7 @@ class Ip(Model):
             dependency = self.resolved_dependencies[dep]
             src_dest_map[self].append(dependency)
             dependency.get_dependencies(src_dest_map)
-        if self.has_dut:
+        if self.has_dut and self.dut.type == DutType.MIO_IP:
             src_dest_map[self].append(self.resolved_dut)
             self.resolved_dut.get_dependencies(src_dest_map)
 

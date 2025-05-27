@@ -132,7 +132,7 @@ class TestBase:
     def cmp_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-C', '-a', app])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-DC', '-a', app])
         assert result.return_code == 0
         return result
 
@@ -146,7 +146,7 @@ class TestBase:
     def cmpelab_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-CE', '-a', app])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-DCE', '-a', app])
         assert result.return_code == 0
         return result
 

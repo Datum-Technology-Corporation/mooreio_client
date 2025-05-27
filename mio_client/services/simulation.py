@@ -18,7 +18,7 @@ from semantic_version import Version
 from ..core.configuration import DSimCloudComputeSizes
 from ..core.scheduler import JobScheduler, Job, JobSchedulerConfiguration, JobResults
 from ..core.service import Service, ServiceType
-from ..core.ip import Ip, IpLocationType
+from ..core.ip import Ip, IpLocationType, DutType
 from abc import ABC, abstractmethod
 
 from ..core.model import Model, UNDEFINED_CONST
@@ -177,6 +177,7 @@ class LogicSimulatorCompilationRequest(LogicSimulatorRequest):
         self.log_vhdl_cmd: bool = True
         self.has_custom_dut: bool = False
         self.custom_dut_type: str = "N/A"
+        self.custom_dut_name: str = ""
         self.custom_dut_directories: List[Path] = []
         self.custom_dut_sv_files: List[Path] = []
         self.custom_dut_vhdl_files: List[Path] = []
@@ -251,6 +252,7 @@ class LogicSimulatorMasterFileList(LogicSimulatorFileList):
     defines_values: Optional[Dict[str, str]] = {}
     has_custom_dut: Optional[bool] = False
     custom_dut_type: Optional[str] = "N/A"
+    custom_dut_name: Optional[str] = ""
     custom_dut_directories: Optional[List[Path]] = []
     custom_dut_files: Optional[List[Path]] = []
     custom_dut_defines_values: Optional[Dict[str, str]] = {}
@@ -706,6 +708,7 @@ class LogicSimulator(Service, ABC):
         if config.has_custom_dut:
             file_list.has_custom_dut = True
             file_list.custom_dut_type = config.custom_dut_type
+            file_list.custom_dut_name = config.custom_dut_name
             file_list.custom_dut_directories = config.custom_dut_directories
             file_list.custom_dut_files = config.custom_dut_sv_files
             file_list.custom_dut_defines_values = config.custom_dut_defines_values
@@ -734,7 +737,7 @@ class LogicSimulator(Service, ABC):
                     sub_file_list.files.append(str(file))
                 has_files_to_compile = True
             file_list.sub_file_lists.append(sub_file_list)
-        if ip.has_dut:
+        if ip.has_dut and ip.dut.type == DutType.MIO_IP:
             dut_target_name = ip.get_target_dut_target(config.target)
             file_list.defines_boolean.update(ip.resolved_dut.get_target_cmp_bool_defines(dut_target_name))
             file_list.defines_values.update(ip.resolved_dut.get_target_cmp_val_defines(dut_target_name))

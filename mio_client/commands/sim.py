@@ -4,7 +4,7 @@
 import re
 from typing import List, Dict
 
-from ..services.fsoc import FuseSocSetupCoreRequest
+from ..services.fsoc import FuseSocSetupCoreRequest, FuseSocSetupCoreReport
 from ..core.configuration import LogicSimulators
 from ..services.regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner, Regression
 from ..core.ip import Ip, IpDefinition, IpPkgType, DutType
@@ -173,6 +173,10 @@ class SimulateCommand(Command):
         return self._do_simulate
 
     @property
+    def fsoc_request(self) -> FuseSocSetupCoreRequest:
+        return self._fsoc_request
+
+    @property
     def compilation_configuration(self) -> LogicSimulatorCompilationRequest:
         return self._compilation_configuration
 
@@ -191,6 +195,10 @@ class SimulateCommand(Command):
     @property
     def coverage_merge_configuration(self) -> LogicSimulatorCoverageMergeRequest:
         return self._coverage_merge_configuration
+
+    @property
+    def fsoc_report(self) -> FuseSocSetupCoreReport:
+        return self._fsoc_report
 
     @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
@@ -381,18 +389,24 @@ class SimulateCommand(Command):
                     core_name=self.ip.dut.name, system_name=self.ip.dut.full_name, target=self.ip.dut.target,
                     simulator=self.app
                 )
-                self._fsoc_report = self._fsoc.setup_core(self._fsoc_request)
-                if not self._fsoc_report.success:
-                    phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
+                try:
+                    self._fsoc_report = self._fsoc.setup_core(self._fsoc_request)
+                except Exception as e:
+                    phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed: {e}")
+                else:
+                    if not self._fsoc_report.success:
+                        phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
 
     def fsoc_add_to_compilation_request(self, compilation_request: LogicSimulatorCompilationRequest):
-        compilation_request.has_custom_dut = True
-        compilation_request.custom_dut_type = "FuseSoC"
-        compilation_request.custom_dut_directories = self._fsoc_report.directories
-        compilation_request.custom_dut_sv_files = self._fsoc_report.sv_files
-        compilation_request.custom_dut_vhdl_files = self._fsoc_report.vhdl_files
-        compilation_request.custom_dut_defines_values = self._fsoc_report.defines_values
-        compilation_request.custom_dut_defines_boolean = self._fsoc_report.defines_boolean
+        if self._fsoc_report:
+            compilation_request.has_custom_dut = True
+            compilation_request.custom_dut_type = "FuseSoC"
+            compilation_request.custom_dut_name = self._fsoc_request.system_name
+            compilation_request.custom_dut_directories = self.fsoc_report.directories
+            compilation_request.custom_dut_sv_files = self.fsoc_report.sv_files
+            compilation_request.custom_dut_vhdl_files = self.fsoc_report.vhdl_files
+            compilation_request.custom_dut_defines_values = self.fsoc_report.defines_values
+            compilation_request.custom_dut_defines_boolean = self.fsoc_report.defines_boolean
 
     def fsoc_add_to_simulation_request(self, simulation_request: LogicSimulatorSimulationRequest):
         pass

@@ -9,19 +9,19 @@
 {% endif %}################################################### \/ DEFINES \/ #####################################################
 {% for define in defines_boolean %}{% if defines_boolean[define] %}+define+{{ define }}
 {% endif %}{% endfor %}{% for define in defines_values %}+define+{{ define }}={{ defines_values[define] }}
-{% endfor %}#################################################### /\ DEFINES /\ #####################################################
+{% endfor %}################################################### /\ DEFINES /\ #####################################################
 
-{% if has_custom_dut %}###################################################### \/ DUT \/ ######################################################
-# Name: {{ custom_dut_name }}
+{% if has_custom_dut %}##################################################### \/ DUT \/ #######################################################
+# Name: '{{ custom_dut_name }}'
 # Type: {{ custom_dut_type }}
 # Defines
-{% for define in custom_dut_defines_boolean %}{% if custom_dut_defines_boolean[define] %}+define+{{ define }}
-{% endif %}{% endfor %}{% for define in custom_dut_defines_values %}+define+{{ define }}={{ custom_dut_defines_values[define] }}
+{% for define in custom_dut_defines_boolean %}+define+{{ define }}
+{% endfor %}{% for define in custom_dut_defines_values %}+define+{{ define }}={{ custom_dut_defines_values[define] }}
 {% endfor %}# Directories
 {% for dir in custom_dut_directories %}+incdir+{{ dir }}
 {% endfor %}# Files
 {% for file in custom_dut_files %}{{ file }}
-{% endfor %}###################################################### /\ DUT /\ ######################################################
+{% endfor %}##################################################### /\ DUT /\ #######################################################
 
 {% endif %}{% for sub in sub_file_lists %}################################################## \/ DEPENDENCY \/ ###################################################
 # Name: {{ sub.name }}

@@ -196,7 +196,7 @@ class FuseSocService(Service):
 
     def setup_core(self, request: FuseSocSetupCoreRequest) -> FuseSocSetupCoreReport:
         tool_name:str = self.map_simulator_to_tool_name(request.simulator)
-        results: FuseSocSetupCoreReport = FuseSocSetupCoreReport(
+        report: FuseSocSetupCoreReport = FuseSocSetupCoreReport(
             success=False, infos=[], warnings=[], errors=[], build_path=self._build_root.absolute(), tool_name=tool_name,
             directories=[], sv_files=[], vhdl_files=[], defines_values={}, defines_boolean=[]
         )
@@ -226,16 +226,16 @@ class FuseSocService(Service):
             sys.stdout = sys.__stdout__
         except Exception as e:
             sys.stdout = sys.__stdout__
-            results.errors.append(str(e))
+            report.errors.append(str(e))
         else:
             # FuseSoC .eda.yml file parsing
             try:
-                self.parse_eda_data(request, results)
+                self.parse_eda_data(request, report)
             except Exception as e:
-                results.errors.append(str(e))
+                report.errors.append(str(e))
             else:
-                results.success = True
-        return results
+                report.success = True
+        return report
 
     def find_core(self, request: FuseSocFindCoreRequest) -> FuseSocFindCoreReport:
         results: FuseSocFindCoreReport = FuseSocFindCoreReport(
