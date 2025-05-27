@@ -4,7 +4,7 @@ module tb();
    logic [47:0][5:0]  pad_cfg_o;
 
    core_v_mcu #(
-      .USE_CORES(1)
+      //.USE_CORES(1)
    ) dut (
       .jtag_tdi_i(tdi),
       .jtag_tms_i(tms),
@@ -15,7 +15,7 @@ module tb();
       .io_out_o(io_out_o),
       .pad_cfg_o(pad_cfg_o),
       .io_oe_o(io_oe_o),
-      .slow_clk_o(slow_clk_o),
+      //.slow_clk_o(slow_clk_o),
       .ref_clk_i(clk),
       .jtag_tck_i(clk),
       .rstn_i(reset_n),
