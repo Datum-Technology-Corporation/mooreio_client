@@ -12,8 +12,8 @@
 {% endfor %}################################################### /\ DEFINES /\ #####################################################
 
 {% if has_custom_dut %}##################################################### \/ DUT \/ #######################################################
-# Name: '{{ custom_dut_name }}'
 # Type: {{ custom_dut_type }}
+# Name: '{{ custom_dut_name }}'
 # Defines
 {% for define in custom_dut_defines_boolean %}+define+{{ define }}
 {% endfor %}{% for define in custom_dut_defines_values %}+define+{{ define }}={{ custom_dut_defines_values[define] }}

@@ -181,6 +181,9 @@ class FuseSocService(Service):
             elif file_type == 'vhdlSource'.lower():
                 results.vhdl_files.append(file_path.absolute())
                 directories[str(file_path.parent.absolute())] = True
+            if 'include_path' in file_entry:
+                include_path: Path = results_dir / file_entry['include_path']
+                directories[str(include_path.absolute())] = True
         # Extract directories
         for directory in directories:
             results.directories.append(directory)
@@ -193,6 +196,13 @@ class FuseSocService(Service):
                 if binary_full_name in tool_options[results.tool_name]:
                     for option in tool_options[results.tool_name][binary_full_name]:
                         self.parse_core_setup_eda_yaml_define(request, option.strip(), results)
+        parameters = eda_data.get('parameters', {})
+        for param in parameters:
+            parameter = parameters[param]
+            if parameter['paramtype'] in ['vlogdefine', 'vhdldefine']:
+                if (parameter['datatype'] == 'bool') and (parameter['default']):
+                    results.defines_boolean.append(param)
+                # TODO Support other FuseSoC core parameter types
 
     def setup_core(self, request: FuseSocSetupCoreRequest) -> FuseSocSetupCoreReport:
         tool_name:str = self.map_simulator_to_tool_name(request.simulator)

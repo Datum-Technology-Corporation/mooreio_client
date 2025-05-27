@@ -1,4 +1,4 @@
 [submodule "tests/data/fsoc/rtl/core-v-mcu"]
 	path = tests/data/fsoc/rtl/core-v-mcu
 	url = https://github.com/Datum-Technology-Corporation/core-v-mcu
-	branch = shelled_core
+	branch = 3d38e803c1451f25c05e534a5991990cc36d8abe
