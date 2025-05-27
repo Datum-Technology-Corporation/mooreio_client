@@ -93,6 +93,12 @@ class TestCliSiArx(TestBase):
         result = self.login(capsys, 'admin', 'admin')
         result = self.one_shot_sim_ip(capsys, path, app, ip, test, 1)
 
+    def cli_siarx_gen_rvmcu_cmpelab_ip(self, capsys, app: str, ip: str):
+        self.reset_workspace()
+        result = self.login(capsys, 'dpoulin', 'admin')
+        result = self.siarx(capsys, self.rvmcu_raw_path, '1000')
+        result = self.cmpelab_ip(capsys, self.rvmcu_raw_path, app, ip)
+
 
     ###################################################################################################################
     # MAPU
@@ -224,8 +230,14 @@ class TestCliSiArx(TestBase):
     ###################################################################################################################
     @pytest.mark.single_process
     #@pytest.mark.integration
-    def test_cli_siarx_gen_project_rvmcu(self, capsys):
+    def test_cli_siarx_gen_rvmcu(self, capsys):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
         result = self.siarx(capsys, self.rvmcu_raw_path, '1000')
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_gen_rvmcu_cmpelab_dsim(self, capsys):
+        self.cli_siarx_gen_rvmcu_cmpelab_ip(capsys, 'dsim', "uvmt_rvmcu_chip")
 
