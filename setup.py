@@ -12,7 +12,7 @@ def parse_requirements(filename):
 
 setup(
     name="mooreio_client",
-    version="2.0.4",
+    version="2.1.0",
     description="CLI tool to automate EDA tasks for ASICs, FPGAs, and UVM IP.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -37,7 +37,7 @@ setup(
         'dev': parse_requirements('requirements-dev.txt')
     },
     classifiers=[
-        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
@@ -46,5 +46,5 @@ setup(
             "mio=mio_client.cli:main",
         ],
     },
-    python_requires='>=3.12',
+    python_requires='>=3.11',
 )

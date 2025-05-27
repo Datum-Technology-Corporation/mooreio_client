@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import argparse
@@ -12,7 +12,7 @@ from mio_client.core.root_manager import RootManager
 #######################################################################################################################
 # User Manual Top
 #######################################################################################################################
-VERSION = "2.0.4"
+VERSION = "2.1.0"
 
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}

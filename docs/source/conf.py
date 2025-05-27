@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 # Configuration file for the Sphinx documentation builder.
@@ -16,9 +16,9 @@ import sphinx_rtd_theme
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 #######################################################################################################################
 project = 'Moore.io CLI Client'
-copyright = '2024, Datum Technology Corporation'
+copyright = '2025, Datum Technology Corporation'
 author = 'Datum Technology Corporation'
-release = '2.0.4'
+release = '2.1.0'
 
 
 #######################################################################################################################

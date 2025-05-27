@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import re
@@ -327,25 +327,82 @@ class RootManager:
         - phase_final
         """
         self.set_command(command)
-        self.do_phase_init()
-        self.do_phase_load_default_configuration()
-        self.do_phase_load_user_data()
-        self.do_phase_authenticate()
-        self.do_phase_save_user_data()
-        self.do_phase_locate_project_file()
-        self.do_phase_create_common_files_and_directories()
-        self.do_phase_load_project_configuration()
-        self.do_phase_load_user_configuration()
-        self.do_phase_validate_configuration_space()
-        self.do_phase_scheduler_discovery()
-        self.do_phase_service_discovery()
-        self.do_phase_ip_discovery()
-        self.do_phase_main()
-        self.do_phase_check()
-        self.do_phase_report()
-        self.do_phase_cleanup()
-        self.do_phase_shutdown()
-        self.do_phase_final()
+        # 1. INIT
+        init_phase:Phase = self.do_phase_init()
+        if init_phase.end_process:
+            return
+        # 2. LOAD DEFAULT CONFIGURATION
+        load_default_configuration_phase:Phase = self.do_phase_load_default_configuration()
+        if load_default_configuration_phase.end_process:
+            return
+        # 3. LOAD USER DATA
+        load_user_data_phase:Phase = self.do_phase_load_user_data()
+        if load_user_data_phase.end_process:
+            return
+        # 4. AUTHENTICATE
+        authenticate_phase:Phase = self.do_phase_authenticate()
+        if authenticate_phase.end_process:
+            return
+        # 5. SAVE USER DATA
+        save_user_data_phase:Phase = self.do_phase_save_user_data()
+        if save_user_data_phase.end_process:
+            return
+        # 6. LOCATE PROJECT FILE
+        locate_project_file_phase:Phase = self.do_phase_locate_project_file()
+        if locate_project_file_phase.end_process:
+            return
+        # 7. CREATE COMMON FILES AND DIRECTORIES
+        create_common_files_and_directories_phase:Phase = self.do_phase_create_common_files_and_directories()
+        if create_common_files_and_directories_phase.end_process:
+            return
+        # 8. LOAD PROJECT CONFIGURATION
+        load_project_configuration_phase:Phase = self.do_phase_load_project_configuration()
+        if load_project_configuration_phase.end_process:
+            return
+        # 9. LOAD USER CONFIGURATION
+        load_user_configuration_phase:Phase = self.do_phase_load_user_configuration()
+        if load_user_configuration_phase.end_process:
+            return
+        # 10. VALIDATE CONFIGURATION SPACE
+        validate_configuration_space_phase:Phase = self.do_phase_validate_configuration_space()
+        if validate_configuration_space_phase.end_process:
+            return
+        # 11. SCHEDULER DISCOVERY
+        scheduler_discovery_phase:Phase = self.do_phase_scheduler_discovery()
+        if scheduler_discovery_phase.end_process:
+            return
+        # 12. SERVICE DISCOVERY
+        service_discovery_phase:Phase = self.do_phase_service_discovery()
+        if service_discovery_phase.end_process:
+            return
+        # 13. IP DISCOVERY
+        ip_discovery_phase:Phase = self.do_phase_ip_discovery()
+        if ip_discovery_phase.end_process:
+            return
+        # 14. MAIN
+        main_phase:Phase = self.do_phase_main()
+        if main_phase.end_process:
+            return
+        # 15. CHECK
+        check_phase:Phase = self.do_phase_check()
+        if check_phase.end_process:
+            return
+        # 16. REPORT
+        report_phase:Phase = self.do_phase_report()
+        if report_phase.end_process:
+            return
+        # 17. CLEANUP
+        cleanup_phase:Phase = self.do_phase_cleanup()
+        if cleanup_phase.end_process:
+            return
+        # 18. SHUTDOWN
+        shutdown_phase:Phase = self.do_phase_shutdown()
+        if shutdown_phase.end_process:
+            return
+        # 19. FINAL
+        final_phase:Phase = self.do_phase_final()
+        if final_phase.end_process:
+            return
     
     def set_command(self, command: Command):
         """
@@ -381,8 +438,10 @@ class RootManager:
                 raise RuntimeError(f"Phase '{phase}' has not finished properly")
         else:
             self.debug(f"Finished phase '{phase}': {phase.duration.total_seconds()} seconds")
-        if phase.end_process:
+        if phase.end_process and phase.error:
             raise PhaseEndProcessException(phase.end_process_message)
+        elif phase.end_process and not phase.error:
+            self.info(phase.end_process_message)
     
     def file_exists(self, path: Path) -> bool:
         """
@@ -558,7 +617,7 @@ class RootManager:
                 d1[key] = value
         return d1
 
-    def do_phase_init(self):
+    def do_phase_init(self) -> Phase:
         """
         Perform any steps necessary before real work begins.
         :return: None
@@ -569,8 +628,9 @@ class RootManager:
         self.command.do_phase_init(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_load_default_configuration(self):
+    def do_phase_load_default_configuration(self) -> Phase:
         """
         Load default configuration file from the package.
         :return: None
@@ -590,8 +650,9 @@ class RootManager:
         self.command.do_phase_post_load_default_configuration(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_load_user_data(self):
+    def do_phase_load_user_data(self) -> Phase:
         """
         Load user data from disk.
         :return: None
@@ -611,8 +672,9 @@ class RootManager:
         self.command.do_phase_post_load_user_data(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_authenticate(self):
+    def do_phase_authenticate(self) -> Phase:
         """
         Authenticate the user with mio_web if necessary.
         :return: None
@@ -633,8 +695,9 @@ class RootManager:
         self.command.do_phase_post_authenticate(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_save_user_data(self):
+    def do_phase_save_user_data(self) -> Phase:
         """
         Write user data to disk.
         :return: None
@@ -654,8 +717,9 @@ class RootManager:
         self.command.do_phase_post_save_user_data(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_locate_project_file(self):
+    def do_phase_locate_project_file(self) -> Phase:
         """
         Locate the project file (`mio.toml`).
         :return: None
@@ -675,8 +739,9 @@ class RootManager:
         self.command.do_phase_post_locate_project_file(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_create_common_files_and_directories(self):
+    def do_phase_create_common_files_and_directories(self) -> Phase:
         """
         Create files and directories needed for proper Moore.io Client and command operation.
         :return: None
@@ -697,8 +762,9 @@ class RootManager:
         self.command.do_phase_post_create_common_files_and_directories(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_load_project_configuration(self):
+    def do_phase_load_project_configuration(self) -> Phase:
         """
         Load project configuration space from disk.
         :return: None
@@ -718,8 +784,9 @@ class RootManager:
         self.command.do_phase_post_load_project_configuration(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_load_user_configuration(self):
+    def do_phase_load_user_configuration(self) -> Phase:
         """
         Load user configuration space from disk.
         :return: None
@@ -739,8 +806,9 @@ class RootManager:
         self.command.do_phase_post_load_user_configuration(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_validate_configuration_space(self):
+    def do_phase_validate_configuration_space(self) -> Phase:
         """
         Merge & validate the configuration space.
         :return: None
@@ -761,8 +829,9 @@ class RootManager:
         self.relocate_data_files(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_scheduler_discovery(self):
+    def do_phase_scheduler_discovery(self) -> Phase:
         """
         Creates and registers task schedulers as described in configuration space.
         :return: None.
@@ -782,8 +851,9 @@ class RootManager:
         self.command.do_phase_post_scheduler_discovery(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_service_discovery(self):
+    def do_phase_service_discovery(self) -> Phase:
         """
         Creates and registers services as described in configuration space.
         :return: None.
@@ -803,8 +873,9 @@ class RootManager:
         self.command.do_phase_post_service_discovery(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_ip_discovery(self):
+    def do_phase_ip_discovery(self) -> Phase:
         """
         Finds and loads IP models in both local and global locations.
         :return: None
@@ -824,8 +895,9 @@ class RootManager:
         self.command.do_phase_post_ip_discovery(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_main(self):
+    def do_phase_main(self) -> Phase:
         """
         Execute the main task(s) of the command.
         :return: None
@@ -845,8 +917,9 @@ class RootManager:
         self.command.do_phase_post_main(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_check(self):
+    def do_phase_check(self) -> Phase:
         """
         Check task(s) outputs for errors/warnings.
         :return: None
@@ -867,8 +940,9 @@ class RootManager:
         self.command.do_phase_post_check(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_report(self):
+    def do_phase_report(self) -> Phase:
         """
         Create report(s) on task(s) executed.
         :return: None
@@ -889,8 +963,9 @@ class RootManager:
         self.command.do_phase_post_report(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_cleanup(self):
+    def do_phase_cleanup(self) -> Phase:
         """
         Delete any temporary files, close handles and connections.
         :return: None
@@ -911,8 +986,9 @@ class RootManager:
         self.command.do_phase_post_cleanup(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_shutdown(self):
+    def do_phase_shutdown(self) -> Phase:
         """
         Perform any step(s) necessary before Moore.io Client ends its operation.
         :return: None
@@ -933,8 +1009,9 @@ class RootManager:
         self.command.do_phase_post_shutdown(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
-    def do_phase_final(self):
+    def do_phase_final(self) -> Phase:
         """
         Last call.
         :return: None
@@ -955,6 +1032,7 @@ class RootManager:
         self.command.do_phase_post_final(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
+        return current_phase
 
     def phase_init(self, phase: Phase):
         file_path = os.path.realpath(__file__)

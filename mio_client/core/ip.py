@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import base64
@@ -17,7 +17,7 @@ from pydantic import constr, PositiveInt, ValidationError
 from semantic_version import SimpleSpec
 
 from .model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
-    VALID_POSIX_PATH_REGEX, UNDEFINED_CONST
+    VALID_POSIX_PATH_REGEX, UNDEFINED_CONST, PosixPath, PosixPathList, HdlNameList, HdlName, OrgName
 
 from enum import Enum
 
@@ -147,10 +147,10 @@ class IpDefinition:
 
 
 class Structure(Model):
-    scripts_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    docs_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    examples_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    hdl_src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    scripts_path: Optional[PosixPath] = UNDEFINED_CONST
+    docs_path: Optional[PosixPath] = UNDEFINED_CONST
+    examples_path: Optional[PosixPath] = UNDEFINED_CONST
+    hdl_src_path: PosixPath
 
     def model_dump(self, **kwargs):
         return_dict = {
@@ -166,13 +166,13 @@ class Structure(Model):
 
 
 class HdlSource(Model):
-    directories: List[constr(pattern=VALID_POSIX_PATH_REGEX)]
-    top_sv_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
-    top_vhdl_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
-    top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
-    tests_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    directories: PosixPathList
+    top_sv_files: Optional[PosixPathList] = []
+    top_vhdl_files: Optional[PosixPathList] = []
+    top: Optional[HdlNameList] = []
+    tests_path: Optional[PosixPath] = UNDEFINED_CONST
     tests_name_template: Optional[str] = UNDEFINED_CONST
-    so_libs: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
+    so_libs: Optional[PosixPathList] = []
 
     def model_dump(self, **kwargs):
         return_dict = {
@@ -198,7 +198,7 @@ class DesignUnderTest(Model):
     name: str = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
     version: Optional[SemanticVersionSpec] = SemanticVersionSpec()
-    target: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
+    target: Optional[HdlName] = UNDEFINED_CONST
 
     def model_dump(self, **kwargs):
         if self.type.value == DutType.FUSE_SOC.value:
@@ -228,9 +228,9 @@ class Parameter(Model):
 
 class Target(Model):
     dut: Optional[str] = UNDEFINED_CONST
-    cmp: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
-    elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
-    sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
+    cmp: Optional[dict[HdlName, Union[PositiveInt, bool]]] = {}
+    elab: Optional[dict[HdlName, Union[PositiveInt, bool]]] = {}
+    sim: Optional[dict[HdlName, Union[PositiveInt, bool]]] = {}
 
     def model_dump(self, **kwargs):
         return_dict = {
@@ -248,14 +248,14 @@ class Target(Model):
 
 class About(Model):
     sync: bool
-    vendor: constr(pattern=VALID_NAME_REGEX)
-    name: constr(pattern=VALID_NAME_REGEX)
+    vendor: HdlName
+    name: HdlName
     full_name: str
     version: SemanticVersion
     pkg_type: IpPkgType
     sync_id: Optional[PositiveInt] = 0
     sync_revision: Optional[str] = UNDEFINED_CONST
-    encrypted: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
+    encrypted: Optional[HdlNameList] = []
     mlicensed: Optional[bool] = False
 
     def model_dump(self, **kwargs):
@@ -281,9 +281,9 @@ class Ip(Model):
     ip: About
     structure: Structure
     hdl_src: HdlSource
-    dependencies: Optional[dict[constr(pattern=VALID_IP_OWNER_NAME_REGEX), SemanticVersionSpec]] = {}
+    dependencies: Optional[dict[OrgName, SemanticVersionSpec]] = {}
     dut: Optional[DesignUnderTest] = None
-    targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
+    targets: Optional[dict[HdlName, Target]] = {}
 
     def __init__(self, **data: Any):
         super().__init__(**data)
