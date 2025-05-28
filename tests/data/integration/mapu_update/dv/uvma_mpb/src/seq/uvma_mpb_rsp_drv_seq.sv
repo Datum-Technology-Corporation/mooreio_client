@@ -31,11 +31,12 @@ class uvma_mpb_rsp_drv_seq_c extends uvma_mpb_base_seq_c;
    virtual task drive();
       // pragma uvmx rsp_drv_seq_drive begin
       uvma_mpb_p_mon_trn_c  p_trn;
+      bit  handled;
       forever begin
          do begin
             `uvmx_peek_mon_trn(p_trn, p_mon_trn_fifo)
          end while (p_trn.vld !== 1);
-         `uvmx_rsp_dispatch(rsp_handlers, p_trn)
+         `uvmx_rsp_dispatch(rsp_handlers, p_trn, handled)
       end
       // pragma uvmx rsp_drv_seq_drive end
    endtask

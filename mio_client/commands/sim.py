@@ -37,7 +37,7 @@ SIM_HELP_TEXT = """Moore.io Logic Simulation Command
    
    While the controls for individual steps (DUT setup, compilation, elaboration and simulation) are exposed, it is
    recommended to let `mio sim` manage this process as much as possible.  In the event of corrupt simulator artifacts,
-   see `mio clean`.  Combining any of the step-control arguments (-D, -C, -E, -S) with missing steps is illegal
+   see `mio clean`.  Combining any of the step-control arguments (-D, -X, -C, -E, -S) with missing steps is illegal
    (ex: `-DS`).
    
    Two types of arguments (--args) can be passed: compilation (+define+NAME[=VALUE]) and simulation (+NAME[=VALUE]).
@@ -49,11 +49,11 @@ Usage:
    
 Options:
    -t TEST     , --test      TEST       Specify the UVM test to be run.
-   -s SEED     , --seed      SEED       Positive Integer. Specify randomization seed  If none is provided, a random one will be picked.
+   -s SEED     , --seed      SEED       Positive Integer. Specify randomization seed. If none is provided, a random one will be picked.
    -v VERBOSITY, --verbosity VERBOSITY  Specifies UVM logging verbosity: none, low, medium, high, debug. [default: medium]
    -+ ARGS     , --args      ARGS       Specifies compilation-time (+define+ARG[=VAL]) or simulation-time (+ARG[=VAL]) arguments
    -e ERRORS   , --errors    ERRORS     Specifies the number of errors at which compilation/elaboration/simulation is terminated.  [default: 10]
-   -a APP      , --app       APP        Specifies simulator application to use: viv, mdc, vcs, xcl, qst, riv. [default: viv]
+   -a APP      , --app       APP        Specifies simulator application to use: dsim, qst, xcl, vcs, riv, viv. [default: dsim]
    -w          , --waves                Enable wave capture to disk.
    -c          , --cov                  Enable code & functional coverage capture.
    -g          , --gui                  Invokes simulator in graphical or 'GUI' mode.
@@ -61,6 +61,7 @@ Options:
    -S   Simulate
    -E   Elaborate
    -C   Compile
+   -X   Invoke Datum SiArx for code generation.
    -D   Prepare Device-Under-Test (DUT) for logic simulation. Ex: invoke FuseSoC to prepare core(s) for compilation.
    
 Examples:
@@ -103,14 +104,17 @@ class SimulateCommand(Command):
                                 required=False)
         parser_sim.add_argument('-g', "--gui", help="Invoke the simulator's Graphical User Interface.",
                                 action="store_true", required=False)
-        parser_sim.add_argument('-S', help='Force mio to simulate target IP.  Can be combined with -D, -C and/or -E.',
+        parser_sim.add_argument('-S', help='Force mio to simulate target IP.  Can be combined with -D, -X, -C and/or -E.',
                                 action="store_true", required=False)
-        parser_sim.add_argument('-E', help='Force mio to elaborate target IP.  Can be combined with -D, -C and/or -S.',
+        parser_sim.add_argument('-E', help='Force mio to elaborate target IP.  Can be combined with -D, -X, -C and/or -S.',
                                 action="store_true", required=False)
-        parser_sim.add_argument('-C', help='Force mio to compile target IP.  Can be combined with -D, -E and/or -S.',
+        parser_sim.add_argument('-C', help='Force mio to compile target IP.  Can be combined with -D, -X, -E and/or -S.',
+                                action="store_true", required=False)
+        parser_sim.add_argument('-X',
+                                help='Force mio to invoke Datum SiArx.  Can be combined with -D, -C, -E and/or -S.',
                                 action="store_true", required=False)
         parser_sim.add_argument('-D',
-                                help='Force mio to prepare Device-Under-Test (DUT).  Can be combined with -C, -E and/or -S.',
+                                help='Force mio to prepare Device-Under-Test (DUT).  Can be combined with -X, -C, -E and/or -S.',
                                 action="store_true", required=False)
         parser_sim.add_argument('-+', "--args",
                                 help='Add arguments for compilation (+define+NAME[=VALUE]) or simulation (+NAME[=VALUE])).',
@@ -123,6 +127,7 @@ class SimulateCommand(Command):
         self._app: LogicSimulators = LogicSimulators.UNDEFINED
         self._simulator: LogicSimulator = None
         self._scheduler: JobScheduler = None
+        self._do_invoke_siarx: bool = False
         self._do_prepare_dut: bool = False
         self._do_compile: bool = False
         self._do_elaborate: bool = False
@@ -151,6 +156,10 @@ class SimulateCommand(Command):
     @property
     def scheduler(self) -> JobScheduler:
         return self._scheduler
+
+    @property
+    def do_invoke_siarx(self) -> bool:
+        return self._do_invoke_siarx
 
     @property
     def do_prepare_dut(self) -> bool:
@@ -270,13 +279,15 @@ class SimulateCommand(Command):
             ip_def_str = self.parsed_cli_arguments.ip.strip().lower()
         self._ip_definition = Ip.parse_ip_definition(ip_def_str)
         self.ip_definition.target = ip_target
-        if not self.parsed_cli_arguments.D and not self.parsed_cli_arguments.C and not self.parsed_cli_arguments.E and not self.parsed_cli_arguments.S:
+        if not self.parsed_cli_arguments.D and not self.parsed_cli_arguments.X and not self.parsed_cli_arguments.C and not self.parsed_cli_arguments.E and not self.parsed_cli_arguments.S:
             self._do_prepare_dut = True
+            self._do_invoke_siarx = True
             self._do_compile = True
             self._do_elaborate = True
             self._do_simulate = True
         else:
             self._do_prepare_dut = self.parsed_cli_arguments.D
+            self._do_invoke_siarx = self.parsed_cli_arguments.X
             self._do_compile = self.parsed_cli_arguments.C
             self._do_elaborate = self.parsed_cli_arguments.E
             self._do_simulate = self.parsed_cli_arguments.S
@@ -362,6 +373,7 @@ class SimulateCommand(Command):
             self.prepare_dut(phase)
             if phase.error:
                 return
+        # TODO Implement invoking SiArx
         if self.do_compile:
             self.compile(phase)
             if not self.compilation_report.success:
@@ -437,8 +449,9 @@ class SimulateCommand(Command):
 
     def compile_and_elaborate(self, phase: Phase):
         self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationRequest()
-        if self.ip.dut.type == DutType.FUSE_SOC:
-            self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
+        if self.ip.has_dut:
+            if self.ip.dut.type == DutType.FUSE_SOC:
+                self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
         if self.parsed_cli_arguments.errors:
             self._compilation_and_elaboration_configuration.max_errors = self.parsed_cli_arguments.errors
         if self.parsed_cli_arguments.waves:
