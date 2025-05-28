@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import re
@@ -73,7 +73,9 @@ Examples:
                                                  # with seed '42' and UVM_HIGH verbosity using the simulator in GUI mode.
    mio sim my_ip#dw64b -C                        # Only compile 'my_ip' target 'dw64b'.
    mio sim my_ip -E                              # Only elaborate 'my_ip'.
-   mio sim my_ip -CE                             # Compile and elaborate 'my_ip'."""
+   mio sim my_ip -CE                             # Compile and elaborate 'my_ip'.
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#sim"""
 LOGIC_SIMULATORS = ["dsim", "vivado"]
 
 class SimulateCommand(Command):
@@ -623,7 +625,9 @@ Options:
 Examples:
    mio regr my_ip sanity            # Run sanity regression for IP 'uvm_my_ip', from test suite 'ts.yml'
    mio regr my_ip apb_xc.sanity     # Run sanity regression for IP 'uvm_my_ip', from test suite 'apb_xc.ts.yml'
-   mio regr my_ip axi_xc.sanity -d  # Dry-run sanity regression for IP 'uvm_my_ip', from test suite 'axi_xc.ts.yml"""
+   mio regr my_ip axi_xc.sanity -d  # Dry-run sanity regression for IP 'uvm_my_ip', from test suite 'axi_xc.ts.yml
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#regr"""
 
 class RegressionCommand(Command):
     @staticmethod

@@ -31,7 +31,9 @@ Usage:
    mio help CMD
    
 Examples:
-   mio help sim  # Prints out a summary on the Logic Simulation command and its options"""
+   mio help sim  # Prints out a summary on the Logic Simulation command and its options
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#help"""
 
 ALL_COMMANDS = [
     "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox",
@@ -97,7 +99,9 @@ Usage:
    
 Examples:
    mio dox my_ip  # Generates HTML documentation for IP 'my_ip'
-   mio dox        # Generates HTML all local Project IPs"""
+   mio dox        # Generates HTML all local Project IPs
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#dox"""
 
 class DoxygenCommand(Command):
     def __init__(self):

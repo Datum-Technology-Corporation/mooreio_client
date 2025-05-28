@@ -38,7 +38,9 @@ Usage:
    mio list
 
 Examples:
-   mio list"""
+   mio list
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#list"""
 
 class List(Command):
     @staticmethod
@@ -79,7 +81,9 @@ Usage:
    mio package IP DEST
    
 Examples:
-   mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory."""
+   mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory.
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#package"""
 
 class PackageCommand(Command):
     def __init__(self):
@@ -163,7 +167,9 @@ Options:
 
 Examples:
    mio publish uvma_my_ip          # Publish Public IP 'uvma_my_ip'.
-   mio publish uvma_my_ip -c acme  # Publish Commercial IP 'uvma_my_ip' for customer 'acme'."""
+   mio publish uvma_my_ip -c acme  # Publish Commercial IP 'uvma_my_ip' for customer 'acme'.
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#publish"""
 
 class PublishCommand(Command):
     def __init__(self):
@@ -270,7 +276,9 @@ Examples:
    mio install                     # Install all dependencies for all IPs in the current Project
    mio install my_ip               # Install all dependencies for a specific IP in the current Project
    mio install acme/abc            # Install latest version of IP from Moore.io Server and its dependencies into current Project
-   mio install acme/abc -v "1.2.3" # Install specific version of IP from Moore.io Server and its dependencies into current Project"""
+   mio install acme/abc -v "1.2.3" # Install specific version of IP from Moore.io Server and its dependencies into current Project
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#install"""
 
 class InstallMode(Enum):
     UNKNOWN = 0
@@ -397,7 +405,9 @@ Usage:
 Examples:
    mio uninstall           # Delete all installed IPs in current project
    mio uninstall my_ip     # Delete all installed dependencies for a specific local IP in the current project
-   mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project"""
+   mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#uninstall"""
 
 class UninstallCommand(Command):
     def __init__(self):
@@ -475,7 +485,9 @@ Options:
    
 Examples:
    mio clean my_ip   # Delete compilation, elaboration and simulation artifacts for IP 'my_ip'
-   mio clean --deep  # Removes contents of Project Moore.io directory (/.mio)"""
+   mio clean --deep  # Removes contents of Project Moore.io directory (/.mio)
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#clean"""
 
 class CleanCommand(Command):
     def __init__(self):

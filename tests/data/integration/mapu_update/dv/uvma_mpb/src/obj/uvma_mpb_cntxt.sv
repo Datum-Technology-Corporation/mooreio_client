@@ -24,6 +24,7 @@ class uvma_mpb_cntxt_c extends uvmx_agent_cntxt_c #(
    `uvm_object_utils_begin(uvma_mpb_cntxt_c)
       // pragma uvmx cntxt_uvm_field_macros begin
       `uvm_field_enum(uvmx_reset_state_enum, reset_state, UVM_DEFAULT)
+      `uvm_field_queue_object(rsp_handlers, UVM_DEFAULT)
       // pragma uvmx cntxt_uvm_field_macros end
    `uvm_object_utils_end
 

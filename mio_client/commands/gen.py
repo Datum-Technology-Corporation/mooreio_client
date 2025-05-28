@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 from enum import Enum
@@ -38,7 +38,9 @@ Options:
 Examples:
    mio init                   # Create a new empty Project/IP in this location.
    mio init -i ~/answers.yml  # Create a new empty Project/IP in this location with pre-filled data.
-   mio -C ~/my_proj init      # Create a new empty Project at a specific location."""
+   mio -C ~/my_proj init      # Create a new empty Project at a specific location.
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#init"""
 
 
 class InitCommand(Command):
@@ -291,7 +293,9 @@ Options:
    
 Examples:
    mio x         # Sync (generate) project with SiArx definition on server
-   mio x -p 123  # Initialize and generate Project from empty directory"""
+   mio x -p 123  # Initialize and generate Project from empty directory
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#x"""
 
 class SiArxCommand(Command):
     def __init__(self):

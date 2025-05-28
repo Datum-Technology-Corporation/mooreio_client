@@ -32,7 +32,9 @@ Options:
 Examples:
    mio login                        # Log in with prompts for username and password 
    mio login -u user123             # Specify username inline and only get prompted for the password
-   mio login -u user123 --no-input  # Authenticate without a keyboard (especially handy for CI)"""
+   mio login -u user123 --no-input  # Authenticate without a keyboard (especially handy for CI)
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#login"""
 
 class LoginCommand(Command):
     @staticmethod
@@ -97,7 +99,9 @@ Usage:
    mio logout
    
 Examples:
-   mio logout"""
+   mio logout
+
+Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#logout"""
 
 class LogoutCommand(Command):
     @staticmethod
