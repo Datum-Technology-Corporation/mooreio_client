@@ -70,10 +70,9 @@ class uvme_mpb_st_fix_stim_seq_c extends uvme_mpb_st_base_seq_c;
 
    // pragma uvmx fix_stim_seq_body begin
    /**
-    * Creates and runs the UVM Bit Bash register sequence on MAIN Agent sequencer.
+    * Generates a read, write and readback on MAIN Agent sequencer.
     */
    virtual task body();
-      // Generates a read, write and readback
       uvm_reg_data_t  read_data;
       const int unsigned  gap_size = 5;
       `uvm_info("FIX_STIM_SEQ", "Starting read", UVM_MEDIUM)
