@@ -315,7 +315,10 @@ class SimulateCommand(Command):
                 if not match_found:
                     phase.error = Exception(f"Argument '{arg}' does not match any of the expected patterns (+define+ARG[=VAL], +ARG[=VAL]).")
                     return
-        self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
+        if self.parsed_cli_arguments.app:
+            self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
+        else:
+            self._app = LogicSimulators.UNDEFINED
         if self._do_simulate and not self.parsed_cli_arguments.test:
             phase.error = Exception(f"Must specify test name when simulating")
             return
@@ -327,7 +330,7 @@ class SimulateCommand(Command):
                     f"No simulator specified (-a/--app) and no default simulator in the Configuration")
                 return
             else:
-                self._app = self.rmh.configuration.logic_simulation.default_simulator.value
+                self._app = self.rmh.configuration.logic_simulation.default_simulator
 
     def phase_post_scheduler_discovery(self, phase: Phase):
         try:

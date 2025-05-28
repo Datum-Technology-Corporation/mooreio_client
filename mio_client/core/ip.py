@@ -837,7 +837,7 @@ class Ip(Model):
         if self.targets:
             for define, value in self.targets[target_name].cmp.items():
                 if not isinstance(value, bool):
-                    defines[define] = value
+                    defines[define] = str(value)
         return defines
     
     def get_target_sim_bool_args(self, target_name: str="default") -> Dict[str, bool]:
@@ -859,7 +859,7 @@ class Ip(Model):
         if self.targets:
             for define, value in self.targets[target_name].sim.items():
                 if not isinstance(value, bool):
-                    defines[define] = value
+                    defines[define] = str(value)
         return defines
 
 
