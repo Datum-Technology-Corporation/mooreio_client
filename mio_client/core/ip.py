@@ -580,6 +580,9 @@ class Ip(Model):
         if (self.location_type == IpLocationType.GLOBAL) and self.rmh.configuration.project.local_mode:
             current_ip_root_path = self.file_path.parent
             new_ip_root_path = self.rmh.global_ip_local_copy_dir / self.installation_directory_name
+            self.rmh.debug(f"Relocating GLOBAL IP '{self}' from '{current_ip_root_path}' to '{new_ip_root_path}' ...")
+            if self.rmh.directory_exists(new_ip_root_path):
+                self.rmh.remove_directory(new_ip_root_path)
             self.rmh.copy_directory(current_ip_root_path, new_ip_root_path)
             self.file_path = new_ip_root_path / self.file_path.name
         # Check hdl-src directories & files
@@ -667,7 +670,8 @@ class Ip(Model):
         if self.has_dut:
             num_dependencies += 1
             if ip_definition.is_dut:
-                self._resolved_dut = ip
+                if self.dut.type == DutType.MIO_IP:
+                    self._resolved_dut = ip
             else:
                 self._resolved_dependencies[ip_definition] = ip
         else:
