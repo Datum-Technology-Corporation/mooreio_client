@@ -1,13 +1,16 @@
 # Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
+import os
 import re
+import tarfile
+from pathlib import Path
 from typing import List, Dict
 
 from ..services.fsoc import FuseSocSetupCoreRequest, FuseSocSetupCoreReport
 from ..core.configuration import LogicSimulators
 from ..services.regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner, Regression
-from ..core.ip import Ip, IpDefinition, IpPkgType, DutType
+from ..core.ip import Ip, IpDefinition, IpPkgType, DutType, IpLocationType
 from ..core.command import Command
 from ..core.phase import Phase
 from ..core.scheduler import JobScheduler
@@ -57,6 +60,7 @@ Options:
    -w          , --waves                Enable wave capture to disk.
    -c          , --cov                  Enable code & functional coverage capture.
    -g          , --gui                  Invokes simulator in graphical or 'GUI' mode.
+   -d DEST     , --dry-run   DEST       Captures simulation command into tarball at DEST instead of invoking simulator.
    
    -S   Simulate
    -E   Elaborate
@@ -121,6 +125,9 @@ class SimulateCommand(Command):
         parser_sim.add_argument('-+', "--args",
                                 help='Add arguments for compilation (+define+NAME[=VALUE]) or simulation (+NAME[=VALUE])).',
                                 nargs='+', dest='add_args', required=False)
+        parser_sim.add_argument('-d', "--dry-run",
+                                help='Captures simulation command into tarball at DEST instead of invoking simulator.',
+                                required=False)
 
     def __init__(self):
         super().__init__()
@@ -135,6 +142,8 @@ class SimulateCommand(Command):
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
         self._do_simulate: bool = False
+        self._dry_run: bool = False
+        self._dry_run_tarball_path: Path = Path()
         self._compilation_configuration: LogicSimulatorCompilationRequest
         self._elaboration_configuration: LogicSimulatorElaborationRequest
         self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationRequest
@@ -178,6 +187,14 @@ class SimulateCommand(Command):
     @property
     def do_compile_and_elaborate(self) -> bool:
         return self._do_compile_and_elaborate
+
+    @property
+    def dry_run(self) -> bool:
+        return self._dry_run
+
+    @property
+    def dry_run_tarball_path(self) -> Path:
+        return self._dry_run_tarball_path
 
     @property
     def do_simulate(self) -> bool:
@@ -322,6 +339,9 @@ class SimulateCommand(Command):
         if self._do_simulate and not self.parsed_cli_arguments.test:
             phase.error = Exception(f"Must specify test name when simulating")
             return
+        if self.parsed_cli_arguments.dry_run:
+            self._dry_run = True
+            self._dry_run_tarball_path = self.parsed_cli_arguments.dry_run
 
     def phase_post_validate_configuration_space(self, phase: Phase):
         if self.app == LogicSimulators.UNDEFINED:
@@ -394,6 +414,8 @@ class SimulateCommand(Command):
                 self._do_simulate = False
         if self.do_simulate:
             self.simulate(phase)
+        if self.dry_run:
+            self.create_sim_tarball(phase)
 
     def prepare_dut(self, phase: Phase):
         if self.ip.has_dut:
@@ -443,6 +465,10 @@ class SimulateCommand(Command):
         self.compilation_configuration.defines_boolean = self.defines_boolean
         self.compilation_configuration.defines_value = self.defines_value
         self.compilation_configuration.target = self.ip_definition.target
+        if self.dry_run:
+            self.compilation_configuration.dry_mode = True
+            self.compilation_configuration.use_relative_paths = True
+            self.compilation_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
     def elaborate(self, phase: Phase):
@@ -450,6 +476,10 @@ class SimulateCommand(Command):
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_compilation_request(self._elaboration_configuration)
+        if self.dry_run:
+            self._elaboration_configuration.dry_mode = True
+            self._elaboration_configuration.use_relative_paths = True
+            self._elaboration_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
@@ -466,6 +496,10 @@ class SimulateCommand(Command):
         self.compilation_and_elaboration_configuration.defines_boolean = self.defines_boolean
         self.compilation_and_elaboration_configuration.defines_value = self.defines_value
         self.compilation_and_elaboration_configuration.target = self.ip_definition.target
+        if self.dry_run:
+            self.compilation_and_elaboration_configuration.dry_mode = True
+            self.compilation_and_elaboration_configuration.use_relative_paths = True
+            self.compilation_and_elaboration_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip,
                                                                                         self.compilation_and_elaboration_configuration,
                                                                                         self.scheduler)
@@ -485,8 +519,12 @@ class SimulateCommand(Command):
         self.simulation_configuration.args_boolean = self.args_boolean
         self.simulation_configuration.args_value = self.args_value
         self.simulation_configuration.target = self.ip_definition.target
+        if self.dry_run:
+            self.simulation_configuration.dry_mode = True
+            self.simulation_configuration.use_relative_paths = True
+            self.simulation_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
-        if self.simulation_configuration.enable_coverage:
+        if self.simulation_configuration.enable_coverage and not self.dry_run:
             self._coverage_merge_configuration = LogicSimulatorCoverageMergeRequest()
             self.coverage_merge_configuration.target_name = self.ip_definition.target
             self.coverage_merge_configuration.output_path = self.simulation_report.coverage_directory
@@ -496,6 +534,58 @@ class SimulateCommand(Command):
             self.coverage_merge_configuration.input_simulation_reports.append(self.simulation_report)
             self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_configuration,
                                                                         self.scheduler)
+
+    def create_sim_tarball(self, phase: Phase):
+        # TODO Move the list below to configuration object
+        exclusions = [".vcd", ".wlf", ".mxd", ".data", ".log", ".png", ".vsdx", ".jpg", ".jpeg",
+                      ".zip", ".gzip", ".tgz", ".gz", ".tar", ".gztar", ".bztar", ".xztar", ".tar.gz", ".tar.bz2", ".tar.xz"]
+        def exclude_files(tarinfo):
+            # Skip files with excluded extensions
+            if any(tarinfo.name.endswith(ext) for ext in exclusions):
+                return None  # Exclude this file
+            return tarinfo  # Include this file
+        # Assemble shell script
+        cmd_log_files: List[Path] = []
+        if self.do_compile:
+            if self.compilation_report.has_sv_files_to_compile:
+                cmd_log_files.append(self.compilation_report.sv_cmd_log_file_path)
+            if self.compilation_report.has_vhdl_files_to_compile:
+                cmd_log_files.append(self.compilation_report.vhdl_cmd_log_file_path)
+        if self.do_elaborate:
+            cmd_log_files.append(self.elaboration_report.cmd_log_file_path)
+        if self.do_compile_and_elaborate:
+            cmd_log_files.append(self.compilation_and_elaboration_report.cmd_log_file_path)
+        if self.do_simulate:
+            cmd_log_files.append(self.simulation_report.cmd_log_file_path)
+        shell_script_contents: List[str] = []
+        for file in cmd_log_files:
+            self.rmh.debug(f"Adding cmd from '{file}'")
+            with open(file, "r") as log_file:
+                for line in log_file:
+                    line = line.strip()
+                    if line:
+                        shell_script_contents.append(line)
+        shell_script_filename: str = "run_me.sh"
+        sim_dir_path: Path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+        shell_script_path: Path = sim_dir_path / shell_script_filename
+        with open(shell_script_path, "w") as shell_script_file:
+            for line in shell_script_contents:
+                shell_script_file.write(line + "\n")
+        # Make the script executable
+        os.chmod(shell_script_path, 0o755)
+        self.rmh.debug(f"Shell script created: {shell_script_path}")
+        # Assemble tarball
+        if self.rmh.file_exists(self.dry_run_tarball_path):
+            self.rmh.debug(f"Removing existing tarball '{self.dry_run_tarball_path}' ...")
+            self.rmh.remove_file(self.dry_run_tarball_path)
+        self.rmh.info(f"Creating tarball '{self.dry_run_tarball_path}' ...")
+        with tarfile.open(self.dry_run_tarball_path, "w:gz") as tarball:
+            tarball.add(self.rmh.project_root_path, filter=exclude_files, arcname=os.path.basename(self.rmh.project_root_path))
+        # Cleanup
+        self.rmh.info(f"Cleaning up ...")
+        self.rmh.remove_file(shell_script_path)
+
+
 
     def phase_report(self, phase: Phase):
         self._success = True
@@ -516,16 +606,19 @@ class SimulateCommand(Command):
         else:
             banner = f"{'*' * 53}\033[31m\033[4m FAILURE \033[0m{'*' * 54}"
         print(banner)
-        if self.do_prepare_dut:
-            self.print_prepare_dut_report(phase)
-        if self.do_compile:
-            self.print_compilation_report(phase)
-        if self.do_elaborate:
-            self.print_elaboration_report(phase)
-        if self.do_compile_and_elaborate:
-            self.print_compilation_and_elaboration_report(phase)
-        if self.do_simulate:
-            self.print_simulation_report(phase)
+        if self.dry_run:
+            self.rmh.info(f"Tarball created: {self.dry_run_tarball_path}")
+        else:
+            if self.do_prepare_dut:
+                self.print_prepare_dut_report(phase)
+            if self.do_compile:
+                self.print_compilation_report(phase)
+            if self.do_elaborate:
+                self.print_elaboration_report(phase)
+            if self.do_compile_and_elaborate:
+                self.print_compilation_and_elaboration_report(phase)
+            if self.do_simulate:
+                self.print_simulation_report(phase)
         print(banner)
 
     def phase_final(self, phase: Phase):

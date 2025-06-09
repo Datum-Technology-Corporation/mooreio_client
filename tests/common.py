@@ -139,7 +139,7 @@ class TestBase:
     def elab_ip(self, capsys, project_path: Path, app: str, ip_name: str) -> OutputCapture:
         if ip_name == "":
             raise Exception(f"IP name cannot be empty!")
-        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-E', '-a', app])
+        result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'sim', ip_name, '-DE', '-a', app])
         assert result.return_code == 0
         return result
 

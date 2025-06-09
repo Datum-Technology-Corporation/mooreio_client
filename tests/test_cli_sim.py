@@ -123,6 +123,11 @@ class TestCliSim(TestBase):
         test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "fsoc"))
         self.cmpelab_ip(capsys, test_project_path, app, "tb")
 
+    def cli_cmp_elab_fsoc(self, capsys, app: str):
+        self.reset_workspace()
+        test_project_path = Path(os.path.join(os.path.dirname(__file__), "data", "fsoc"))
+        self.cmp_ip(capsys, test_project_path, app, "tb")
+        self.elab_ip(capsys, test_project_path, app, "tb")
 
     # DSim
     @pytest.mark.single_process
@@ -158,6 +163,10 @@ class TestCliSim(TestBase):
     @pytest.mark.dsim
     def test_cli_prep_dut_fsoc_dsim(self, capsys):
         self.cli_prep_dut_fsoc(capsys, "dsim")
+    @pytest.mark.single_process
+    @pytest.mark.dsim
+    def test_cli_cmp_elab_fsoc_dsim(self, capsys):
+        self.cli_cmp_elab_fsoc(capsys, "dsim")
     @pytest.mark.single_process
     @pytest.mark.dsim
     def test_cli_cmpelab_fsoc_dsim(self, capsys):

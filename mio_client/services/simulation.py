@@ -253,8 +253,8 @@ class LogicSimulatorMasterFileList(LogicSimulatorFileList):
     has_custom_dut: Optional[bool] = False
     custom_dut_type: Optional[str] = "N/A"
     custom_dut_name: Optional[str] = ""
-    custom_dut_directories: Optional[List[Path]] = []
-    custom_dut_files: Optional[List[Path]] = []
+    custom_dut_directories: Optional[List[str]] = []
+    custom_dut_files: Optional[List[str]] = []
     custom_dut_defines_values: Optional[Dict[str, str]] = {}
     custom_dut_defines_boolean: Optional[List[str]] = []
 
@@ -529,12 +529,13 @@ class LogicSimulator(Service, ABC):
             #final_args_value["__MIO_USER_TOKEN__"] = self.rmh.user.access_token
         # Add TB/DUT Args
         if ip.has_dut:
-            dut_target_name = ip.get_target_dut_target(config.target)
-            dut_args_bool = ip.resolved_dut.get_target_cmp_bool_defines(dut_target_name)
-            for arg in dut_args_bool:
-                if dut_args_bool[arg]:
-                    final_args_boolean_set.add(arg)
-            final_args_value.update(ip.resolved_dut.get_target_sim_val_args(dut_target_name))
+            if ip.dut.type == DutType.MIO_IP:
+                dut_target_name = ip.get_target_dut_target(config.target)
+                dut_args_bool = ip.resolved_dut.get_target_cmp_bool_defines(dut_target_name)
+                for arg in dut_args_bool:
+                    if dut_args_bool[arg]:
+                        final_args_boolean_set.add(arg)
+                final_args_value.update(ip.resolved_dut.get_target_sim_val_args(dut_target_name))
         args_bool = ip.get_target_cmp_bool_defines(config.target)
         for arg in args_bool:
             if args_bool[arg]:
@@ -709,8 +710,16 @@ class LogicSimulator(Service, ABC):
             file_list.has_custom_dut = True
             file_list.custom_dut_type = config.custom_dut_type
             file_list.custom_dut_name = config.custom_dut_name
-            file_list.custom_dut_directories = config.custom_dut_directories
-            file_list.custom_dut_files = config.custom_dut_sv_files
+            if config.use_relative_paths:
+                for directory in config.custom_dut_directories:
+                    file_list.custom_dut_directories.append(os.path.relpath(directory, config.start_path))
+                for file in config.custom_dut_sv_files:
+                    file_list.custom_dut_files.append(os.path.relpath(file, config.start_path))
+            else:
+                for directory in config.custom_dut_directories:
+                    file_list.custom_dut_directories.append(str(directory))
+                for file in config.custom_dut_sv_files:
+                    file_list.custom_dut_files.append(str(file))
             file_list.custom_dut_defines_values = config.custom_dut_defines_values
             file_list.custom_dut_defines_boolean = config.custom_dut_defines_boolean
         for dep in report.ordered_dependencies:
@@ -805,8 +814,16 @@ class LogicSimulator(Service, ABC):
         if config.has_custom_dut:
             file_list.has_custom_dut = True
             file_list.custom_dut_type = config.custom_dut_type
-            file_list.custom_dut_directories = config.custom_dut_directories
-            file_list.custom_dut_files = config.custom_dut_vhdl_files
+            if config.use_relative_paths:
+                for directory in config.custom_dut_directories:
+                    file_list.custom_dut_directories.append(os.path.relpath(directory, config.start_path))
+                for file in config.custom_dut_vhdl_files:
+                    file_list.custom_dut_files.append(os.path.relpath(file, config.start_path))
+            else:
+                for directory in config.custom_dut_directories:
+                    file_list.custom_dut_directories.append(str(directory))
+                for file in config.custom_dut_vhdl_files:
+                    file_list.custom_dut_files.append(str(file))
             file_list.custom_dut_defines_values = config.custom_dut_defines_values
             file_list.custom_dut_defines_boolean = config.custom_dut_defines_boolean
         target_name = config.target
@@ -834,7 +851,7 @@ class LogicSimulator(Service, ABC):
                     sub_file_list.files.append(str(file))
                 report.has_vhdl_files_to_compile = True
             file_list.sub_file_lists.append(sub_file_list)
-        if ip.has_dut:
+        if ip.has_dut and ip.dut.type == DutType.MIO_IP:
             dut_target_name = ip.get_target_dut_target(config.target)
             file_list.defines_boolean.update(ip.resolved_dut.get_target_cmp_bool_defines(dut_target_name))
             file_list.defines_values.update(ip.resolved_dut.get_target_cmp_val_defines(dut_target_name))

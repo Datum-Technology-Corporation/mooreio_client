@@ -83,6 +83,8 @@ class LoginCommand(Command):
                 phase.error = Exception(f"Environment variable `{PASSWORD_ENV_VAR_NAME}` not set")
             else:
                 self.rmh.user.pre_set_password = password
+        elif self.parsed_cli_arguments.username:
+            self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.strip().lower()
 
     def phase_post_save_user_data(self, phase: Phase):
         phase.end_process = True
