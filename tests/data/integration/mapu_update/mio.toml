@@ -1,8 +1,0 @@
-[project]
-sync=true
-sync_id=2
-name="math_project"
-full_name="Math Project"
-
-[ip]
-local_paths=['rtl', 'dv']

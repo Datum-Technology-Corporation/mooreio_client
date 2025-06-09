@@ -10,3 +10,11 @@
 	path = rtl/core-v-mcu
 	url = https://github.com/Datum-Technology-Corporation/core-v-mcu
 	branch = shelled_core
+[submodule "tests/data/integration/mapu_raw"]
+	path = tests/data/integration/mapu_raw
+	url = https://github.com/Datum-Technology-Corporation/uvmx_demo
+	branch = start
+[submodule "tests/data/integration/mapu_update"]
+	path = tests/data/integration/mapu_update
+	url = https://github.com/Datum-Technology-Corporation/uvmx_demo
+	branch = main
