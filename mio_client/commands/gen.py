@@ -422,6 +422,7 @@ class SiArxCommand(Command):
             phase.error = Exception(f"Failed to generate code with SiArx.")
 
     def perform_siarx_gen(self, phase: Phase):
+        self.rmh.info(f"Generating code with SiArx ...")
         self._configuration = SiArxConfiguration(
             input_path=self.input_path,
             mode=self.mode,
