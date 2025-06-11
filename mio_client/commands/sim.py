@@ -425,6 +425,7 @@ class SimulateCommand(Command):
                 except Exception as e:
                     phase.error = Exception(f"FuseSoC is not available: {e}")
                 else:
+                    self.rmh.info(f"Invoking FuseSoC on core '{self.ip.dut.name}' ...")
                     self._fsoc_request = FuseSocSetupCoreRequest(
                         core_name=self.ip.dut.name, system_name=self.ip.dut.full_name, target=self.ip.dut.target,
                         simulator=self.app
@@ -469,6 +470,7 @@ class SimulateCommand(Command):
             self.compilation_configuration.dry_mode = True
             self.compilation_configuration.use_relative_paths = True
             self.compilation_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+        self.rmh.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
     def elaborate(self, phase: Phase):
@@ -480,6 +482,7 @@ class SimulateCommand(Command):
             self._elaboration_configuration.dry_mode = True
             self._elaboration_configuration.use_relative_paths = True
             self._elaboration_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+        self.rmh.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
@@ -500,6 +503,7 @@ class SimulateCommand(Command):
             self.compilation_and_elaboration_configuration.dry_mode = True
             self.compilation_and_elaboration_configuration.use_relative_paths = True
             self.compilation_and_elaboration_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+        self.rmh.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip,
                                                                                         self.compilation_and_elaboration_configuration,
                                                                                         self.scheduler)
@@ -523,6 +527,7 @@ class SimulateCommand(Command):
             self.simulation_configuration.dry_mode = True
             self.simulation_configuration.use_relative_paths = True
             self.simulation_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+        self.rmh.info(f"Simulating IP '{self.ip}' with '{self.simulator}' ...")
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
         if self.simulation_configuration.enable_coverage and not self.dry_run:
             self._coverage_merge_configuration = LogicSimulatorCoverageMergeRequest()
@@ -532,6 +537,7 @@ class SimulateCommand(Command):
             self.coverage_merge_configuration.html_report_path = self.simulation_report.coverage_directory
             self.coverage_merge_configuration.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
             self.coverage_merge_configuration.input_simulation_reports.append(self.simulation_report)
+            self.rmh.info(f"Preparing Coverage Report for IP '{self.ip}' with '{self.simulator}' ...")
             self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_configuration,
                                                                         self.scheduler)
 

@@ -275,6 +275,10 @@ class LogicSimulator(Service, ABC):
         self._regression_root_path = self.simulation_root_path / self.rmh.configuration.logic_simulation.regression_directory_name
         self._simulation_logs_path = self.simulation_root_path / self.rmh.configuration.logic_simulation.logs_directory
 
+    def __str__(self):
+        #return f"{self.vendor_name} {self.name} {self.version}"
+        return f"{self.vendor_name} {self.full_name}"
+
     @property
     @abstractmethod
     def installation_path(self) -> Path:
@@ -1086,7 +1090,7 @@ class LogicSimulator(Service, ABC):
 
 
 #######################################################################################################################
-# Logic Simulator Implementation: Metrics Design Automation© DSim (TM)
+# Logic Simulator Implementation: Altair DSim
 #######################################################################################################################
 class DSimCloudSimulationState(Enum):
     BUILDING_JOB = "1/5 Building Job File"
@@ -1182,7 +1186,7 @@ class DSimCloudSimulationReport(Model):
 
 class SimulatorMetricsDSim(LogicSimulator):
     def __init__(self, rmh: 'RootManager'):
-        super().__init__(rmh, "Metrics Design Automation", "dsim", "DSim")
+        super().__init__(rmh, "Altair", "dsim", "DSim")
         self._cloud_mode: bool = False
         self._cloud_job: DSimCloudJob = None
         self._cloud_sim_task_cmp_elab: DSimCloudTask = None
