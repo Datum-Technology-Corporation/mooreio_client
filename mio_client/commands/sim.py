@@ -454,6 +454,7 @@ class SimulateCommand(Command):
 
     def compile(self, phase: Phase):
         self._compilation_configuration = LogicSimulatorCompilationRequest()
+        self._compilation_configuration.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_compilation_request(self._compilation_configuration)
@@ -475,6 +476,7 @@ class SimulateCommand(Command):
 
     def elaborate(self, phase: Phase):
         self._elaboration_configuration = LogicSimulatorElaborationRequest()
+        self._elaboration_configuration.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_compilation_request(self._elaboration_configuration)
@@ -487,6 +489,7 @@ class SimulateCommand(Command):
 
     def compile_and_elaborate(self, phase: Phase):
         self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationRequest()
+        self._compilation_and_elaboration_configuration.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
@@ -510,6 +513,7 @@ class SimulateCommand(Command):
 
     def simulate(self, phase: Phase):
         self._simulation_configuration = LogicSimulatorSimulationRequest()
+        self._simulation_configuration.print_to_terminal = True
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_simulation_request(self._simulation_configuration)

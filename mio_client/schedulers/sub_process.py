@@ -41,8 +41,7 @@ class SubProcessScheduler(JobScheduler):
         final_env_vars['PATH'] = path
         if not configuration.dry_run:
             if configuration.output_to_terminal:
-                result = subprocess.Popen(args=command_str, cwd=job.wd, shell=True, env=final_env_vars, text=True,
-                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                result = subprocess.Popen(args=command_str, cwd=job.wd, shell=True, env=final_env_vars, text=True)
             else:
                 result = subprocess.Popen(args=command_str, cwd=job.wd, shell=True, env=final_env_vars,
                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
