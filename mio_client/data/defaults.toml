@@ -17,6 +17,7 @@ compilation_timeout=120
 elaboration_timeout=120
 compilation_and_elaboration_timeout=120
 simulation_timeout=120
+vscode_installation_path="/usr/bin/"
 metrics_dsim_cloud_max_compute_size="s4"
 metrics_dsim_default_compilation_sv_arguments=[
     "-suppress MultiBlockWrite:ReadingOutputModport:UndefinedMacro:IneffectiveDynamicCast"
