@@ -808,6 +808,14 @@ class RegressionCommand(Command):
         return self._dry_mode
 
     @property
+    def fsoc_request(self) -> FuseSocSetupCoreRequest:
+        return self._fsoc_request
+
+    @property
+    def fsoc_report(self) -> FuseSocSetupCoreReport:
+        return self._fsoc_report
+
+    @property
     def regression_database(self) -> RegressionDatabase:
         return self._regression_database
 
@@ -963,6 +971,8 @@ class RegressionCommand(Command):
     
     def phase_main(self, phase: Phase):
         self.prepare_dut(phase)
+        if phase.error:
+            return
         if not self.app == LogicSimulators.DSIM:
             if self.do_compile:
                 self.compile(phase)
@@ -980,21 +990,65 @@ class RegressionCommand(Command):
         self.simulate(phase)
 
     def prepare_dut(self, phase: Phase):
-        pass
+        if self.ip.has_dut:
+            if self.ip.dut.type == DutType.FUSE_SOC:
+                try:
+                    self._fsoc = self.rmh.service_database.find_service(ServiceType.PACKAGE_MANAGEMENT, "fsoc")
+                except Exception as e:
+                    phase.error = Exception(f"FuseSoC is not available: {e}")
+                else:
+                    self.rmh.info(f"Invoking FuseSoC on core '{self.ip.dut.name}' ...")
+                    self._fsoc_request = FuseSocSetupCoreRequest(
+                        core_name=self.ip.dut.name, system_name=self.ip.dut.full_name, target=self.ip.dut.target,
+                        simulator=self.app
+                    )
+                    try:
+                        self._fsoc_report = self._fsoc.setup_core(self._fsoc_request)
+                    except Exception as e:
+                        phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed: {e}")
+                    else:
+                        if not self._fsoc_report.success:
+                            phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
+
+    def fsoc_add_to_compilation_request(self, compilation_request: LogicSimulatorCompilationRequest):
+        if self._fsoc_report:
+            compilation_request.has_custom_dut = True
+            compilation_request.custom_dut_type = "FuseSoC"
+            compilation_request.custom_dut_name = self._fsoc_request.system_name
+            compilation_request.custom_dut_directories = self.fsoc_report.directories
+            compilation_request.custom_dut_sv_files = self.fsoc_report.sv_files
+            compilation_request.custom_dut_vhdl_files = self.fsoc_report.vhdl_files
+            compilation_request.custom_dut_defines_values = self.fsoc_report.defines_values
+            compilation_request.custom_dut_defines_boolean = self.fsoc_report.defines_boolean
 
     def compile(self, phase: Phase):
         self._compilation_configuration = self.regression.render_cmp_config(self.ip_definition.target)
+        self._compilation_configuration.print_to_terminal = self.rmh.print_trace
+        if self.ip.has_dut:
+            if self.ip.dut.type == DutType.FUSE_SOC:
+                self.fsoc_add_to_compilation_request(self._compilation_configuration)
         self.compilation_configuration.dry_mode = self.dry_mode
+        self.rmh.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
 
     def elaborate(self, phase: Phase):
         self._elaboration_configuration = self.regression.render_elab_config(self.ip_definition.target)
+        self._elaboration_configuration.print_to_terminal = self.rmh.print_trace
+        if self.ip.has_dut:
+            if self.ip.dut.type == DutType.FUSE_SOC:
+                self.fsoc_add_to_compilation_request(self._elaboration_configuration)
         self._elaboration_configuration.dry_mode = self.dry_mode
+        self.rmh.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
         self._compilation_and_elaboration_configuration = self.regression.render_cmp_elab_config(self.ip_definition.target)
+        self._compilation_and_elaboration_configuration.print_to_terminal = self.rmh.print_trace
+        if self.ip.has_dut:
+            if self.ip.dut.type == DutType.FUSE_SOC:
+                self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
         self._compilation_and_elaboration_configuration.dry_mode = self.dry_mode
+        self.rmh.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
 
     def simulate(self, phase: Phase):
@@ -1003,7 +1057,9 @@ class RegressionCommand(Command):
         self.regression_configuration.dry_mode = self.dry_mode
         self.regression_configuration.app = self.app
         self._regression_runner = self.regression_database.get_regression_runner(self.ip, self.regression, self.simulator, self.regression_configuration)
+        self.rmh.info(f"Starting Regression '{self.regression.name}' for IP '{self.ip}' with '{self.simulator}' ...")
         self._regression_report = self.regression_runner.execute_regression(self.scheduler)
+        self.rmh.info("Finished Regression")
         if self.app == LogicSimulators.DSIM:
             self._compilation_report = self.regression_report.compilation_report
             self._elaboration_report = self.regression_report.elaboration_report
