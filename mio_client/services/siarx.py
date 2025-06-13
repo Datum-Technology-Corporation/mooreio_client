@@ -211,7 +211,7 @@ class SiArxService(Service):
         try:
             tgz_data = base64.b64decode(response.project_files_payload)
             with tarfile.open(fileobj=BytesIO(tgz_data), mode='r:gz') as tar:
-                tar.extractall(path=response.extract_path)
+                tar.extractall(path=response.extract_path, filter='data')
         except Exception as e:
             report.success = False
             report.errors.append(f"Failed to unpack Project files at path '{configuration.input_path}': {e}")
@@ -227,7 +227,7 @@ class SiArxService(Service):
                     try:
                         tgz_data = base64.b64decode(package.payload)
                         with tarfile.open(fileobj=BytesIO(tgz_data), mode='r:gz') as tar:
-                            tar.extractall(path=package.extract_path)
+                            tar.extractall(path=package.extract_path, filter='data')
                     except Exception as e:
                         report.success = False
                         report.errors.append(f"Failed to unpack IP {ip.name}/{package.name} at path '{package.extract_path}': {e}")

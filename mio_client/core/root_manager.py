@@ -1203,6 +1203,8 @@ class RootManager:
         if self.configuration.project.local_mode:
             self.debug(f"Relocating MIO data files to project")
             new_data_files_path = self.temp_dir / "mio_data_files"
+            if self.directory_exists(new_data_files_path):
+                self.remove_directory(new_data_files_path)
             self.copy_directory(self._data_files_path, new_data_files_path)
             self._data_files_path = new_data_files_path
 
