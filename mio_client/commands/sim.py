@@ -7,6 +7,7 @@ import tarfile
 from pathlib import Path
 from typing import List, Dict
 
+from ..services.siarx import SiArxReport, SiArxConfiguration, SiArxMode, SiArxService
 from ..services.fsoc import FuseSocSetupCoreRequest, FuseSocSetupCoreReport
 from ..core.configuration import LogicSimulators
 from ..services.regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner, Regression
@@ -136,8 +137,8 @@ class SimulateCommand(Command):
         self._app: LogicSimulators = LogicSimulators.UNDEFINED
         self._simulator: LogicSimulator = None
         self._scheduler: JobScheduler = None
-        self._do_invoke_siarx: bool = False
         self._do_prepare_dut: bool = False
+        self._do_invoke_siarx: bool = False
         self._do_compile: bool = False
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
@@ -169,12 +170,16 @@ class SimulateCommand(Command):
         return self._scheduler
 
     @property
-    def do_invoke_siarx(self) -> bool:
-        return self._do_invoke_siarx
+    def siarx_service(self) -> SiArxService:
+        return self._siarx_service
 
     @property
     def do_prepare_dut(self) -> bool:
         return self._do_prepare_dut
+
+    @property
+    def do_invoke_siarx(self) -> bool:
+        return self._do_invoke_siarx
 
     @property
     def do_compile(self) -> bool:
@@ -205,6 +210,10 @@ class SimulateCommand(Command):
         return self._fsoc_request
 
     @property
+    def siarx_request(self) -> SiArxConfiguration:
+        return self._siarx_request
+
+    @property
     def compilation_configuration(self) -> LogicSimulatorCompilationRequest:
         return self._compilation_configuration
 
@@ -227,6 +236,10 @@ class SimulateCommand(Command):
     @property
     def fsoc_report(self) -> FuseSocSetupCoreReport:
         return self._fsoc_report
+
+    @property
+    def siarx_report(self) -> SiArxReport:
+        return self._siarx_report
 
     @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
@@ -364,9 +377,18 @@ class SimulateCommand(Command):
             self._simulator = self.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, self.app.value)
         except Exception as e:
             phase.error = e
+            return
         else:
             if not self.simulator.supports_uvm:
                 phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
+                return
+        if self.do_invoke_siarx:
+            try:
+                self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
+            except Exception as e:
+                phase.error = Exception(f"Failed to load SiArx: '{e}'")
+                self._success = False
+                return
 
     def phase_post_ip_discovery(self, phase: Phase):
         self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
@@ -398,7 +420,10 @@ class SimulateCommand(Command):
             self.prepare_dut(phase)
             if phase.error:
                 return
-        # TODO Implement invoking SiArx
+        if self.do_invoke_siarx:
+            self.prepare_dut(phase)
+            if phase.error:
+                return
         if self.do_compile:
             self.compile(phase)
             if not self.compilation_report.success:
@@ -437,6 +462,26 @@ class SimulateCommand(Command):
                     else:
                         if not self._fsoc_report.success:
                             phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
+
+    def perform_siarx_gen(self, phase: Phase):
+        self.rmh.info(f"Generating code with SiArx ...")
+        self._siarx_request = SiArxConfiguration(
+            input_path=self.rmh.project_root_path,
+            mode=SiArxMode.UPDATE_PROJECT,
+            project_id=str(self.rmh.configuration.project.sync_id),
+            force_update=False
+        )
+        self._siarx_report = self.siarx_service.gen_project(self._siarx_request)
+        self._success = self._siarx_report.success
+        if not self._success:
+            phase.error = Exception(f"Failed to generate SiArx Project: {len(self._siarx_report.errors)}E {len(self._siarx_report.warnings)}W")
+            if self.rmh.print_trace:
+                for info in self._siarx_report.infos:
+                    self.rmh.info(info)
+            for warning in self._siarx_report.warnings:
+                self.rmh.warning(warning)
+            for error in self._siarx_report.errors:
+                self.rmh.error(error)
 
     def fsoc_add_to_compilation_request(self, compilation_request: LogicSimulatorCompilationRequest):
         if self._fsoc_report:

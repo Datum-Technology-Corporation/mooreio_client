@@ -547,7 +547,7 @@ class LogicSimulator(Service, ABC):
         final_args_boolean = list(final_args_boolean_set)
         final_args_value.update(ip.get_target_sim_val_args(config.target))
         # Add to report
-        report.log_path = report.test_results_path / f"sim.{self.name}.log"
+        report.log_path = report.test_results_path / f"sim.log"
         report.waveform_file_path = report.test_results_path / f"waves.{self.name}"
         report.coverage_directory = report.test_results_path / f"cov.{self.name}"
         report.args_boolean = final_args_boolean
@@ -1216,7 +1216,7 @@ class SimulatorMetricsDSim(LogicSimulator):
     
     @property
     def installation_path(self) -> Path:
-        return self.rmh.configuration.logic_simulation.metrics_dsim_installation_path
+        return self.rmh.configuration.logic_simulation.altair_dsim_installation_path
     @property
     def supports_vhdl(self) -> bool:
         return True
@@ -1311,7 +1311,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         return Version('1.0.0')
 
     def set_job_env(self, job:Job):
-        dsim_home: str = f"{self.rmh.configuration.logic_simulation.metrics_dsim_installation_path}"
+        dsim_home: str = f"{self.rmh.configuration.logic_simulation.altair_dsim_installation_path}"
         job.env_vars["DSIM_HOME"] = dsim_home
         job.env_vars["STD_LIBS"] = f"{dsim_home}/std_pkgs/lib"
         job.env_vars["RADFLEX_PATH"] = f"{dsim_home}/radflex"
@@ -1319,7 +1319,7 @@ class SimulatorMetricsDSim(LogicSimulator):
         job.pre_path = f"{dsim_home}/bin:{dsim_home}/{self.rmh.configuration.logic_simulation.uvm_version.value}/bin:{dsim_home}/llvm_small/bin"
         job.env_vars["LD_LIBRARY_PATH"] = f"{dsim_home}/lib:" +"${LD_LIBRARY_PATH}:" + f"{dsim_home}/llvm_small/lib"
         job.env_vars["UVM_HOME"] = f"{dsim_home}/uvm/" + self.rmh.configuration.logic_simulation.uvm_version.value
-        job.env_vars["DSIM_LICENSE"] = self.rmh.configuration.logic_simulation.metrics_dsim_license_path
+        job.env_vars["DSIM_LICENSE"] = self.rmh.configuration.logic_simulation.altair_dsim_license_path
 
     def do_create_library(self, ip: Ip, config: LogicSimulatorLibraryCreationRequest, report: LogicSimulatorLibraryCreationReport, scheduler: JobScheduler, scheduler_config: JobSchedulerConfiguration):
         pass
@@ -1347,7 +1347,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             else:
                 vhdl_file_list_path: str = str(report.vhdl_file_list_path)
                 vhdl_log_path: str = str(report.vhdl_log_path)
-            args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_vhdl_arguments + [
+            args = self.rmh.configuration.logic_simulation.altair_dsim_default_compilation_vhdl_arguments + [
                 defines_str,
                 f"-f {vhdl_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
@@ -1380,7 +1380,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             else:
                 sv_file_list_path: str = str(report.sv_file_list_path)
                 sv_log_path: str = str(report.sv_log_path)
-            args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_sv_arguments + [
+            args = self.rmh.configuration.logic_simulation.altair_dsim_default_compilation_sv_arguments + [
                 defines_str,
                 f"-f {sv_file_list_path}",
                 f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
@@ -1415,7 +1415,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             log_path = os.path.relpath(report.log_path, config.start_path)
         else:
             log_path = report.log_path
-        args = self.rmh.configuration.logic_simulation.metrics_dsim_default_elaboration_arguments + [
+        args = self.rmh.configuration.logic_simulation.altair_dsim_default_elaboration_arguments + [
             f"-genimage {ip.lib_name}",
             f"-uvm {self.rmh.configuration.logic_simulation.uvm_version.value}",
             top_str,
@@ -1460,7 +1460,7 @@ class SimulatorMetricsDSim(LogicSimulator):
                 file_list_path = str(os.path.relpath(report.file_list_path, config.start_path))
             else:
                 file_list_path = str(report.file_list_path)
-            args = self.rmh.configuration.logic_simulation.metrics_dsim_default_compilation_and_elaboration_arguments + [
+            args = self.rmh.configuration.logic_simulation.altair_dsim_default_compilation_and_elaboration_arguments + [
                 f"-genimage {ip.lib_name}",
                 defines_str,
                 so_str,
@@ -1503,7 +1503,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             log_path = os.path.relpath(report.log_path, config.start_path)
         else:
             log_path = report.log_path
-        args = self.rmh.configuration.logic_simulation.metrics_dsim_default_simulation_arguments + [
+        args = self.rmh.configuration.logic_simulation.altair_dsim_default_simulation_arguments + [
             f"-image {ip.lib_name}",
             args_str,
             so_str,
@@ -1653,7 +1653,7 @@ class SimulatorMetricsDSim(LogicSimulator):
             report.timestamp_end = results_report.timestamp_end
 
     def dsim_cloud_simulate(self, ip: Ip, cloud_simulation_config: DSimCloudSimulationConfiguration, scheduler: JobScheduler) -> DSimCloudSimulationReport:
-        self._cloud_sim_installation_path = self.rmh.configuration.logic_simulation.metrics_dsim_cloud_installation_path
+        self._cloud_sim_installation_path = self.rmh.configuration.logic_simulation.altair_dsim_cloud_installation_path
         # 1. Initialize report
         report: DSimCloudSimulationReport = DSimCloudSimulationReport()
         config_report_map: Dict[LogicSimulatorSimulationReport, LogicSimulatorSimulationRequest] = {}

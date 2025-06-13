@@ -648,7 +648,7 @@ class RegressionRunner:
         cloud_simulation_config.dry_mode = self.config.dry_mode
         cloud_simulation_config.timeout = self.regression.max_duration
         cloud_simulation_config.max_parallel_tasks = self.regression.max_jobs
-        cloud_simulation_config.compute_size = self.db.rmh.configuration.logic_simulation.metrics_dsim_cloud_max_compute_size
+        cloud_simulation_config.compute_size = self.db.rmh.configuration.logic_simulation.altair_dsim_cloud_max_compute_size
         cloud_simulation_config.compilation_config = self.config.compilation_config
         cloud_simulation_config.elaboration_config = self.config.elaboration_config
         cloud_simulation_config.compilation_and_elaboration_config = self.config.compilation_and_elaboration_config

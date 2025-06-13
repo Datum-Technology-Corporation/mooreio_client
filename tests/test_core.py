@@ -191,7 +191,7 @@ class TestSimulatorDSimCommand(Command):
     def phase_main(self, phase: Phase):
         super().phase_main(phase)
         installation_dir: Path = Path(os.path.join(os.path.dirname(__file__), "data", "environment", "valid_1", "tools", "dsim"))
-        self.rmh.configuration.logic_simulation.metrics_dsim_installation_path = str(installation_dir)
+        self.rmh.configuration.logic_simulation.altair_dsim_installation_path = str(installation_dir)
         dsim_simulator: SimulatorMetricsDSim = SimulatorMetricsDSim(self.rmh)
         dsim_simulator.init()
         assert dsim_simulator.is_available

@@ -71,19 +71,19 @@ class LogicSimulation(Model):
     compilation_and_elaboration_timeout: PositiveFloat
     simulation_timeout: PositiveFloat
     vscode_installation_path: Optional[PosixPath] = UNDEFINED_CONST
-    metrics_dsim_license_path: Optional[PosixPath] = UNDEFINED_CONST
-    metrics_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
-    metrics_dsim_installation_path: Optional[PosixPath] = UNDEFINED_CONST
-    metrics_dsim_cloud_installation_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_license_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
+    altair_dsim_installation_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_cloud_installation_path: Optional[PosixPath] = UNDEFINED_CONST
     xilinx_vivado_installation_path: Optional[PosixPath] = UNDEFINED_CONST
-    metrics_dsim_default_compilation_sv_arguments: List[str] = []
+    altair_dsim_default_compilation_sv_arguments: List[str] = []
     xilinx_vivado_default_compilation_sv_arguments: List[str] = []
-    metrics_dsim_default_compilation_vhdl_arguments: List[str] = []
+    altair_dsim_default_compilation_vhdl_arguments: List[str] = []
     xilinx_vivado_default_compilation_vhdl_arguments: List[str] = []
-    metrics_dsim_default_elaboration_arguments: List[str] = []
+    altair_dsim_default_elaboration_arguments: List[str] = []
     xilinx_vivado_default_elaboration_arguments: List[str] = []
-    metrics_dsim_default_compilation_and_elaboration_arguments: List[str] = []
-    metrics_dsim_default_simulation_arguments: List[str] = []
+    altair_dsim_default_compilation_and_elaboration_arguments: List[str] = []
+    altair_dsim_default_simulation_arguments: List[str] = []
     xilinx_vivado_default_simulation_arguments: List[str] = []
     default_simulator: Optional[LogicSimulators] = LogicSimulators.UNDEFINED
 
