@@ -20,8 +20,8 @@ The Moore.io client currently supports the following tools, which must be instal
 
 To make these available, variables in the Configuration Space must be set:
 
-- Metrics DSim Desktop: :ref:`metrics_dsim_license_path` :ref:`metrics_dsim_installation_path` :ref:`vscode_installation_path`
-- Metrics DSim Cloud: :ref:`metrics_dsim_cloud_installation_path`
+- Altair DSim Desktop: :ref:`altair_dsim_license_path` :ref:`altair_dsim_installation_path` :ref:`vscode_installation_path`
+- Altair DSim Cloud: :ref:`altair_dsim_cloud_installation_path`
 - Xilinx Vivado: :ref:`xilinx_vivado_installation_path`
 - Doxygen: :ref:`doxygen_installation_path`
 
@@ -34,9 +34,9 @@ Save the following to ``~/.mio/mio.toml``:
 
   [logic_simulation]
   default_simulator="dsim"
-  metrics_dsim_license_path="~/metrics-ca/dsim-license.json"
-  metrics_dsim_installation_path="/tools/altair/dsim"
-  metrics_dsim_cloud_installation_path="/usr/local/bin"
+  altair_dsim_license_path="~/metrics-ca/dsim-license.json"
+  altair_dsim_installation_path="/tools/altair/dsim"
+  altair_dsim_cloud_installation_path="/usr/local/bin"
   xilinx_vivado_installation_path="/tools/vivado/2024.2/Vivado/2024.2"
   compilation_timeout=60.0
   compilation_and_elaboration_timeout=60.0

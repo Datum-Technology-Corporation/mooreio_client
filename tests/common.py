@@ -197,6 +197,44 @@ class TestBase:
         else:
             plus_args = []
         result = self.run_cmd(capsys, [
+            f'--wd={project_path}', '--dbg', 'sim', '-D', '-C', '-E', '-S', ip_name, f'-t {test_name}', f'-s {seed}',
+            '-v', 'high', '-a', app, '-w'
+        ] + optional_args + plus_args)
+        assert result.return_code == 0
+        if cov:
+            assert os.path.isdir(mio_client.cli.root_manager.command.coverage_merge_report.output_path)
+            if mio_client.cli.root_manager.command.coverage_merge_report.has_html_report:
+                assert os.path.isdir(mio_client.cli.root_manager.command.coverage_merge_report.html_report_path)
+                assert os.path.isfile(mio_client.cli.root_manager.command.coverage_merge_report.html_report_index_path)
+                assert os.path.getsize(mio_client.cli.root_manager.command.coverage_merge_report.html_report_index_path) > 0
+            if mio_client.cli.root_manager.command.coverage_merge_report.has_merge_log:
+                assert os.path.isfile(mio_client.cli.root_manager.command.coverage_merge_report.merge_log_file_path)
+                assert os.path.getsize(mio_client.cli.root_manager.command.coverage_merge_report.merge_log_file_path) > 0
+        return result
+
+    def one_shot_siarx_sim_ip(self, capsys, project_path: Path, app: str, ip_name: str, test_name: str, seed: int=1, waves: bool=False,
+                        cov: bool=False, defines_boolean: list[str]=[], defines_value: dict[str,str]={},
+                        args_boolean: list[str]=[], args_value: dict[str,str]={}) -> OutputCapture:
+        if ip_name == "":
+            raise Exception(f"IP name cannot be empty!")
+        optional_args = []
+        if waves:
+            optional_args.append('-w')
+        if cov:
+            optional_args.append('-c')
+        if len(defines_boolean) > 0 or len(defines_value) > 0 or len(args_boolean) > 0 or len(args_value) > 0:
+            plus_args = ["-+"]
+            for define in defines_boolean:
+                plus_args.append(f"+define+{define}")
+            for define in defines_value:
+                plus_args.append(f"+define+{define}={defines_value[define]}")
+            for arg in args_boolean:
+                plus_args.append(f"+{arg}")
+            for arg in args_value:
+                plus_args.append(f"+{arg}={args_value[arg]}")
+        else:
+            plus_args = []
+        result = self.run_cmd(capsys, [
             f'--wd={project_path}', '--dbg', 'sim', ip_name, f'-t {test_name}', f'-s {seed}', '-v', 'high', '-a', app, '-w'
         ] + optional_args + plus_args)
         assert result.return_code == 0

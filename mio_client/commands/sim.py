@@ -54,7 +54,7 @@ Usage:
 Options:
    -t TEST     , --test      TEST       Specify the UVM test to be run.
    -s SEED     , --seed      SEED       Positive Integer. Specify randomization seed. If none is provided, a random one will be picked.
-   -v VERBOSITY, --verbosity VERBOSITY  Specifies UVM logging verbosity: none, low, medium, high, debug. [default: medium]
+   -v VERBOSITY, --verbosity VERBOSITY  Specifies UVM logging verbosity: none, low, medium, high, full, debug. [default: medium]
    -+ ARGS     , --args      ARGS       Specifies compilation-time (+define+ARG[=VAL]) or simulation-time (+ARG[=VAL]) arguments
    -e ERRORS   , --errors    ERRORS     Specifies the number of errors at which compilation/elaboration/simulation is terminated.  [default: 10]
    -a APP      , --app       APP        Specifies simulator application to use: dsim, qst, xcl, vcs, riv, viv. [default: dsim]
@@ -63,11 +63,12 @@ Options:
    -g          , --gui                  Invokes simulator in graphical or 'GUI' mode.
    -d DEST     , --dry-run   DEST       Captures simulation command into tarball at DEST instead of invoking simulator.
    
-   -S   Simulate
-   -E   Elaborate
-   -C   Compile
-   -X   Invoke Datum SiArx for code generation.
+Steps:
    -D   Prepare Device-Under-Test (DUT) for logic simulation. Ex: invoke FuseSoC to prepare core(s) for compilation.
+   -X   Invoke Datum SiArx for code generation.
+   -C   Compile
+   -E   Elaborate
+   -S   Simulate
    
 Examples:
    mio sim my_ip -t smoke -s 1 -w -c             # Compile, elaborate and simulate test 'my_ip_smoke_test_c'
@@ -145,11 +146,11 @@ class SimulateCommand(Command):
         self._do_simulate: bool = False
         self._dry_run: bool = False
         self._dry_run_tarball_path: Path = Path()
-        self._compilation_configuration: LogicSimulatorCompilationRequest
-        self._elaboration_configuration: LogicSimulatorElaborationRequest
-        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationRequest
-        self._simulation_configuration: LogicSimulatorSimulationRequest
-        self._coverage_merge_configuration: LogicSimulatorCoverageMergeRequest
+        self._compilation_request: LogicSimulatorCompilationRequest
+        self._elaboration_request: LogicSimulatorElaborationRequest
+        self._compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest
+        self._simulation_request: LogicSimulatorSimulationRequest
+        self._coverage_merge_request: LogicSimulatorCoverageMergeRequest
         self._compilation_report: LogicSimulatorCompilationReport
         self._elaboration_report: LogicSimulatorElaborationReport
         self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
@@ -214,24 +215,24 @@ class SimulateCommand(Command):
         return self._siarx_request
 
     @property
-    def compilation_configuration(self) -> LogicSimulatorCompilationRequest:
-        return self._compilation_configuration
+    def compilation_request(self) -> LogicSimulatorCompilationRequest:
+        return self._compilation_request
 
     @property
-    def elaboration_configuration(self) -> LogicSimulatorElaborationRequest:
-        return self._elaboration_configuration
+    def elaboration_request(self) -> LogicSimulatorElaborationRequest:
+        return self._elaboration_request
 
     @property
-    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationRequest:
-        return self._compilation_and_elaboration_configuration
+    def compilation_and_elaboration_request(self) -> LogicSimulatorCompilationAndElaborationRequest:
+        return self._compilation_and_elaboration_request
 
     @property
-    def simulation_configuration(self) -> LogicSimulatorSimulationRequest:
-        return self._simulation_configuration
+    def simulation_request(self) -> LogicSimulatorSimulationRequest:
+        return self._simulation_request
 
     @property
-    def coverage_merge_configuration(self) -> LogicSimulatorCoverageMergeRequest:
-        return self._coverage_merge_configuration
+    def coverage_merge_request(self) -> LogicSimulatorCoverageMergeRequest:
+        return self._coverage_merge_request
 
     @property
     def fsoc_report(self) -> FuseSocSetupCoreReport:
@@ -364,6 +365,10 @@ class SimulateCommand(Command):
                 return
             else:
                 self._app = self.rmh.configuration.logic_simulation.default_simulator
+        if self.rmh.configuration.authentication.offline:
+            self._do_invoke_siarx = False
+        elif self.rmh.configuration.project.sync_id == -1:
+            self._do_invoke_siarx = False
 
     def phase_post_scheduler_discovery(self, phase: Phase):
         try:
@@ -398,7 +403,7 @@ class SimulateCommand(Command):
             if self.do_simulate and (self.ip.ip.pkg_type != IpPkgType.DV_TB):
                 phase.error = Exception(f"IP '{self.ip}' is not a Test Bench")
                 return
-            if self.ip.has_vhdl_content:
+            if self.ip.has_vhdl_content: # TODO This does not take into account non-IP DUT contents
                 # VHDL must be compiled and elaborated separately
                 if self.do_compile_and_elaborate:
                     self._do_compile = True
@@ -421,7 +426,7 @@ class SimulateCommand(Command):
             if phase.error:
                 return
         if self.do_invoke_siarx:
-            self.prepare_dut(phase)
+            self.perform_siarx_gen(phase)
             if phase.error:
                 return
         if self.do_compile:
@@ -498,96 +503,96 @@ class SimulateCommand(Command):
         pass
 
     def compile(self, phase: Phase):
-        self._compilation_configuration = LogicSimulatorCompilationRequest()
-        self._compilation_configuration.print_to_terminal = self.rmh.print_trace
+        self._compilation_request = LogicSimulatorCompilationRequest()
+        self._compilation_request.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
-                self.fsoc_add_to_compilation_request(self._compilation_configuration)
+                self.fsoc_add_to_compilation_request(self._compilation_request)
         if self.parsed_cli_arguments.errors:
-            self.compilation_configuration.max_errors = self.parsed_cli_arguments.errors
+            self.compilation_request.max_errors = self.parsed_cli_arguments.errors
         if self.parsed_cli_arguments.waves:
-            self.compilation_configuration.enable_waveform_capture = True
+            self.compilation_request.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
-            self.compilation_configuration.enable_coverage = True
-        self.compilation_configuration.defines_boolean = self.defines_boolean
-        self.compilation_configuration.defines_value = self.defines_value
-        self.compilation_configuration.target = self.ip_definition.target
+            self.compilation_request.enable_coverage = True
+        self.compilation_request.defines_boolean = self.defines_boolean
+        self.compilation_request.defines_value = self.defines_value
+        self.compilation_request.target = self.ip_definition.target
         if self.dry_run:
-            self.compilation_configuration.dry_mode = True
-            self.compilation_configuration.use_relative_paths = True
-            self.compilation_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+            self.compilation_request.dry_mode = True
+            self.compilation_request.use_relative_paths = True
+            self.compilation_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self.rmh.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
-        self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
+        self._compilation_report = self.simulator.compile(self.ip, self.compilation_request, self.scheduler)
 
     def elaborate(self, phase: Phase):
-        self._elaboration_configuration = LogicSimulatorElaborationRequest()
-        self._elaboration_configuration.print_to_terminal = self.rmh.print_trace
+        self._elaboration_request = LogicSimulatorElaborationRequest()
+        self._elaboration_request.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
-                self.fsoc_add_to_compilation_request(self._elaboration_configuration)
+                self.fsoc_add_to_compilation_request(self._elaboration_request)
         if self.dry_run:
-            self._elaboration_configuration.dry_mode = True
-            self._elaboration_configuration.use_relative_paths = True
-            self._elaboration_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+            self._elaboration_request.dry_mode = True
+            self._elaboration_request.use_relative_paths = True
+            self._elaboration_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self.rmh.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
-        self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
+        self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_request, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
-        self._compilation_and_elaboration_configuration = LogicSimulatorCompilationAndElaborationRequest()
-        self._compilation_and_elaboration_configuration.print_to_terminal = self.rmh.print_trace
+        self._compilation_and_elaboration_request = LogicSimulatorCompilationAndElaborationRequest()
+        self._compilation_and_elaboration_request.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
-                self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
+                self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_request)
         if self.parsed_cli_arguments.errors:
-            self._compilation_and_elaboration_configuration.max_errors = self.parsed_cli_arguments.errors
+            self._compilation_and_elaboration_request.max_errors = self.parsed_cli_arguments.errors
         if self.parsed_cli_arguments.waves:
-            self._compilation_and_elaboration_configuration.enable_waveform_capture = True
+            self._compilation_and_elaboration_request.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
-            self._compilation_and_elaboration_configuration.enable_coverage = True
-        self.compilation_and_elaboration_configuration.defines_boolean = self.defines_boolean
-        self.compilation_and_elaboration_configuration.defines_value = self.defines_value
-        self.compilation_and_elaboration_configuration.target = self.ip_definition.target
+            self._compilation_and_elaboration_request.enable_coverage = True
+        self.compilation_and_elaboration_request.defines_boolean = self.defines_boolean
+        self.compilation_and_elaboration_request.defines_value = self.defines_value
+        self.compilation_and_elaboration_request.target = self.ip_definition.target
         if self.dry_run:
-            self.compilation_and_elaboration_configuration.dry_mode = True
-            self.compilation_and_elaboration_configuration.use_relative_paths = True
-            self.compilation_and_elaboration_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+            self.compilation_and_elaboration_request.dry_mode = True
+            self.compilation_and_elaboration_request.use_relative_paths = True
+            self.compilation_and_elaboration_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self.rmh.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip,
-                                                                                        self.compilation_and_elaboration_configuration,
+                                                                                        self.compilation_and_elaboration_request,
                                                                                         self.scheduler)
 
     def simulate(self, phase: Phase):
-        self._simulation_configuration = LogicSimulatorSimulationRequest()
-        self._simulation_configuration.print_to_terminal = True
+        self._simulation_request = LogicSimulatorSimulationRequest()
+        self._simulation_request.print_to_terminal = True
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
-                self.fsoc_add_to_simulation_request(self._simulation_configuration)
-        self.simulation_configuration.seed = self.parsed_cli_arguments.seed if self.parsed_cli_arguments.seed is not None else 1
-        self.simulation_configuration.verbosity = self.parsed_cli_arguments.verbosity if self.parsed_cli_arguments.verbosity is not None else UvmVerbosity.MEDIUM
-        self.simulation_configuration.max_errors = self.parsed_cli_arguments.errors if self.parsed_cli_arguments.errors is not None else 10
-        self.simulation_configuration.gui_mode = self.parsed_cli_arguments.gui
-        self.simulation_configuration.enable_waveform_capture = self.parsed_cli_arguments.waves
-        self.simulation_configuration.enable_coverage = self.parsed_cli_arguments.cov
-        self.simulation_configuration.test_name = self.parsed_cli_arguments.test.strip().lower()
-        self.simulation_configuration.args_boolean = self.args_boolean
-        self.simulation_configuration.args_value = self.args_value
-        self.simulation_configuration.target = self.ip_definition.target
+                self.fsoc_add_to_simulation_request(self._simulation_request)
+        self.simulation_request.seed = self.parsed_cli_arguments.seed if self.parsed_cli_arguments.seed is not None else 1
+        self.simulation_request.verbosity = self.parsed_cli_arguments.verbosity if self.parsed_cli_arguments.verbosity is not None else UvmVerbosity.MEDIUM
+        self.simulation_request.max_errors = self.parsed_cli_arguments.errors if self.parsed_cli_arguments.errors is not None else 10
+        self.simulation_request.gui_mode = self.parsed_cli_arguments.gui
+        self.simulation_request.enable_waveform_capture = self.parsed_cli_arguments.waves
+        self.simulation_request.enable_coverage = self.parsed_cli_arguments.cov
+        self.simulation_request.test_name = self.parsed_cli_arguments.test.strip().lower()
+        self.simulation_request.args_boolean = self.args_boolean
+        self.simulation_request.args_value = self.args_value
+        self.simulation_request.target = self.ip_definition.target
         if self.dry_run:
-            self.simulation_configuration.dry_mode = True
-            self.simulation_configuration.use_relative_paths = True
-            self.simulation_configuration.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
+            self.simulation_request.dry_mode = True
+            self.simulation_request.use_relative_paths = True
+            self.simulation_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
         self.rmh.info(f"Simulating IP '{self.ip}' with '{self.simulator}' ...")
-        self._simulation_report = self.simulator.simulate(self.ip, self.simulation_configuration, self.scheduler)
-        if self.simulation_configuration.enable_coverage and not self.dry_run:
-            self._coverage_merge_configuration = LogicSimulatorCoverageMergeRequest()
-            self.coverage_merge_configuration.target_name = self.ip_definition.target
-            self.coverage_merge_configuration.output_path = self.simulation_report.coverage_directory
-            self.coverage_merge_configuration.create_html_report = True
-            self.coverage_merge_configuration.html_report_path = self.simulation_report.coverage_directory
-            self.coverage_merge_configuration.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
-            self.coverage_merge_configuration.input_simulation_reports.append(self.simulation_report)
+        self._simulation_report = self.simulator.simulate(self.ip, self.simulation_request, self.scheduler)
+        if self.simulation_request.enable_coverage and not self.dry_run:
+            self._coverage_merge_request = LogicSimulatorCoverageMergeRequest()
+            self.coverage_merge_request.target_name = self.ip_definition.target
+            self.coverage_merge_request.output_path = self.simulation_report.coverage_directory
+            self.coverage_merge_request.create_html_report = True
+            self.coverage_merge_request.html_report_path = self.simulation_report.coverage_directory
+            self.coverage_merge_request.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
+            self.coverage_merge_request.input_simulation_reports.append(self.simulation_report)
             self.rmh.info(f"Preparing Coverage Report for IP '{self.ip}' with '{self.simulator}' ...")
-            self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_configuration,
+            self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_request,
                                                                         self.scheduler)
 
     def create_sim_tarball(self, phase: Phase):
@@ -639,8 +644,6 @@ class SimulateCommand(Command):
         # Cleanup
         self.rmh.info(f"Cleaning up ...")
         self.rmh.remove_file(shell_script_path)
-
-
 
     def phase_report(self, phase: Phase):
         self._success = True
@@ -743,11 +746,11 @@ class SimulateCommand(Command):
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.simulation_report.num_fatals > 0 else ""
         self.rmh.info(f" Simulation results - {errors_str} {warnings_str}{fatal_str}:")
         print(f"  * Log: {self.rmh.configuration.applications.editor} {self.simulation_report.log_path}")
-        if self.simulation_configuration.enable_waveform_capture:
-            view_waves_command: str = self.simulator.get_view_waves_command(self.simulation_configuration,
+        if self.simulation_request.enable_waveform_capture:
+            view_waves_command: str = self.simulator.get_view_waves_command(self.simulation_request,
                                                                             self.simulation_report)
             print(f"  * Waves: {view_waves_command} &")
-        if self.simulation_configuration.enable_coverage:
+        if self.simulation_request.enable_coverage:
             print(
                 f"  * Coverage: {self.rmh.configuration.applications.web_browser} {self.coverage_merge_report.html_report_index_path} &")
         if not self.simulation_report.success:
@@ -810,10 +813,10 @@ class RegressionCommand(Command):
         self._do_compile: bool = False
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
-        self._compilation_configuration: LogicSimulatorCompilationRequest
-        self._elaboration_configuration: LogicSimulatorElaborationRequest
-        self._compilation_and_elaboration_configuration: LogicSimulatorCompilationAndElaborationRequest
-        self._regression_configuration: RegressionConfiguration
+        self._compilation_request: LogicSimulatorCompilationRequest
+        self._elaboration_request: LogicSimulatorElaborationRequest
+        self._compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest
+        self._regression_request: RegressionConfiguration
         self._compilation_report: LogicSimulatorCompilationReport
         self._elaboration_report: LogicSimulatorElaborationReport
         self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
@@ -887,20 +890,20 @@ class RegressionCommand(Command):
         return self._do_compile_and_elaborate
 
     @property
-    def compilation_configuration(self) -> LogicSimulatorCompilationRequest:
-        return self._compilation_configuration
+    def compilation_request(self) -> LogicSimulatorCompilationRequest:
+        return self._compilation_request
 
     @property
-    def elaboration_configuration(self) -> LogicSimulatorElaborationRequest:
-        return self._elaboration_configuration
+    def elaboration_request(self) -> LogicSimulatorElaborationRequest:
+        return self._elaboration_request
 
     @property
-    def compilation_and_elaboration_configuration(self) -> LogicSimulatorCompilationAndElaborationRequest:
-        return self._compilation_and_elaboration_configuration
+    def compilation_and_elaboration_request(self) -> LogicSimulatorCompilationAndElaborationRequest:
+        return self._compilation_and_elaboration_request
 
     @property
-    def regression_configuration(self) -> RegressionConfiguration:
-        return self._regression_configuration
+    def regression_request(self) -> RegressionConfiguration:
+        return self._regression_request
 
     @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
@@ -1067,41 +1070,41 @@ class RegressionCommand(Command):
             compilation_request.custom_dut_defines_boolean = self.fsoc_report.defines_boolean
 
     def compile(self, phase: Phase):
-        self._compilation_configuration = self.regression.render_cmp_config(self.ip_definition.target)
-        self._compilation_configuration.print_to_terminal = self.rmh.print_trace
+        self._compilation_request = self.regression.render_cmp_config(self.ip_definition.target)
+        self._compilation_request.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
-                self.fsoc_add_to_compilation_request(self._compilation_configuration)
-        self.compilation_configuration.dry_mode = self.dry_mode
+                self.fsoc_add_to_compilation_request(self._compilation_request)
+        self.compilation_request.dry_mode = self.dry_mode
         self.rmh.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
-        self._compilation_report = self.simulator.compile(self.ip, self.compilation_configuration, self.scheduler)
+        self._compilation_report = self.simulator.compile(self.ip, self.compilation_request, self.scheduler)
 
     def elaborate(self, phase: Phase):
-        self._elaboration_configuration = self.regression.render_elab_config(self.ip_definition.target)
-        self._elaboration_configuration.print_to_terminal = self.rmh.print_trace
+        self._elaboration_request = self.regression.render_elab_config(self.ip_definition.target)
+        self._elaboration_request.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
-                self.fsoc_add_to_compilation_request(self._elaboration_configuration)
-        self._elaboration_configuration.dry_mode = self.dry_mode
+                self.fsoc_add_to_compilation_request(self._elaboration_request)
+        self._elaboration_request.dry_mode = self.dry_mode
         self.rmh.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
-        self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_configuration, self.scheduler)
+        self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_request, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
-        self._compilation_and_elaboration_configuration = self.regression.render_cmp_elab_config(self.ip_definition.target)
-        self._compilation_and_elaboration_configuration.print_to_terminal = self.rmh.print_trace
+        self._compilation_and_elaboration_request = self.regression.render_cmp_elab_config(self.ip_definition.target)
+        self._compilation_and_elaboration_request.print_to_terminal = self.rmh.print_trace
         if self.ip.has_dut:
             if self.ip.dut.type == DutType.FUSE_SOC:
-                self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_configuration)
-        self._compilation_and_elaboration_configuration.dry_mode = self.dry_mode
+                self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_request)
+        self._compilation_and_elaboration_request.dry_mode = self.dry_mode
         self.rmh.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
-        self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_configuration, self.scheduler)
+        self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_request, self.scheduler)
 
     def simulate(self, phase: Phase):
-        self._regression_configuration = RegressionConfiguration()
-        self.regression_configuration.target = self.ip_definition.target
-        self.regression_configuration.dry_mode = self.dry_mode
-        self.regression_configuration.app = self.app
-        self._regression_runner = self.regression_database.get_regression_runner(self.ip, self.regression, self.simulator, self.regression_configuration)
+        self._regression_request = RegressionConfiguration()
+        self.regression_request.target = self.ip_definition.target
+        self.regression_request.dry_mode = self.dry_mode
+        self.regression_request.app = self.app
+        self._regression_runner = self.regression_database.get_regression_runner(self.ip, self.regression, self.simulator, self.regression_request)
         self.rmh.info(f"Starting Regression '{self.regression.name}' for IP '{self.ip}' with '{self.simulator}' ...")
         self._regression_report = self.regression_runner.execute_regression(self.scheduler)
         self.rmh.info("Finished Regression")
@@ -1195,9 +1198,9 @@ class RegressionCommand(Command):
 
     def print_regression_report(self, phase: Phase):
         if self.dry_mode:
-            self.rmh.info(f" Regression Dry Mode - {len(self.regression_configuration.simulation_configs)} tests would have been run:")
-            for seed in self.regression_configuration.simulation_configs:
-                simulation_config = self.regression_configuration.simulation_configs[seed]
+            self.rmh.info(f" Regression Dry Mode - {len(self.regression_request.simulation_configs)} tests would have been run:")
+            for seed in self.regression_request.simulation_configs:
+                simulation_config = self.regression_request.simulation_configs[seed]
                 print(f" * {simulation_config.summary_str()}")
             if self.parsed_cli_arguments.app == "dsim":
                 self.rmh.info(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")

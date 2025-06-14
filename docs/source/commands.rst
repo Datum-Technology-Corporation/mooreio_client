@@ -130,7 +130,7 @@ An optional target may be specified for the IP. Ex: ``my_ip#target``.
 
 While the controls for individual steps (DUT setup, compilation, elaboration and simulation) are exposed, it is
 recommended to let `mio sim` manage this process as much as possible.  In the event of corrupt simulator artifacts,
-see `mio clean`.  Combining any of the step-control arguments (``-D``, ``-C``, ``-E``, ``-S``) with missing steps is illegal
+see `mio clean`.  Combining any of the step-control arguments (``-D``, ``-X``, ``-C``, ``-E``, ``-S``) with missing steps is illegal
 (ex: ``-DS``).
 
 Two types of arguments (``--args``) can be passed: compilation (``+define+NAME[=VALUE]``) and simulation (``+NAME[=VALUE]``).
@@ -146,14 +146,25 @@ Options
 ================  =========================  ===========================
 ``-t TEST``       ``--test TEST``            Specify the UVM test to be run.
 ``-s SEED``       ``--seed SEED``            Positive Integer. Specify randomization seed  If none is provided, a random one will be picked.
-``-v VERBOSITY``  ``--verbosity VERBOSITY``  Specifies UVM logging verbosity: ``none``, ``low``, ``medium``, ``high``, ``debug``. [default: ``medium``]
+``-v VERBOSITY``  ``--verbosity VERBOSITY``  Specifies UVM logging verbosity: ``none``, ``low``, ``medium``, ``high``, ``full``, ``debug``. [default: ``medium``]
 ``-+ ARGS``       ``--args      ARGS``       Specifies compilation-time (``+define+ARG[=VAL]``) or simulation-time (``+ARG[=VAL]``) arguments
 ``-e ERRORS``     ``--errors    ERRORS``     Specifies the number of errors at which compilation/elaboration/simulation is terminated.  [default: ``10``]
 ``-a APP``        ``--app APP``              Specifies simulator application to use: ``dsim``, ``vivado``.
 ``-w``            ``--waves``                Enable wave capture to disk.
 ``-c``            ``--cov``                  Enable code & functional coverage capture.
 ``-g``            ``--gui``                  Invokes simulator in graphical or 'GUI' mode.
+``-d DEST``       ``--dry-run   DEST``       Captures simulation command into tarball at DEST instead of invoking simulator.
 ================  =========================  ===========================
+
+Steps
+^^^^^
+======  ======================================================
+``-D``   Prepare Device-Under-Test (DUT) for logic simulation. Ex: invoke FuseSoC to prepare core(s) for compilation.
+``-X``   Invoke Datum SiArx for code generation.
+``-C``   Compile
+``-E``   Elaborate
+``-S``   Simulate
+======  ======================================================
 
 
 Examples

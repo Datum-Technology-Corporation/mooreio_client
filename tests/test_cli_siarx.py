@@ -88,6 +88,11 @@ class TestCliSiArx(TestBase):
         result = self.siarx(capsys, self.mapu_update_path, '2')
         result = self.one_shot_sim_ip(capsys, self.mapu_update_path, app, ip, test, 1)
 
+    def cli_siarx_autoupdate_project_sim_ip_test(self, capsys, app: str, ip: str, test: str):
+        self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
+        result = self.one_shot_siarx_sim_ip(capsys, self.mapu_update_path, app, ip, test, 1)
+
     def cli_siarx_sim_ip_test(self, capsys, path: Path, app: str, ip: str, test: str):
         self.reset_workspace()
         result = self.login(capsys, 'admin', 'admin')
@@ -130,8 +135,8 @@ class TestCliSiArx(TestBase):
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
-    def test_cli_siarx_update_project_sim_mapu_rand_stim_dsim(self, capsys):
-        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mapu_b', 'rand_stim')
+    def test_cli_siarx_autoupdate_project_sim_mapu_rand_stim_dsim(self, capsys):
+        self.cli_siarx_autoupdate_project_sim_ip_test(capsys, 'dsim', 'uvmt_mapu_b', 'rand_stim')
 
 
     ###################################################################################################################
@@ -164,8 +169,8 @@ class TestCliSiArx(TestBase):
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
-    def test_cli_siarx_update_project_sim_mstream_rand_stim_dsim(self, capsys):
-        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mstream_st', 'rand_stim')
+    def test_cli_siarx_autoupdate_project_sim_mstream_rand_stim_dsim(self, capsys):
+        self.cli_siarx_autoupdate_project_sim_ip_test(capsys, 'dsim', 'uvmt_mstream_st', 'rand_stim')
 
 
     ###################################################################################################################
@@ -198,8 +203,8 @@ class TestCliSiArx(TestBase):
     @pytest.mark.single_process
     #@pytest.mark.integration
     @pytest.mark.dsim
-    def test_cli_siarx_update_project_sim_mpb_rand_stim_dsim(self, capsys):
-        self.cli_siarx_update_project_sim_ip_test(capsys, 'dsim', 'uvmt_mpb_st', 'bit_bash')
+    def test_cli_siarx_autoupdate_project_sim_mpb_rand_stim_dsim(self, capsys):
+        self.cli_siarx_autoupdate_project_sim_ip_test(capsys, 'dsim', 'uvmt_mpb_st', 'bit_bash')
 
 
     ###################################################################################################################

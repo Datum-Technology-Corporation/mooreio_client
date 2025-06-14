@@ -3,7 +3,7 @@
 #######################################################################################################################
 from typing import List, Optional
 
-from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat, conlist
+from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat, conlist, StrictInt
 from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
     VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST, PosixPathList, PosixPath, PosixDirName
 from enum import Enum
@@ -42,7 +42,7 @@ class DSimCloudComputeSizes(Enum):
 
 class Project(Model):
     sync: bool
-    sync_id: Optional[PositiveInt] = 0
+    sync_id: Optional[StrictInt] = -1
     local_mode: bool
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
