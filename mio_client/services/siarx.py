@@ -35,11 +35,12 @@ class SiArxMode(Enum):
     UPDATE_PROJECT = "Update existing Project"
 
 
-class SiArxConfiguration(Model):
+class SiArxRequest(Model):
     input_path: Path = Path()
     mode: SiArxMode
     force_update: bool
     project_id: str
+    quiet: Optional[bool] = True
 
 
 class SiArxReport(Model):
@@ -177,7 +178,7 @@ class SiArxService(Service):
     def get_version(self) -> Version:
         return Version('1.0.0')
 
-    def gen_project(self, configuration: SiArxConfiguration) -> SiArxReport:
+    def gen_project(self, configuration: SiArxRequest) -> SiArxReport:
         report = SiArxReport()
         report.output_path = configuration.input_path
         response: SiArxResponse
@@ -202,9 +203,9 @@ class SiArxService(Service):
                     self.update_codebase(configuration, response, report)
             return report
 
-    def extract_response(self, configuration: SiArxConfiguration, response: SiArxResponse, report: SiArxReport):
-        if configuration.mode == SiArxMode.NEW_PROJECT:
-            response.extract_path = configuration.input_path
+    def extract_response(self, request: SiArxRequest, response: SiArxResponse, report: SiArxReport):
+        if request.mode == SiArxMode.NEW_PROJECT:
+            response.extract_path = request.input_path
         else:
             response.extract_path = self._work_path / response.project_name
             self.rmh.create_directory(response.extract_path)
@@ -214,13 +215,14 @@ class SiArxService(Service):
                 tar.extractall(path=response.extract_path, filter='data')
         except Exception as e:
             report.success = False
-            report.errors.append(f"Failed to unpack Project files at path '{configuration.input_path}': {e}")
+            report.errors.append(f"Failed to unpack Project files at path '{request.input_path}': {e}")
         else:
             for ip in response.ips:
                 for package in ip.packages:
-                    self.rmh.info(f"Processing IP {ip.name}/{package.name} ...")
-                    if configuration.mode == SiArxMode.NEW_PROJECT:
-                        package.extract_path = configuration.input_path / package.path
+                    if not request.quiet:
+                        self.rmh.info(f"Processing IP {ip.name}/{package.name} ...")
+                    if request.mode == SiArxMode.NEW_PROJECT:
+                        package.extract_path = request.input_path / package.path
                     else:
                         package.extract_path = self._work_path / package.name
                         self.rmh.create_directory(response.extract_path)
@@ -232,12 +234,12 @@ class SiArxService(Service):
                         report.success = False
                         report.errors.append(f"Failed to unpack IP {ip.name}/{package.name} at path '{package.extract_path}': {e}")
 
-    def update_codebase(self, configuration: SiArxConfiguration, response: SiArxResponse, report: SiArxReport):
+    def update_codebase(self, request: SiArxRequest, response: SiArxResponse, report: SiArxReport):
         for file in response.files:
             extracted_file_path: Path = response.extract_path / file.path
             current_file_path: Path = self.rmh.project_root_path / file.path
             if self.rmh.file_exists(current_file_path):
-                if file.replace_user_file and configuration.force_update:
+                if file.replace_user_file and request.force_update:
                     self.rmh.warning(f"Replacing '{current_file_path}'")
                     self.rmh.move_file(extracted_file_path, current_file_path)
         for ip in response.ips:
@@ -249,7 +251,7 @@ class SiArxService(Service):
                         try:
                             user_file_sections = self.find_user_file_sections(current_file_path)
                         except Exception as e:
-                            if configuration.force_update:
+                            if request.force_update:
                                 self.rmh.warning(f"Replacing '{current_file_path}'")
                                 self.rmh.move_file(extracted_file_path, current_file_path)
                             else:

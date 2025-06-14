@@ -7,7 +7,7 @@ import tarfile
 from pathlib import Path
 from typing import List, Dict
 
-from ..services.siarx import SiArxReport, SiArxConfiguration, SiArxMode, SiArxService
+from ..services.siarx import SiArxReport, SiArxRequest, SiArxMode, SiArxService
 from ..services.fsoc import FuseSocSetupCoreRequest, FuseSocSetupCoreReport
 from ..core.configuration import LogicSimulators
 from ..services.regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner, Regression
@@ -211,7 +211,7 @@ class SimulateCommand(Command):
         return self._fsoc_request
 
     @property
-    def siarx_request(self) -> SiArxConfiguration:
+    def siarx_request(self) -> SiArxRequest:
         return self._siarx_request
 
     @property
@@ -470,7 +470,7 @@ class SimulateCommand(Command):
 
     def perform_siarx_gen(self, phase: Phase):
         self.rmh.info(f"Generating code with SiArx ...")
-        self._siarx_request = SiArxConfiguration(
+        self._siarx_request = SiArxRequest(
             input_path=self.rmh.project_root_path,
             mode=SiArxMode.UPDATE_PROJECT,
             project_id=str(self.rmh.configuration.project.sync_id),

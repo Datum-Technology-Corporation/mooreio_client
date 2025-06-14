@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List
 
-from ..services.siarx import SiArxService, SiArxMode, SiArxConfiguration, SiArxReport
+from ..services.siarx import SiArxService, SiArxMode, SiArxRequest, SiArxReport
 from ..services.init import InitServiceModes, InitServiceReport, InitService, InitProjectConfiguration, \
     InitIpConfiguration
 from ..core.service import ServiceType
@@ -305,7 +305,7 @@ class SiArxCommand(Command):
         self._force_update: bool = False
         self._input_path: Path = Path
         self._siarx_service: SiArxService
-        self._configuration: SiArxConfiguration
+        self._configuration: SiArxRequest
         self._report: SiArxReport
         self._success: bool = False
 
@@ -338,7 +338,7 @@ class SiArxCommand(Command):
         return self._siarx_service
     
     @property
-    def configuration(self) -> SiArxConfiguration:
+    def configuration(self) -> SiArxRequest:
         return self._configuration
 
     @property
@@ -423,11 +423,12 @@ class SiArxCommand(Command):
 
     def perform_siarx_gen(self, phase: Phase):
         self.rmh.info(f"Generating code with SiArx ...")
-        self._configuration = SiArxConfiguration(
+        self._configuration = SiArxRequest(
             input_path=self.input_path,
             mode=self.mode,
             project_id=self._project_id,
-            force_update=self._force_update
+            force_update=self._force_update,
+            quiet=False
         )
         self._report = self.siarx_service.gen_project(self._configuration)
         self._success = self._report.success
