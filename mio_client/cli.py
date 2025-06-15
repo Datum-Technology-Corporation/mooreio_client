@@ -57,42 +57,49 @@ Full Command List (`mio help CMD` for help on a specific command):
 
 
 #######################################################################################################################
-# Main
+# Global Variables
 #######################################################################################################################
 #URL_BASE = 'https://mooreio.com'
 URL_BASE = 'http://localhost:8000'
 TEST_MODE = False
 USER_HOME_PATH = pathlib.Path(os.path.expanduser("~/.mio"))
 root_manager: RootManager
+
+
+#######################################################################################################################
+# Main
+#######################################################################################################################
 def main(args=None) -> int:
     """
     Main entry point. Performs the following steps in order:
-    - Create CLI argument parser
-    - Find all commands and register them
-    - Parse CLI arguments
-    - Find the command which matches the parsed arguments
-    - Create the Root instance
-    - Run the command via the Root instance
+    - 1. Create CLI argument parser
+    - 2. Find all commands and register them
+    - 3. Parse CLI arguments
+    - 4. Find the command which matches the parsed arguments
+    - 5. Create the Root Manage instance
+    - 6. Run the command via the Root instance
     :return: Exit code
     """
     global root_manager
-
+    # 1. Create CLI argument parser
     try:
         parser = create_top_level_parser()
         subparsers = parser.add_subparsers(dest='command', help='Sub-command help')
+        # 2. Find all commands and register them
         commands = register_all_commands(subparsers)
+        # 3. Parse CLI arguments
         args = parser.parse_args(args)
     except Exception as e:
         print(f"Error during parsing of CLI arguments: {e}", file=sys.stderr)
         return 1
-
+    # Version/Help (--version, --help) commands are handled here
     if args.version:
         print_version_text()
         return 0
     if (not args.command) or args.help:
         print_help_text()
         return 0
-
+    # 4. Find the command which matches the parsed arguments
     command = next(
         (
             cmd for cmd in commands
@@ -103,7 +110,7 @@ def main(args=None) -> int:
     if not command:
         print(f"Unknown command '{args.command}' specified.", file=sys.stderr)
         return 1
-
+     # If we're using a custom Work Directory, check that it exists
     wd = None
     if args.wd is None:
         wd = pathlib.Path.cwd()
@@ -113,13 +120,13 @@ def main(args=None) -> int:
         except Exception as e:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
-
+    # 5. Create the Root Manage instance
     root_manager = RootManager("Moore.io Client Root Manager", wd, URL_BASE, TEST_MODE, USER_HOME_PATH)
     command.parsed_cli_arguments = args
-
+    # Enable Moore.io debug output
     if args.dbg:
         root_manager.print_trace = True
-
+    # 6. Run the command via the Root instance
     return root_manager.run(command)
 
 

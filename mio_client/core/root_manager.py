@@ -25,6 +25,9 @@ from .service import ServiceDataBase
 from .user import User
 
 
+#######################################################################################################################
+# Support Types
+#######################################################################################################################
 class PhaseEndProcessException(Exception):
     def __init__(self, message: str = ""):
         self.message = message
