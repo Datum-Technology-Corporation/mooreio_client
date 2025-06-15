@@ -69,6 +69,6 @@ root_path="docs"
 offline=false
 
 [project]
-local_mode=true
+local_mode=false
 
 [package_management]

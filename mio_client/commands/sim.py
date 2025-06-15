@@ -365,6 +365,8 @@ class SimulateCommand(Command):
                 return
             else:
                 self._app = self.rmh.configuration.logic_simulation.default_simulator
+        if self._dry_run:
+            self.rmh.configuration.project.local_mode = True
         if self.rmh.configuration.authentication.offline:
             self._do_invoke_siarx = False
         elif self.rmh.configuration.project.sync_id == -1:
@@ -605,6 +607,7 @@ class SimulateCommand(Command):
                 return None  # Exclude this file
             return tarinfo  # Include this file
         # Assemble shell script
+        # TODO Add the commands themselves to the Request object so we don't need to load them from disk
         cmd_log_files: List[Path] = []
         if self.do_compile:
             if self.compilation_report.has_sv_files_to_compile:
