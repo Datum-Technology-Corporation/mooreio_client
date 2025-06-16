@@ -3,7 +3,7 @@
 #######################################################################################################################
 from typing import Dict, List
 
-from ..services.doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceConfiguration
+from ..services.doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceRequest
 from ..core.ip import IpLocationType, Ip
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
@@ -110,7 +110,7 @@ class DoxygenCommand(Command):
         self._ip: List['Ip'] = []
         self._scheduler: JobScheduler
         self._doxygen: DoxygenService
-        self._configuration: DoxygenServiceConfiguration = DoxygenServiceConfiguration()
+        self._configuration: DoxygenServiceRequest = DoxygenServiceRequest()
         self._reports: Dict[Ip, DoxygenServiceReport] = {}
         self._all_ip: bool = False
         self._success: bool = False
@@ -136,7 +136,7 @@ class DoxygenCommand(Command):
         return self._doxygen
 
     @property
-    def configuration(self) -> DoxygenServiceConfiguration:
+    def configuration(self) -> DoxygenServiceRequest:
         return self._configuration
 
     @property

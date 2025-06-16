@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Dict, List
 
 from ..services.siarx import SiArxService, SiArxMode, SiArxRequest, SiArxReport
-from ..services.init import InitServiceModes, InitServiceReport, InitService, InitProjectConfiguration, \
-    InitIpConfiguration
+from ..services.init import InitServiceModes, InitServiceReport, InitService, InitProjectRequest, \
+    InitIpRequest
 from ..core.service import ServiceType
 from ..core.phase import Phase
 from ..core.command import Command
@@ -49,8 +49,8 @@ class InitCommand(Command):
         self._prompt_user: bool = False
         self._user_input_file: Path = Path()
         self._mode: InitServiceModes = InitServiceModes.UNDEFINED
-        self._init_project_configuration: InitProjectConfiguration
-        self._init_ip_configuration: InitIpConfiguration
+        self._init_project_configuration: InitProjectRequest
+        self._init_ip_configuration: InitIpRequest
         self._init_service: InitService
         self._report: InitServiceReport
         self._success: bool = False
@@ -72,11 +72,11 @@ class InitCommand(Command):
         return self._mode
 
     @property
-    def init_project_configuration(self) -> InitProjectConfiguration:
+    def init_project_configuration(self) -> InitProjectRequest:
         return self._init_project_configuration
 
     @property
-    def init_ip_configuration(self) -> InitIpConfiguration:
+    def init_ip_configuration(self) -> InitIpRequest:
         return self._init_ip_configuration
 
     @property
@@ -182,7 +182,7 @@ class InitCommand(Command):
                 ip_directories.append(ip_directory.strip())
             sim_directory: str = input("Enter the logic simulation directory: ").strip()
             docs_directory: str = input("Enter the documentation directory: ").strip()
-            self._project_configuration: InitProjectConfiguration = InitProjectConfiguration(
+            self._project_configuration: InitProjectRequest = InitProjectRequest(
                 input_path=str(self.rmh.wd),
                 name=name.strip().lower(),
                 full_name=full_name.strip(),
@@ -191,7 +191,7 @@ class InitCommand(Command):
                 docs_directory=docs_directory
             )
         else:
-            self._init_project_configuration = InitProjectConfiguration.load_from_yaml(self.user_input_file)
+            self._init_project_configuration = InitProjectRequest.load_from_yaml(self.user_input_file)
 
     def fill_ip_configuration_from_user_input(self):
         if self.prompt_user:
@@ -248,7 +248,7 @@ class InitCommand(Command):
                 hdl_tests_path = input("Enter the tests directory (path): ").strip()
                 hdl_tests_name_template = input(
                     f"Enter the template for test class names (e.g., '{name}_{{{{ name }}}}_test_c' ): ").strip()
-            self._init_ip_configuration = InitIpConfiguration(
+            self._init_ip_configuration = InitIpRequest(
                 input_path=str(self.rmh.wd),
                 vendor=vendor,
                 name=name,
@@ -273,7 +273,7 @@ class InitCommand(Command):
                 hdl_tests_name_template=hdl_tests_name_template
             )
         else:
-            self._init_ip_configuration = InitIpConfiguration.load_from_yaml(self.user_input_file)
+            self._init_ip_configuration = InitIpRequest.load_from_yaml(self.user_input_file)
 
 
 
@@ -305,7 +305,7 @@ class SiArxCommand(Command):
         self._force_update: bool = False
         self._input_path: Path = Path
         self._siarx_service: SiArxService
-        self._configuration: SiArxRequest
+        self._request: SiArxRequest
         self._report: SiArxReport
         self._success: bool = False
 
@@ -338,8 +338,8 @@ class SiArxCommand(Command):
         return self._siarx_service
     
     @property
-    def configuration(self) -> SiArxRequest:
-        return self._configuration
+    def request(self) -> SiArxRequest:
+        return self._request
 
     @property
     def report(self) -> SiArxReport:
@@ -423,14 +423,14 @@ class SiArxCommand(Command):
 
     def perform_siarx_gen(self, phase: Phase):
         self.rmh.info(f"Generating code with SiArx ...")
-        self._configuration = SiArxRequest(
+        self._request = SiArxRequest(
             input_path=self.input_path,
             mode=self.mode,
             project_id=self._project_id,
             force_update=self._force_update,
             quiet=False
         )
-        self._report = self.siarx_service.gen_project(self._configuration)
+        self._report = self.siarx_service.gen_project(self._request)
         self._success = self._report.success
         if not self._success:
             phase.error = Exception(f"Failed to generate SiArx Project: {len(self._report.errors)}E {len(self._report.warnings)}W")

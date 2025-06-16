@@ -178,19 +178,19 @@ class SiArxService(Service):
     def get_version(self) -> Version:
         return Version('1.0.0')
 
-    def gen_project(self, configuration: SiArxRequest) -> SiArxReport:
+    def gen_project(self, request: SiArxRequest) -> SiArxReport:
         report = SiArxReport()
-        report.output_path = configuration.input_path
+        report.output_path = request.input_path
         response: SiArxResponse
         try:
             data = {
-                'project_id': configuration.project_id,
+                'project_id': request.project_id,
             }
             raw_response = self.rmh.web_api_call(HTTPMethod.POST, 'siarx/gen', data)
             response = SiArxResponse.model_validate(raw_response.json())
         except Exception as e:
             report.success = False
-            report.errors.append(f"SiArx failed to generate response for Project '{configuration.project_id}': {e}")
+            report.errors.append(f"SiArx failed to generate response for Project '{request.project_id}': {e}")
             return report
         else:
             report.infos = response.info_report()
@@ -198,9 +198,9 @@ class SiArxService(Service):
             report.errors = response.error_report()
             report.success = response.success
             if response.success:
-                self.extract_response(configuration, response, report)
-                if configuration.mode == SiArxMode.UPDATE_PROJECT:
-                    self.update_codebase(configuration, response, report)
+                self.extract_response(request, response, report)
+                if request.mode == SiArxMode.UPDATE_PROJECT:
+                    self.update_codebase(request, response, report)
             return report
 
     def extract_response(self, request: SiArxRequest, response: SiArxResponse, report: SiArxReport):

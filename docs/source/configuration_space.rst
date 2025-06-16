@@ -485,3 +485,30 @@ root_path
 - Default: ``syn``
 
 Project-relative path to directory where logic synthesis results and reports are stored.
+
+
+
+
+
+package_management
+------------------
+
+fsoc_cores_global_paths
+***********************
+
+- Required: Yes
+- Type: ``List[Path]``
+- Default: ``[]``
+
+FuseSoc searches these absolute paths for core files.
+
+
+fsoc_cores_local_paths
+**********************
+
+- Required: Yes
+- Type: ``List[Path]``
+- Default: ``["dv","rtl"]``
+
+FuseSoc searches these relative (to the project root) paths for core files.
+

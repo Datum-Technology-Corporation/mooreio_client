@@ -11,7 +11,7 @@ import pytest
 import yaml
 
 import mio_client.cli
-from mio_client.services.init import InitProjectConfiguration, InitIpConfiguration
+from mio_client.services.init import InitProjectRequest, InitIpRequest
 from .common import OutputCapture, TestBase
 
 
@@ -43,12 +43,12 @@ class TestInit(TestBase):
         self.uninit_local_simplest_def_ss_tb_answers_data = uninit_local_simplest_def_ss_tb_answers_data
 
     def init_project_configuration_creation(self, data: Dict):
-        init_project_configuration = InitProjectConfiguration(**data)
-        assert isinstance(init_project_configuration, InitProjectConfiguration)
+        init_project_configuration = InitProjectRequest(**data)
+        assert isinstance(init_project_configuration, InitProjectRequest)
 
     def init_ip_configuration_creation(self, data: Dict):
-        init_ip_configuration = InitIpConfiguration(**data)
-        assert isinstance(init_ip_configuration, InitIpConfiguration)
+        init_ip_configuration = InitIpRequest(**data)
+        assert isinstance(init_ip_configuration, InitIpRequest)
 
     @pytest.mark.core
     def test_init_project_configuration_creation(self):

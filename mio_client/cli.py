@@ -17,7 +17,7 @@ VERSION = "2.1.0"
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}
                                     User Manual: http://mooreio-client.rtfd.io/
-             https://mooreio.com - Copyright 2020-2024 Datum Technology Corporation - https://datumtc.ca
+             https://mooreio.com - Copyright 2020-2025 Datum Technology Corporation - https://datumtc.ca
 Usage:
   mio [--version] [--help]
   mio [--wd WD] [--dbg] CMD [OPTIONS]
@@ -110,7 +110,7 @@ def main(args=None) -> int:
     if not command:
         print(f"Unknown command '{args.command}' specified.", file=sys.stderr)
         return 1
-     # If we're using a custom Work Directory, check that it exists
+     # If we're using a custom Work Directory, ensure it exists
     wd = None
     if args.wd is None:
         wd = pathlib.Path.cwd()
@@ -120,13 +120,13 @@ def main(args=None) -> int:
         except Exception as e:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
-    # 5. Create the Root Manage instance
+    # 5. Create the Root Manager instance
     root_manager = RootManager("Moore.io Client Root Manager", wd, URL_BASE, TEST_MODE, USER_HOME_PATH)
     command.parsed_cli_arguments = args
-    # Enable Moore.io debug output
+    # Enable Moore.io debug output if specified
     if args.dbg:
         root_manager.print_trace = True
-    # 6. Run the command via the Root instance
+    # 6. Run the command via the Root Manager instance
     return root_manager.run(command)
 
 

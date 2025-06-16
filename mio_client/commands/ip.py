@@ -497,7 +497,7 @@ class CleanCommand(Command):
         self._deep_clean: bool
         self._scheduler: JobScheduler
         self._simulators: list[LogicSimulator] = []
-        self._configuration: LogicSimulatorLibraryDeletionRequest = LogicSimulatorLibraryDeletionRequest()
+        self._request: LogicSimulatorLibraryDeletionRequest = LogicSimulatorLibraryDeletionRequest()
         self._reports: Dict[LogicSimulator, LogicSimulatorLibraryDeletionReport] = {}
         self._success: bool = False
 
@@ -526,8 +526,8 @@ class CleanCommand(Command):
         return self._scheduler
 
     @property
-    def configuration(self) -> LogicSimulatorLibraryDeletionRequest:
-        return self._configuration
+    def request(self) -> LogicSimulatorLibraryDeletionRequest:
+        return self._request
 
     @property
     def reports(self) -> Dict[LogicSimulator, LogicSimulatorLibraryDeletionReport]:
@@ -586,7 +586,7 @@ class CleanCommand(Command):
         else:
             self._success = True
             for simulator in self._simulators:
-                self._reports[simulator] = simulator.delete_library(self.ip, self.configuration, self.scheduler)
+                self._reports[simulator] = simulator.delete_library(self.ip, self.request, self.scheduler)
                 self._success &= self._reports[simulator].success
             if not self._success:
                 phase.error = Exception(f"Failed to clean IP '{self.ip}'")

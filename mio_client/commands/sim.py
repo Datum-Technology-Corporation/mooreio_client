@@ -10,7 +10,7 @@ from typing import List, Dict
 from ..services.siarx import SiArxReport, SiArxRequest, SiArxMode, SiArxService
 from ..services.fsoc import FuseSocSetupCoreRequest, FuseSocSetupCoreReport
 from ..core.configuration import LogicSimulators
-from ..services.regression import RegressionDatabase, RegressionReport, RegressionConfiguration, RegressionRunner, Regression
+from ..services.regression import RegressionDatabase, RegressionReport, RegressionRequest, RegressionRunner, Regression
 from ..core.ip import Ip, IpDefinition, IpPkgType, DutType, IpLocationType
 from ..core.command import Command
 from ..core.phase import Phase
@@ -813,13 +813,15 @@ class RegressionCommand(Command):
         self._simulator: LogicSimulator = None
         self._regression_runner: RegressionRunner = None
         self._scheduler: JobScheduler = None
+        self._do_prepare_dut: bool = True
+        self._do_invoke_siarx: bool = True
         self._do_compile: bool = False
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
         self._compilation_request: LogicSimulatorCompilationRequest
         self._elaboration_request: LogicSimulatorElaborationRequest
         self._compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest
-        self._regression_request: RegressionConfiguration
+        self._regression_request: RegressionRequest
         self._compilation_report: LogicSimulatorCompilationReport
         self._elaboration_report: LogicSimulatorElaborationReport
         self._compilation_and_elaboration_report: LogicSimulatorCompilationAndElaborationReport
@@ -883,6 +885,16 @@ class RegressionCommand(Command):
         return self._scheduler
 
     @property
+    def siarx_service(self) -> SiArxService:
+        return self._siarx_service
+
+    @property
+    def do_prepare_dut(self) -> bool:
+        return self._do_prepare_dut
+    @property
+    def do_invoke_siarx(self) -> bool:
+        return self._do_invoke_siarx
+    @property
     def do_compile(self) -> bool:
         return self._do_compile
     @property
@@ -891,6 +903,14 @@ class RegressionCommand(Command):
     @property
     def do_compile_and_elaborate(self) -> bool:
         return self._do_compile_and_elaborate
+
+    @property
+    def fsoc_request(self) -> FuseSocSetupCoreRequest:
+        return self._fsoc_request
+
+    @property
+    def siarx_request(self) -> SiArxRequest:
+        return self._siarx_request
 
     @property
     def compilation_request(self) -> LogicSimulatorCompilationRequest:
@@ -905,8 +925,16 @@ class RegressionCommand(Command):
         return self._compilation_and_elaboration_request
 
     @property
-    def regression_request(self) -> RegressionConfiguration:
+    def regression_request(self) -> RegressionRequest:
         return self._regression_request
+
+    @property
+    def fsoc_report(self) -> FuseSocSetupCoreReport:
+        return self._fsoc_report
+
+    @property
+    def siarx_report(self) -> SiArxReport:
+        return self._siarx_report
 
     @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
@@ -970,6 +998,10 @@ class RegressionCommand(Command):
                 self._app = self.rmh.configuration.logic_simulation.default_simulator.value
         if self.app == LogicSimulators.DSIM:
             self.rmh.configuration.project.local_mode = True
+        if self.rmh.configuration.authentication.offline:
+            self._do_invoke_siarx = False
+        elif self.rmh.configuration.project.sync_id == -1:
+            self._do_invoke_siarx = False
 
     def phase_post_scheduler_discovery(self, phase: Phase):
         try:
@@ -1024,6 +1056,10 @@ class RegressionCommand(Command):
         self.prepare_dut(phase)
         if phase.error:
             return
+        if self.do_invoke_siarx:
+            self.perform_siarx_gen(phase)
+            if phase.error:
+                return
         if not self.app == LogicSimulators.DSIM:
             if self.do_compile:
                 self.compile(phase)
@@ -1060,6 +1096,26 @@ class RegressionCommand(Command):
                     else:
                         if not self._fsoc_report.success:
                             phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
+
+    def perform_siarx_gen(self, phase: Phase):
+        self.rmh.info(f"Generating code with SiArx ...")
+        self._siarx_request = SiArxRequest(
+            input_path=self.rmh.project_root_path,
+            mode=SiArxMode.UPDATE_PROJECT,
+            project_id=str(self.rmh.configuration.project.sync_id),
+            force_update=False
+        )
+        self._siarx_report = self.siarx_service.gen_project(self._siarx_request)
+        self._success = self._siarx_report.success
+        if not self._success:
+            phase.error = Exception(f"Failed to generate SiArx Project: {len(self._siarx_report.errors)}E {len(self._siarx_report.warnings)}W")
+            if self.rmh.print_trace:
+                for info in self._siarx_report.infos:
+                    self.rmh.info(info)
+            for warning in self._siarx_report.warnings:
+                self.rmh.warning(warning)
+            for error in self._siarx_report.errors:
+                self.rmh.error(error)
 
     def fsoc_add_to_compilation_request(self, compilation_request: LogicSimulatorCompilationRequest):
         if self._fsoc_report:
@@ -1103,7 +1159,7 @@ class RegressionCommand(Command):
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_request, self.scheduler)
 
     def simulate(self, phase: Phase):
-        self._regression_request = RegressionConfiguration()
+        self._regression_request = RegressionRequest()
         self.regression_request.target = self.ip_definition.target
         self.regression_request.dry_mode = self.dry_mode
         self.regression_request.app = self.app
@@ -1201,9 +1257,9 @@ class RegressionCommand(Command):
 
     def print_regression_report(self, phase: Phase):
         if self.dry_mode:
-            self.rmh.info(f" Regression Dry Mode - {len(self.regression_request.simulation_configs)} tests would have been run:")
-            for seed in self.regression_request.simulation_configs:
-                simulation_config = self.regression_request.simulation_configs[seed]
+            self.rmh.info(f" Regression Dry Mode - {len(self.regression_request.simulation_requests)} tests would have been run:")
+            for seed in self.regression_request.simulation_requests:
+                simulation_config = self.regression_request.simulation_requests[seed]
                 print(f" * {simulation_config.summary_str()}")
             if self.parsed_cli_arguments.app == "dsim":
                 self.rmh.info(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
