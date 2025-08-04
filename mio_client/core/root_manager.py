@@ -48,14 +48,13 @@ class RootManager:
     """
     Component which performs all vital tasks and executes phases.
     """
-    def __init__(self, name: str, wd: Path, url_base: str, test_mode: bool = False, user_home_path:Path=os.path.expanduser("~/.mio")):
+    def __init__(self, name: str, wd: Path, test_mode: bool = False, user_home_path:Path=os.path.expanduser("~/.mio")):
         """
         Initialize an instance of the Root Manager.
 
         :param name: The name of the instance.
         :param wd: The working directory for the instance.
-        :param url_base: URL of the Moore.io Server
-        :param url_authentication: URL of the Moore.io Server Authentication API
+        :param test_mode: Pytest mode
         :param user_home_path: Path to user home directory
         """
         self._name: str = name
@@ -65,8 +64,8 @@ class RootManager:
         self._temp_dir: Path = self.md / "temp"
         self._locally_installed_ip_dir: Path = self.md / "installed_ip"
         self._global_ip_local_copy_dir: Path = self.md / "global_ip"
-        self._url_base: str = url_base
-        self._url_api: str = f"{self._url_base}/api"
+        self._url_base: str = ""
+        self._url_api: str = ""
         self._print_trace: bool = False
         self._command: Command = None
         self._install_path: Path = None
@@ -311,14 +310,14 @@ class RootManager:
         Then it goes through the following steps in order:
         - phase_init
         - phase_load_default_configuration
-        - phase_load_user_data
-        - phase_authenticate
-        - phase_save_user_data
         - phase_locate_project_file
         - phase_create_common_files_and_directories
         - phase_load_user_configuration
         - phase_load_project_configuration
         - phase_validate_configuration_space
+        - phase_load_user_data
+        - phase_authenticate
+        - phase_save_user_data
         - phase_scheduler_discovery
         - phase_service_discovery
         - phase_ip_discovery
@@ -338,37 +337,37 @@ class RootManager:
         load_default_configuration_phase:Phase = self.do_phase_load_default_configuration()
         if load_default_configuration_phase.end_process:
             return
-        # 3. LOAD USER DATA
-        load_user_data_phase:Phase = self.do_phase_load_user_data()
-        if load_user_data_phase.end_process:
-            return
-        # 4. AUTHENTICATE
-        authenticate_phase:Phase = self.do_phase_authenticate()
-        if authenticate_phase.end_process:
-            return
-        # 5. SAVE USER DATA
-        save_user_data_phase:Phase = self.do_phase_save_user_data()
-        if save_user_data_phase.end_process:
-            return
-        # 6. LOCATE PROJECT FILE
+        # 3. LOCATE PROJECT FILE
         locate_project_file_phase:Phase = self.do_phase_locate_project_file()
         if locate_project_file_phase.end_process:
             return
-        # 7. CREATE COMMON FILES AND DIRECTORIES
+        # 4. CREATE COMMON FILES AND DIRECTORIES
         create_common_files_and_directories_phase:Phase = self.do_phase_create_common_files_and_directories()
         if create_common_files_and_directories_phase.end_process:
             return
-        # 8. LOAD PROJECT CONFIGURATION
+        # 5. LOAD PROJECT CONFIGURATION
         load_project_configuration_phase:Phase = self.do_phase_load_project_configuration()
         if load_project_configuration_phase.end_process:
             return
-        # 9. LOAD USER CONFIGURATION
+        # 6. LOAD USER CONFIGURATION
         load_user_configuration_phase:Phase = self.do_phase_load_user_configuration()
         if load_user_configuration_phase.end_process:
             return
-        # 10. VALIDATE CONFIGURATION SPACE
+        # 7. VALIDATE CONFIGURATION SPACE
         validate_configuration_space_phase:Phase = self.do_phase_validate_configuration_space()
         if validate_configuration_space_phase.end_process:
+            return
+        # 8. LOAD USER DATA
+        load_user_data_phase:Phase = self.do_phase_load_user_data()
+        if load_user_data_phase.end_process:
+            return
+        # 9. AUTHENTICATE
+        authenticate_phase:Phase = self.do_phase_authenticate()
+        if authenticate_phase.end_process:
+            return
+        # 10. SAVE USER DATA
+        save_user_data_phase:Phase = self.do_phase_save_user_data()
+        if save_user_data_phase.end_process:
             return
         # 11. SCHEDULER DISCOVERY
         scheduler_discovery_phase:Phase = self.do_phase_scheduler_discovery()
@@ -655,73 +654,6 @@ class RootManager:
         self.check_phase_finished(current_phase)
         return current_phase
 
-    def do_phase_load_user_data(self) -> Phase:
-        """
-        Load user data from disk.
-        :return: None
-        """
-        current_phase = self.create_phase('pre_load_user_data')
-        current_phase.next()
-        self.command.do_phase_pre_load_user_data(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('load_user_data')
-        current_phase.next()
-        self.phase_load_user_data(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('post_load_user_data')
-        current_phase.next()
-        self.command.do_phase_post_load_user_data(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        return current_phase
-
-    def do_phase_authenticate(self) -> Phase:
-        """
-        Authenticate the user with mio_web if necessary.
-        :return: None
-        """
-        current_phase = self.create_phase('pre_authenticate')
-        current_phase.next()
-        self.command.do_phase_pre_authenticate(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('authenticate')
-        current_phase.next()
-        if self._command.needs_authentication():
-            self.authenticate(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('post_authenticate')
-        current_phase.next()
-        self.command.do_phase_post_authenticate(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        return current_phase
-
-    def do_phase_save_user_data(self) -> Phase:
-        """
-        Write user data to disk.
-        :return: None
-        """
-        current_phase = self.create_phase('pre_save_user_data')
-        current_phase.next()
-        self.command.do_phase_pre_save_user_data(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('save_user_data')
-        current_phase.next()
-        self.phase_save_user_data(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        current_phase = self.create_phase('post_save_user_data')
-        current_phase.next()
-        self.command.do_phase_post_save_user_data(current_phase)
-        current_phase.next()
-        self.check_phase_finished(current_phase)
-        return current_phase
-
     def do_phase_locate_project_file(self) -> Phase:
         """
         Locate the project file (`mio.toml`).
@@ -830,6 +762,73 @@ class RootManager:
         current_phase.next()
         self.command.do_phase_post_validate_configuration_space(current_phase)
         self.relocate_data_files(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        return current_phase
+
+    def do_phase_load_user_data(self) -> Phase:
+        """
+        Load user data from disk.
+        :return: None
+        """
+        current_phase = self.create_phase('pre_load_user_data')
+        current_phase.next()
+        self.command.do_phase_pre_load_user_data(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('load_user_data')
+        current_phase.next()
+        self.phase_load_user_data(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('post_load_user_data')
+        current_phase.next()
+        self.command.do_phase_post_load_user_data(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        return current_phase
+
+    def do_phase_authenticate(self) -> Phase:
+        """
+        Authenticate the user with mio_web if necessary.
+        :return: None
+        """
+        current_phase = self.create_phase('pre_authenticate')
+        current_phase.next()
+        self.command.do_phase_pre_authenticate(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('authenticate')
+        current_phase.next()
+        if self._command.needs_authentication():
+            self.authenticate(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('post_authenticate')
+        current_phase.next()
+        self.command.do_phase_post_authenticate(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        return current_phase
+
+    def do_phase_save_user_data(self) -> Phase:
+        """
+        Write user data to disk.
+        :return: None
+        """
+        current_phase = self.create_phase('pre_save_user_data')
+        current_phase.next()
+        self.command.do_phase_pre_save_user_data(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('save_user_data')
+        current_phase.next()
+        self.phase_save_user_data(current_phase)
+        current_phase.next()
+        self.check_phase_finished(current_phase)
+        current_phase = self.create_phase('post_save_user_data')
+        current_phase.next()
+        self.command.do_phase_post_save_user_data(current_phase)
         current_phase.next()
         self.check_phase_finished(current_phase)
         return current_phase
@@ -1152,7 +1151,8 @@ class RootManager:
         try:
             self._project_configuration_path = self.locate_project_file()
         except Exception as e:
-            phase.error = Exception(f"Could not locate Project 'mio.toml': {e}")
+            if self.command.executes_main_phase:
+                phase.error = Exception(f"Could not locate Project 'mio.toml': {e}")
         else:
             self.debug(f"Found Project root at '{self.project_configuration_path}'")
 
@@ -1164,7 +1164,8 @@ class RootManager:
 
     def phase_load_project_configuration(self, phase: Phase):
         if not self.project_configuration_path:
-            phase.error = Exception("Could not find project root path")
+            if self.command.executes_main_phase:
+                phase.error = Exception("Could not find project root path")
             return
         try:
             with open(self.project_configuration_path, 'r') as f:
@@ -1200,6 +1201,12 @@ class RootManager:
             phase.error = Exception(f"Failed to validate Configuration Space: {error_messages}")
         else:
             self.configuration.check()
+            if self._test_mode:
+                self._url_base = "http://localhost:8000"
+                self._url_api = f"{self._url_base}/api"
+            else:
+                self._url_base = self.configuration.authentication.server_url
+                self._url_api = self.configuration.authentication.server_api_url
             self.debug(f"Final configuration tree:\n{merged_configuration}")
 
     def relocate_data_files(self, phase: Phase):

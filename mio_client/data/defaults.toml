@@ -67,6 +67,8 @@ root_path="docs"
 
 [authentication]
 offline=false
+server_url="https://mooreio.com"
+server_api_url="https://mooreio.com/api"
 
 [project]
 local_mode=false

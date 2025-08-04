@@ -84,7 +84,17 @@ class Command:
         """
         pass
 
-    def needs_authentication(self):
+    @property
+    @abstractmethod
+    def executes_main_phase(self) -> bool:
+        """
+        Check if command executes job(s).
+        This method is a placeholder and must be implemented by subclasses.
+        :return: bool
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def needs_authentication(self) -> bool:
         """
         Check if user needs authentication to perform this command.
         This method is a placeholder and must be implemented by subclasses.

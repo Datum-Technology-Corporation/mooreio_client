@@ -60,6 +60,10 @@ class InitCommand(Command):
         return "init"
 
     @property
+    def executes_main_phase(self) -> bool:
+        return False
+
+    @property
     def prompt_user(self) -> bool:
         return self._prompt_user
 
@@ -312,6 +316,10 @@ class SiArxCommand(Command):
     @staticmethod
     def name() -> str:
         return "x"
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
     
     @property
     def mode(self) -> SiArxMode:

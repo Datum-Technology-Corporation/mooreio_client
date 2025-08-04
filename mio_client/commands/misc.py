@@ -84,6 +84,10 @@ class HelpCommand(Command):
         if self.parsed_cli_arguments.cmd == "x":
             self.print_text_and_exit(phase, gen.SIARX_HELP_TEXT)
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -155,6 +159,10 @@ class DoxygenCommand(Command):
     def add_to_subparsers(subparsers):
         parser_dox = subparsers.add_parser('dox', help=DOX_HELP_TEXT, add_help=False)
         parser_dox.add_argument('ip', help='Target IP', nargs='?', default="*")
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return False

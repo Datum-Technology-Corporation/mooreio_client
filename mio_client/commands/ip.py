@@ -51,6 +51,10 @@ class List(Command):
     def add_to_subparsers(subparsers):
         parser_list = subparsers.add_parser('list', help=LIST_HELP_TEXT, add_help=False)
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -113,6 +117,10 @@ class PackageCommand(Command):
         parser_package = subparsers.add_parser('package', help=PACKAGE_HELP_TEXT, add_help=False)
         parser_package.add_argument('ip'            , help='Target IP'                          )
         parser_package.add_argument('dest'          , help='Destination path'                   )
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return False
@@ -208,6 +216,10 @@ class PublishCommand(Command):
             help='Customer (Moore.io Organization) name.  Commercial IPs only.',
             required=False
         )
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return True
@@ -318,6 +330,10 @@ class InstallCommand(Command):
             help='IP version spec (remote IPs only)',
             required=False
         )
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return True
@@ -437,6 +453,10 @@ class UninstallCommand(Command):
         parser_uninstall = subparsers.add_parser('uninstall', help=UNINSTALL_HELP_TEXT, add_help=False)
         parser_uninstall.add_argument('ip', help='Target IP', nargs='?', default="*")
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -542,6 +562,10 @@ class CleanCommand(Command):
         parser_clean = subparsers.add_parser('clean', help=CLEAN_HELP_TEXT, add_help=False)
         parser_clean.add_argument('ip', help='Target IP', nargs='?', default="*")
         parser_clean.add_argument('-d', "--deep", help='Removes Project Moore.io directory (/.mio)', action="store_true", default=False , required=False)
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return False

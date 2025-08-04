@@ -41,7 +41,7 @@ class DSimCloudComputeSizes(Enum):
 
 
 class Project(Model):
-    sync: bool
+    sync: Optional[bool] = False
     sync_id: Optional[StrictInt] = -1
     local_mode: bool
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
@@ -51,6 +51,8 @@ class Project(Model):
 
 class Authentication(Model):
     offline: bool
+    server_url: str
+    server_api_url: str
 
 
 class Applications(Model):

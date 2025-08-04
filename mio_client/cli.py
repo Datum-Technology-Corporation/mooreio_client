@@ -59,8 +59,6 @@ Full Command List (`mio help CMD` for help on a specific command):
 #######################################################################################################################
 # Global Variables
 #######################################################################################################################
-#URL_BASE = 'https://mooreio.com'
-URL_BASE = 'http://localhost:8000'
 TEST_MODE = False
 USER_HOME_PATH = pathlib.Path(os.path.expanduser("~/.mio"))
 root_manager: RootManager
@@ -121,7 +119,7 @@ def main(args=None) -> int:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
     # 5. Create the Root Manager instance
-    root_manager = RootManager("Moore.io Client Root Manager", wd, URL_BASE, TEST_MODE, USER_HOME_PATH)
+    root_manager = RootManager("Moore.io Client Root Manager", wd, TEST_MODE, USER_HOME_PATH)
     command.parsed_cli_arguments = args
     # Enable Moore.io debug output if specified
     if args.dbg:

@@ -294,6 +294,10 @@ class SimulateCommand(Command):
     def app(self) -> LogicSimulators:
         return self._app
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -955,6 +959,10 @@ class RegressionCommand(Command):
     @property
     def success(self) -> bool:
         return self._success
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return False

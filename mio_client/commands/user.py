@@ -60,6 +60,10 @@ class LoginCommand(Command):
         if self.parsed_cli_arguments.no_input and not self.parsed_cli_arguments.username:
             phase.error = Exception("`--no-input` must be combined with `--username`")
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
+
     def needs_authentication(self) -> bool:
         return True
 
@@ -113,6 +117,10 @@ class LogoutCommand(Command):
     @staticmethod
     def add_to_subparsers(subparsers):
         parser_logout = subparsers.add_parser('logout', add_help=False)
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
 
     def needs_authentication(self) -> bool:
         return False

@@ -1,4 +1,4 @@
-access_token: ''
 authenticated: false
-refresh_token: ''
+session_cookies: {}
+session_headers: {}
 username: __ANONYMOUS__

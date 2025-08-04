@@ -18,7 +18,6 @@ from .common import OutputCapture, TestBase
 #######################################################################################################################
 # Test (ie mock) classes
 #######################################################################################################################
-URL_BASE = "http://localhost:8000"
 TEST_COMMAND_HELP_TEXT = """Moore.io Test Command"""
 class TestCommand(Command):
     def __init__(self):
@@ -49,55 +48,55 @@ class TestCommand(Command):
     def phase_post_load_default_configuration(self, phase):
         self._numbers.append(3)
 
-    def phase_pre_load_user_data(self, phase: Phase):
+    def phase_pre_locate_project_file(self, phase: Phase):
         self._numbers.append(4)
 
-    def phase_post_load_user_data(self, phase: Phase):
+    def phase_post_locate_project_file(self, phase: Phase):
         self._numbers.append(5)
 
-    def phase_pre_authenticate(self, phase: Phase):
+    def phase_pre_create_common_files_and_directories(self, phase: Phase):
         self._numbers.append(6)
 
-    def phase_post_authenticate(self, phase: Phase):
+    def phase_create_common_files_and_directories(self, phase: Phase):
         self._numbers.append(7)
 
-    def phase_pre_save_user_data(self, phase: Phase):
+    def phase_post_create_common_files_and_directories(self, phase: Phase):
         self._numbers.append(8)
 
-    def phase_post_save_user_data(self, phase: Phase):
+    def phase_pre_load_project_configuration(self, phase: Phase):
         self._numbers.append(9)
 
-    def phase_pre_locate_project_file(self, phase: Phase):
+    def phase_post_load_project_configuration(self, phase: Phase):
         self._numbers.append(10)
 
-    def phase_post_locate_project_file(self, phase: Phase):
+    def phase_pre_load_user_configuration(self, phase: Phase):
         self._numbers.append(11)
 
-    def phase_pre_create_common_files_and_directories(self, phase: Phase):
+    def phase_post_load_user_configuration(self, phase: Phase):
         self._numbers.append(12)
 
-    def phase_create_common_files_and_directories(self, phase: Phase):
+    def phase_pre_validate_configuration_space(self, phase: Phase):
         self._numbers.append(13)
 
-    def phase_post_create_common_files_and_directories(self, phase: Phase):
+    def phase_post_validate_configuration_space(self, phase: Phase):
         self._numbers.append(14)
 
-    def phase_pre_load_project_configuration(self, phase: Phase):
+    def phase_pre_load_user_data(self, phase: Phase):
         self._numbers.append(15)
 
-    def phase_post_load_project_configuration(self, phase: Phase):
+    def phase_post_load_user_data(self, phase: Phase):
         self._numbers.append(16)
 
-    def phase_pre_load_user_configuration(self, phase: Phase):
+    def phase_pre_authenticate(self, phase: Phase):
         self._numbers.append(17)
 
-    def phase_post_load_user_configuration(self, phase: Phase):
+    def phase_post_authenticate(self, phase: Phase):
         self._numbers.append(18)
 
-    def phase_pre_validate_configuration_space(self, phase: Phase):
+    def phase_pre_save_user_data(self, phase: Phase):
         self._numbers.append(19)
 
-    def phase_post_validate_configuration_space(self, phase: Phase):
+    def phase_post_save_user_data(self, phase: Phase):
         self._numbers.append(20)
 
     def phase_pre_scheduler_discovery(self, phase: Phase):
@@ -230,7 +229,7 @@ class TestCore(TestBase):
         pass
 
     def create_root_manager(self, work_directory: Path, user_directory: Path):
-        self.rmh: RootManager = RootManager("Test Root Manager", work_directory, URL_BASE, True, user_directory)
+        self.rmh: RootManager = RootManager("Test Root Manager", work_directory, True, user_directory)
 
     def run_command(self, command_type, work_directory: Path, user_directory: Path):
         self.create_root_manager(work_directory, user_directory)

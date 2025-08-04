@@ -16,11 +16,12 @@ from .common import OutputCapture, TestBase
 class TestCliSiArx(TestBase):
     @pytest.fixture(autouse=True)
     def setup(self):
-        mio_client.cli.URL_BASE = "http://localhost:8000"
         mio_client.cli.TEST_MODE = True
         self.mapu_raw_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "mapu_raw"))
         self.mapu_update_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "mapu_update"))
         self.rvmcu_raw_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "rvmcu_raw"))
+        self.eth_raw_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "eth_raw"))
+        self.test_raw_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "integration", "test_raw"))
         self.assert_directory_exists(self.mapu_raw_path)
 
     def reset_workspace(self):
@@ -37,6 +38,16 @@ class TestCliSiArx(TestBase):
         self.remove_directory(self.rvmcu_raw_path / "docs")
         self.remove_directory(self.rvmcu_raw_path / "dv")
         #self.remove_file(self.rvmcu_raw_path / "mio.toml")
+        # TEMPORARY ETH
+        self.remove_directory(self.eth_raw_path / ".mio")
+        self.remove_directory(self.eth_raw_path / "sim")
+        self.remove_directory(self.eth_raw_path / "docs")
+        self.remove_directory(self.eth_raw_path / "dv")
+        # TEMPORARY TEST
+        self.remove_directory(self.test_raw_path / ".mio")
+        self.remove_directory(self.test_raw_path / "sim")
+        self.remove_directory(self.test_raw_path / "docs")
+        self.remove_directory(self.test_raw_path / "dv")
 
     def siarx(self, capsys, project_path: Path, project_id: str) -> OutputCapture:
         result = self.run_cmd(capsys, [f'--wd={project_path}', '--dbg', 'x', f'--project-id={project_id}'])
@@ -103,6 +114,18 @@ class TestCliSiArx(TestBase):
         result = self.login(capsys, 'dpoulin', 'admin')
         result = self.siarx(capsys, self.rvmcu_raw_path, '1000')
         result = self.cmpelab_ip(capsys, self.rvmcu_raw_path, app, ip)
+
+    def cli_siarx_gen_eth_cmpelab_ip(self, capsys, app: str, ip: str):
+        self.reset_workspace()
+        result = self.login(capsys, 'dpoulin', 'admin')
+        result = self.siarx(capsys, self.eth_raw_path, '1004')
+        result = self.cmpelab_ip(capsys, self.eth_raw_path, app, ip)
+
+    def cli_siarx_gen_test_cmpelab_ip(self, capsys, app: str, ip: str):
+        self.reset_workspace()
+        result = self.login(capsys, 'dpoulin', 'admin')
+        result = self.siarx(capsys, self.test_raw_path, '10000')
+        result = self.cmpelab_ip(capsys, self.test_raw_path, app, ip)
 
 
     ###################################################################################################################
@@ -245,4 +268,40 @@ class TestCliSiArx(TestBase):
     @pytest.mark.dsim
     def test_cli_siarx_gen_rvmcu_cmpelab_dsim(self, capsys):
         self.cli_siarx_gen_rvmcu_cmpelab_ip(capsys, 'dsim', "uvmt_rvmcu_chip")
+
+
+
+    ###################################################################################################################
+    # *TEMPORARY* ETH
+    ###################################################################################################################
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    def test_cli_siarx_gen_eth(self, capsys):
+        self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
+        result = self.siarx(capsys, self.eth_raw_path, '1004')
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_gen_eth_cmpelab_dsim(self, capsys):
+        self.cli_siarx_gen_eth_cmpelab_ip(capsys, 'dsim', "uvmt_eth_st")
+
+
+
+    ###################################################################################################################
+    # *TEMPORARY* TEST
+    ###################################################################################################################
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    def test_cli_siarx_gen_test(self, capsys):
+        self.reset_workspace()
+        result = self.login(capsys, 'admin', 'admin')
+        result = self.siarx(capsys, self.test_raw_path, '10000')
+
+    @pytest.mark.single_process
+    #@pytest.mark.integration
+    @pytest.mark.dsim
+    def test_cli_siarx_gen_test_cmpelab_dsim(self, capsys):
+        self.cli_siarx_gen_test_cmpelab_ip(capsys, 'dsim', "uvmt_test_alpha_b")
 
