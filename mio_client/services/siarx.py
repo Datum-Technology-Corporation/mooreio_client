@@ -259,7 +259,7 @@ class SiArxService(Service):
                         else:
                             self.replace_generated_file_sections_with_user_contents(extracted_file_path, user_file_sections)
                             self.rmh.move_file(extracted_file_path, current_file_path)
-                    elif not self.rmh.file_exists(current_file_path):
+                    elif not self.rmh.file_exists(current_file_path) and self.rmh.file_exists(extracted_file_path):
                         current_file_path.parent.mkdir(parents=True, exist_ok=True)  # TODO Use rmh to create directories
                         self.rmh.move_file(extracted_file_path, current_file_path)
 
@@ -267,7 +267,7 @@ class SiArxService(Service):
         file_content: str = ""
         with open(file, 'r') as original_file:
             file_content = original_file.read()
-        section_pattern = r"// pragma uvmx (\w+) begin(.*?)// pragma uvmx \1 end"
+        section_pattern = r"// pragma siarx (\w+) begin(.*?)// pragma siarx \1 end"
         return {match[0]: match[1] for match in re.findall(section_pattern, file_content, re.DOTALL)}
 
     def replace_generated_file_sections_with_user_contents(self, file: Path, sections: Dict):
@@ -276,9 +276,9 @@ class SiArxService(Service):
         def replace_section(match):
             section_name = match.group(1)
             original_section_content = sections.get(section_name, match.group(2))
-            return f"// pragma uvmx {section_name} begin{original_section_content}// pragma uvmx {section_name} end"
+            return f"// pragma siarx {section_name} begin{original_section_content}// pragma siarx {section_name} end"
         updated_content = re.sub(
-            r"// pragma uvmx (\w+) begin(.*?)// pragma uvmx \1 end",
+            r"// pragma siarx (\w+) begin(.*?)// pragma siarx \1 end",
             replace_section,
             generated_file_contents,
             flags=re.DOTALL

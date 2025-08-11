@@ -71,7 +71,7 @@ class RootManager:
         self._install_path: Path = None
         self._data_files_path: Path = None
         self._user_home_path: Path = Path(user_home_path)
-        self._user_data_file_path: Path = self.user_home_path / "user.yml"
+        self._user_data_file_path: Path = self.user_home_path / ".mio" / "user.yml"
         self._user: User = None
         self._project_root_path: Path = None
         self._default_configuration_path: Path = None
@@ -378,13 +378,15 @@ class RootManager:
         if service_discovery_phase.end_process:
             return
         # 13. IP DISCOVERY
-        ip_discovery_phase:Phase = self.do_phase_ip_discovery()
-        if ip_discovery_phase.end_process:
-            return
+        if self.command.perform_ip_discovery:
+            ip_discovery_phase:Phase = self.do_phase_ip_discovery()
+            if ip_discovery_phase.end_process:
+                return
         # 14. MAIN
-        main_phase:Phase = self.do_phase_main()
-        if main_phase.end_process:
-            return
+        if self.command.executes_main_phase:
+            main_phase:Phase = self.do_phase_main()
+            if main_phase.end_process:
+                return
         # 15. CHECK
         check_phase:Phase = self.do_phase_check()
         if check_phase.end_process:
@@ -1187,7 +1189,7 @@ class RootManager:
                 phase.error = Exception(f"Failed to load User configuration at '{self.user_configuration_path}': {e}")
         else:
             self.create_file(self.user_configuration_path)
-            self._user_configuration = Configuration()
+            #self._user_configuration = Configuration()
             self.debug(f"Loaded user configuration from '{self.user_configuration_path}':\n{self._user_configuration}")
 
     def phase_validate_configuration_space(self, phase):

@@ -94,6 +94,14 @@ class Command:
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+    @property
+    def perform_ip_discovery(self) -> bool:
+        """
+        Check if command performs IP discovery.
+        :return: bool
+        """
+        return True
+
     def needs_authentication(self) -> bool:
         """
         Check if user needs authentication to perform this command.
@@ -139,60 +147,6 @@ class Command:
         """
         self.check_phase(phase)
         self.phase_post_load_default_configuration(phase)
-
-    def do_phase_pre_load_user_data(self, phase: Phase):
-        """
-        Dispatcher for Pre-load User Data Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_pre_load_user_data(phase)
-
-    def do_phase_post_load_user_data(self, phase: Phase):
-        """
-        Dispatcher for Post-load User Data Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_post_load_user_data(phase)
-
-    def do_phase_pre_authenticate(self, phase: Phase):
-        """
-        Dispatcher for Pre-authenticate Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_pre_authenticate(phase)
-
-    def do_phase_post_authenticate(self, phase: Phase):
-        """
-        Dispatcher for Post-authenticate Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_post_authenticate(phase)
-
-    def do_phase_pre_save_user_data(self, phase: Phase):
-        """
-        Dispatcher for Pre-save User Data Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_pre_save_user_data(phase)
-
-    def do_phase_post_save_user_data(self, phase: Phase):
-        """
-        Dispatcher for Post-save User Data Phase; called by Root.
-        :param phase: handle to phase object
-        :return:
-        """
-        self.check_phase(phase)
-        self.phase_post_save_user_data(phase)
 
     def do_phase_pre_locate_project_file(self, phase: Phase):
         """
@@ -292,6 +246,60 @@ class Command:
         """
         self.check_phase(phase)
         self.phase_post_validate_configuration_space(phase)
+
+    def do_phase_pre_load_user_data(self, phase: Phase):
+        """
+        Dispatcher for Pre-load User Data Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_pre_load_user_data(phase)
+
+    def do_phase_post_load_user_data(self, phase: Phase):
+        """
+        Dispatcher for Post-load User Data Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_post_load_user_data(phase)
+
+    def do_phase_pre_authenticate(self, phase: Phase):
+        """
+        Dispatcher for Pre-authenticate Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_pre_authenticate(phase)
+
+    def do_phase_post_authenticate(self, phase: Phase):
+        """
+        Dispatcher for Post-authenticate Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_post_authenticate(phase)
+
+    def do_phase_pre_save_user_data(self, phase: Phase):
+        """
+        Dispatcher for Pre-save User Data Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_pre_save_user_data(phase)
+
+    def do_phase_post_save_user_data(self, phase: Phase):
+        """
+        Dispatcher for Post-save User Data Phase; called by Root.
+        :param phase: handle to phase object
+        :return:
+        """
+        self.check_phase(phase)
+        self.phase_post_save_user_data(phase)
 
     def do_phase_pre_scheduler_discovery(self, phase: Phase):
         """

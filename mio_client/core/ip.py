@@ -1007,20 +1007,21 @@ class IpDataBase():
                 if ip.dut.type == DutType.FUSE_SOC:
                     # TODO Add checks for FuseSoC core spec
                     pass
-        for ip_definition_str, ip_version_spec in ip.dependencies.items():
-            if not ip.dependencies_resolved:
-                ip_definition = Ip.parse_ip_definition(ip_definition_str)
-                ip_definition.version_spec = ip_version_spec
-                ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
-                if ip_dependency is None:
-                    ip.add_dependency_to_find_on_remote(ip_definition)
-                    self._need_to_find_dependencies_on_remote = True
-                    self._ip_with_missing_dependencies[ip.uid] = ip
-                    self._dependencies_to_find_online.append(ip_definition)
-                else:
-                    ip.add_resolved_dependency(ip_definition, ip_dependency)
-                    if recursive:
-                        self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
+        if ip.dependencies is not None:
+            for ip_definition_str, ip_version_spec in ip.dependencies.items():
+                if not ip.dependencies_resolved:
+                    ip_definition = Ip.parse_ip_definition(ip_definition_str)
+                    ip_definition.version_spec = ip_version_spec
+                    ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
+                    if ip_dependency is None:
+                        ip.add_dependency_to_find_on_remote(ip_definition)
+                        self._need_to_find_dependencies_on_remote = True
+                        self._ip_with_missing_dependencies[ip.uid] = ip
+                        self._dependencies_to_find_online.append(ip_definition)
+                    else:
+                        ip.add_resolved_dependency(ip_definition, ip_dependency)
+                        if recursive:
+                            self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
     
     def find_all_missing_dependencies_on_server(self):
         ordered_deps = {}

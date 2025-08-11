@@ -64,6 +64,10 @@ class InitCommand(Command):
         return False
 
     @property
+    def perform_ip_discovery(self) -> bool:
+        return False
+
+    @property
     def prompt_user(self) -> bool:
         return self._prompt_user
 
@@ -114,6 +118,7 @@ class InitCommand(Command):
                 self._prompt_user = False
 
     def phase_pre_locate_project_file(self, phase: Phase):
+        # TODO Move to phase_pre_ip_discovery()
         project_path: Path = self.rmh.locate_project_file()
         if project_path:
             self._mode = InitServiceModes.NEW_IP
@@ -318,6 +323,10 @@ class SiArxCommand(Command):
         return "x"
 
     @property
+    def perform_ip_discovery(self) -> bool:
+        return False
+
+    @property
     def executes_main_phase(self) -> bool:
         return False
     
@@ -372,34 +381,20 @@ class SiArxCommand(Command):
     def phase_init(self, phase: Phase):
         self._force_update = self.parsed_cli_arguments.force
 
-    def phase_pre_locate_project_file(self, phase: Phase):
-        project_path: Path = self.rmh.locate_project_file()
-        if not project_path:
-            if not self.parsed_cli_arguments.project_id:
-                phase.error = Exception("Project ID must be specified when initializing a new project.")
-                self._success = False
-            else:
-                self._mode = SiArxMode.NEW_PROJECT
-                self._input_path = self.rmh.wd
-                self._project_id = self.parsed_cli_arguments.project_id
-                try:
-                    self._siarx_service: SiArxService = SiArxService(self.rmh)
-                except Exception as e:
-                    phase.error = e
-                    self._success = False
-                else:
-                    self.perform_siarx_gen(phase)
-        else:
-            self._mode = SiArxMode.UPDATE_PROJECT
-
     def phase_post_service_discovery(self, phase: Phase):
-        if self._mode == SiArxMode.UPDATE_PROJECT:
-            try:
-                self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
-            except Exception as e:
-                phase.error = e
-                self._success = False
+        try:
+            self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
+        except Exception as e:
+            phase.error = e
+            self._success = False
+        else:
+            if self.parsed_cli_arguments.project_id:
+                self._mode = SiArxMode.NEW_PROJECT
+                self._project_id = self.parsed_cli_arguments.project_id
+                self._input_path = self.rmh.wd
+                self.perform_siarx_gen(phase)
             else:
+                self._mode = SiArxMode.UPDATE_PROJECT
                 self._project_id = str(self.rmh.configuration.project.sync_id)
                 self._input_path = self.rmh.project_root_path
                 self.perform_siarx_gen(phase)
