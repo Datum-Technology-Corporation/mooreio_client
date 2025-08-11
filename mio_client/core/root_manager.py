@@ -71,7 +71,7 @@ class RootManager:
         self._install_path: Path = None
         self._data_files_path: Path = None
         self._user_home_path: Path = Path(user_home_path)
-        self._user_data_file_path: Path = self.user_home_path / ".mio" / "user.yml"
+        self._user_data_file_path: Path = self.user_home_path / "user.yml"
         self._user: User = None
         self._project_root_path: Path = None
         self._default_configuration_path: Path = None
@@ -1180,7 +1180,7 @@ class RootManager:
             self.debug(f"Loaded project configuration from '{self.project_configuration_path}':\n{self._project_configuration}")
 
     def phase_load_user_configuration(self, phase: Phase):
-        self._user_configuration_path = os.path.expanduser("~/.mio/mio.toml")
+        self._user_configuration_path = self.user_home_path / "mio.toml"
         if self.file_exists(self.user_configuration_path):
             try:
                 with open(self.user_configuration_path, 'r') as f:
@@ -1189,7 +1189,6 @@ class RootManager:
                 phase.error = Exception(f"Failed to load User configuration at '{self.user_configuration_path}': {e}")
         else:
             self.create_file(self.user_configuration_path)
-            #self._user_configuration = Configuration()
             self.debug(f"Loaded user configuration from '{self.user_configuration_path}':\n{self._user_configuration}")
 
     def phase_validate_configuration_space(self, phase):

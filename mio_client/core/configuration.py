@@ -114,8 +114,8 @@ class Docs(Model):
 
 
 class Encryption(Model):
-    metrics_dsim_sv_key_path: Optional[PosixPath] = UNDEFINED_CONST
-    metrics_dsim_vhdl_key_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_sv_key_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_vhdl_key_path: Optional[PosixPath] = UNDEFINED_CONST
     xilinx_vivado_key_path: Optional[PosixPath] = UNDEFINED_CONST
 
 

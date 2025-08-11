@@ -1558,7 +1558,7 @@ class SimulatorMetricsDSim(LogicSimulator):
                 file_encrypted = Path(f"{file}.encrypted")
                 sv_args = []
                 sv_args.append(str(file))
-                sv_args.append(f"-i {self.rmh.configuration.encryption.metrics_dsim_sv_key_path}")
+                sv_args.append(f"-i {self.rmh.configuration.encryption.altair_dsim_sv_key_path}")
                 sv_args.append(f"-o {file_encrypted}")
                 job_encrypt_sv = Job(self.rmh, report.work_directory, f"dsim_encryption_sv_{ip.lib_name}_{file.name}",
                                      Path(os.path.join(self.installation_path, "bin", "dvlencrypt")), sv_args)
@@ -1583,7 +1583,7 @@ class SimulatorMetricsDSim(LogicSimulator):
                 file_encrypted = Path(f"{file}.encrypted")
                 vhdl_args = []
                 vhdl_args.append(str(file))
-                vhdl_args.append(f"-i {self.rmh.configuration.encryption.metrics_dsim_vhdl_key_path}")
+                vhdl_args.append(f"-i {self.rmh.configuration.encryption.altair_dsim_vhdl_key_path}")
                 vhdl_args.append(f"-o {file_encrypted}")
                 job_encrypt_vhdl = Job(self.rmh, report.work_directory, f"dsim_encryption_vhdl_{ip.lib_name}_{file.name}",
                                        Path(os.path.join(self.installation_path, "bin", "dvhencrypt")), vhdl_args)

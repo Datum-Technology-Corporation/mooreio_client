@@ -11,17 +11,17 @@ logs_directory="logs"
 test_result_path_template="{{ ip_name }}_{{ test_name }}_{{ seed }}"
 uvm_version="1.1b"
 timescale="10ns/100fs"
-metrics_dsim_license_path="~/dsim/license.json"
-metrics_dsim_installation_path="~/dsim/"
-metrics_dsim_default_compilation_sv_arguments=[]
+altair_dsim_license_path="~/dsim/license.json"
+altair_dsim_installation_path="~/dsim/"
+altair_dsim_default_compilation_sv_arguments=[]
 xilinx_vivado_default_compilation_sv_arguments=[]
-metrics_dsim_default_compilation_vhdl_arguments=[]
+altair_dsim_default_compilation_vhdl_arguments=[]
 xilinx_vivado_default_compilation_vhdl_arguments=[]
-metrics_dsim_default_elaboration_arguments=[]
+altair_dsim_default_elaboration_arguments=[]
 xilinx_vivado_default_elaboration_arguments=[]
-metrics_dsim_default_compilation_and_elaboration_arguments=[]
+altair_dsim_default_compilation_and_elaboration_arguments=[]
 xilinx_vivado_default_compilation_and_elaboration_arguments=[]
-metrics_dsim_default_simulation_arguments=[]
+altair_dsim_default_simulation_arguments=[]
 xilinx_vivado_default_simulation_arguments=[]
 compilation_timeout=1.0
 compilation_and_elaboration_timeout=1.0
@@ -42,11 +42,15 @@ local_paths=["hdl/"]
 root_path="docs/"
 
 [encryption]
-metrics_dsim_sv_key_path="~/metrics/dsim/key"
-metrics_dsim_vhdl_key_path="/tools/dsim/key.data"
+altair_dsim_sv_key_path="~/altair/dsim/key"
+altair_dsim_vhdl_key_path="/tools/dsim/key.data"
 
 [authentication]
 offline=false
+server_url="https://mooreio.com"
+server_api_url="https://mooreio.com/api"
+
+[package_management]
 
 [applications]
 editor="gvim"

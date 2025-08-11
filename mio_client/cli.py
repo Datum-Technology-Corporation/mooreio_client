@@ -16,7 +16,7 @@ VERSION = "2.1.0"
 
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}
-                                    User Manual: http://mooreio-client.rtfd.io/
+                                    User Manual: https://mooreio-client.rtfd.io/
              https://mooreio.com - Copyright 2020-2025 Datum Technology Corporation - https://datumtc.ca
 Usage:
   mio [--version] [--help]

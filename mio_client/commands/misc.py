@@ -25,7 +25,7 @@ def get_commands():
 #######################################################################################################################
 HELP_TEXT = """Moore.io Help Command
    Prints out documentation on a specific command.  This is meant for quick lookups and is only a subset of the
-   documentation found in the User Manual (https://mio-client.readthedocs.io/).
+   documentation found in the User Manual (https://mooreio-client.rtfd.io/).
    
 Usage:
    mio help CMD
@@ -33,7 +33,7 @@ Usage:
 Examples:
    mio help sim  # Prints out a summary on the Logic Simulation command and its options
 
-Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#help"""
+Reference documentation: https://mooreio-client.rtfd.io//en/latest/commands.html#help"""
 
 ALL_COMMANDS = [
     "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox",
@@ -105,7 +105,7 @@ Examples:
    mio dox my_ip  # Generates HTML documentation for IP 'my_ip'
    mio dox        # Generates HTML all local Project IPs
 
-Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#dox"""
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#dox"""
 
 class DoxygenCommand(Command):
     def __init__(self):

@@ -40,7 +40,7 @@ Examples:
    mio init -i ~/answers.yml  # Create a new empty Project/IP in this location with pre-filled data.
    mio -C ~/my_proj init      # Create a new empty Project at a specific location.
 
-Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#init"""
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#init"""
 
 
 class InitCommand(Command):
@@ -117,53 +117,56 @@ class InitCommand(Command):
             else:
                 self._prompt_user = False
 
-    def phase_pre_locate_project_file(self, phase: Phase):
-        # TODO Move to phase_pre_ip_discovery()
-        project_path: Path = self.rmh.locate_project_file()
-        if project_path:
-            self._mode = InitServiceModes.NEW_IP
-        else:
+    def do_phase_post_validate_configuration_space(self, phase: Phase):
+        if self.rmh.project_configuration_path is None:
             self._mode = InitServiceModes.NEW_PROJECT
-            self._init_service: InitService = InitService(self.rmh)
-            try:
-                self.fill_project_configuration_from_user_input()
-                self.init_project_configuration.input_path = self.rmh.wd
-            except Exception as e:
-                self._success = False
-                phase.error = Exception(f"Failed to obtain valid Project data from user: {e}")
-            else:
-                try:
-                    self._report = self.init_service.init_project(self.init_project_configuration)
-                except Exception as e:
-                    phase.error = Exception(f"Failed to initialize Project: {e}")
-                    self._success = False
-                else:
-                    self._success = self.report.success
-
-    def phase_pre_ip_discovery(self, phase: Phase):
-        if self.mode == InitServiceModes.NEW_IP:
-            try:
-                self._init_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "init")
-            except Exception as e:
-                phase.error = e
-            else:
-                try:
-                    self.fill_ip_configuration_from_user_input()
-                    self.init_ip_configuration.input_path = self.rmh.wd
-                except Exception as e:
-                    self._success = False
-                    phase.error = Exception(f"Failed to obtain valid IP data from user: {e}")
-                else:
-                    try:
-                        self._report = self.init_service.init_ip(self.init_ip_configuration)
-                    except Exception as e:
-                        phase.error = Exception(f"Failed to initialize IP: {e}")
-                        self._success = False
-                    else:
-                        self._success = self.report.success
         else:
+            self._mode = InitServiceModes.NEW_IP
+
+    def phase_post_service_discovery(self, phase: Phase):
+        try:
+            self._init_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "init")
+        except Exception as e:
+            phase.error = e
+        else:
+            if self.mode == InitServiceModes.NEW_PROJECT:
+                self.new_project(phase)
+            elif self.mode == InitServiceModes.NEW_IP:
+                self.new_ip(phase)
             self.print_report(phase)
             phase.end_process = True
+
+    def new_project(self, phase: Phase):
+        try:
+            self.fill_project_configuration_from_user_input()
+            self.init_project_configuration.input_path = self.rmh.wd
+        except Exception as e:
+            self._success = False
+            phase.error = Exception(f"Failed to obtain valid Project data from user: {e}")
+        else:
+            try:
+                self._report = self.init_service.init_project(self.init_project_configuration)
+            except Exception as e:
+                phase.error = Exception(f"Failed to initialize Project: {e}")
+                self._success = False
+            else:
+                self._success = self.report.success
+
+    def new_ip(self, phase: Phase):
+        try:
+            self.fill_ip_configuration_from_user_input()
+            self.init_ip_configuration.input_path = self.rmh.wd
+        except Exception as e:
+            self._success = False
+            phase.error = Exception(f"Failed to obtain valid IP data from user: {e}")
+        else:
+            try:
+                self._report = self.init_service.init_ip(self.init_ip_configuration)
+            except Exception as e:
+                phase.error = Exception(f"Failed to initialize IP: {e}")
+                self._success = False
+            else:
+                self._success = self.report.success
 
     def phase_report(self, phase: Phase):
         self.print_report(phase)
@@ -304,7 +307,7 @@ Examples:
    mio x         # Sync (generate) project with SiArx definition on server
    mio x -p 123  # Initialize and generate Project from empty directory
 
-Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#x"""
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#x"""
 
 class SiArxCommand(Command):
     def __init__(self):

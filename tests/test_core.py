@@ -36,6 +36,10 @@ class TestCommand(Command):
     def add_to_subparsers(subparsers):
         parser_test = subparsers.add_parser('test', help=TEST_COMMAND_HELP_TEXT, add_help=False)
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -184,6 +188,10 @@ class TestSimulatorDSimCommand(Command):
     def add_to_subparsers(subparsers):
         parser_test_simulator_dsim = subparsers.add_parser('test_simulator_dsim', help=TEST_COMMAND_HELP_TEXT, add_help=False)
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -207,6 +215,10 @@ class TestSimulatorVivadoCommand(Command):
     @staticmethod
     def add_to_subparsers(subparsers):
         parser_test_simulator_vivado = subparsers.add_parser('test_simulator_vivado', help=TEST_COMMAND_HELP_TEXT, add_help=False)
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return False

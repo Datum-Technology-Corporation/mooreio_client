@@ -81,7 +81,7 @@ Examples:
    mio sim my_ip -E                              # Only elaborate 'my_ip'.
    mio sim my_ip -CE                             # Compile and elaborate 'my_ip'.
 
-Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#sim"""
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#sim"""
 LOGIC_SIMULATORS = ["dsim", "vivado"]
 
 class SimulateCommand(Command):
@@ -788,7 +788,7 @@ Examples:
    mio regr my_ip apb_xc.sanity     # Run sanity regression for IP 'uvm_my_ip', from test suite 'apb_xc.ts.yml'
    mio regr my_ip axi_xc.sanity -d  # Dry-run sanity regression for IP 'uvm_my_ip', from test suite 'axi_xc.ts.yml
 
-Reference documentation: https://mooreio-client.readthedocs.io/en/latest/commands.html#regr"""
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#regr"""
 
 class RegressionCommand(Command):
     @staticmethod

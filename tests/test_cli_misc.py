@@ -15,6 +15,7 @@ class TestCliMisc(TestBase):
     def setup(self):
         mio_client.cli.TEST_MODE = True
 
+    @pytest.mark.core
     def test_cli_help(self, capsys):
         result = self.run_cmd(capsys, ['--help'])
         self.check_help(result)
@@ -25,7 +26,7 @@ class TestCliMisc(TestBase):
         assert result.return_code == 0
         assert "Moore.io" in result.text
         assert "Client" in result.text
-        assert "https://mio-client.readthedocs.io" in result.text
+        assert "https://mooreio-client.rtfd.io" in result.text
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Full Command List" in result.text
@@ -49,9 +50,10 @@ class TestCliMisc(TestBase):
         assert "Moore.io" in result.text
         assert "Help Command" in result.text
         assert "User Manual" in result.text
-        assert "https://mio-client.readthedocs.io" in result.text
+        assert "https://mooreio-client.rtfd.io" in result.text
         assert "Usage" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_login(self, capsys):
@@ -62,6 +64,7 @@ class TestCliMisc(TestBase):
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_logout(self, capsys):
@@ -71,6 +74,7 @@ class TestCliMisc(TestBase):
         assert "User Logout Command" in result.text
         assert "Usage" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_list(self, capsys):
@@ -80,6 +84,7 @@ class TestCliMisc(TestBase):
         assert "IP List Command" in result.text
         assert "Usage" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_package(self, capsys):
@@ -89,6 +94,7 @@ class TestCliMisc(TestBase):
         assert "IP Package Command" in result.text
         assert "Usage" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_publish(self, capsys):
@@ -99,6 +105,7 @@ class TestCliMisc(TestBase):
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_install(self, capsys):
@@ -118,6 +125,7 @@ class TestCliMisc(TestBase):
         assert "IP Uninstall Command" in result.text
         assert "Usage" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_sim(self, capsys):
@@ -128,6 +136,7 @@ class TestCliMisc(TestBase):
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_regr(self, capsys):
@@ -138,6 +147,7 @@ class TestCliMisc(TestBase):
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_dox(self, capsys):
@@ -147,6 +157,7 @@ class TestCliMisc(TestBase):
         assert "Doxygen Command" in result.text
         assert "Usage" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
     @pytest.mark.core
     def test_cli_help_command_init(self, capsys):
@@ -157,5 +168,17 @@ class TestCliMisc(TestBase):
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text
+        assert "Reference documentation" in result.text
+
+    @pytest.mark.core
+    def test_cli_help_command_siarx(self, capsys):
+        result = self.run_cmd(capsys, ['help', 'x'])
+        assert result.return_code == 0
+        assert "Moore.io" in result.text
+        assert "SiArx Command" in result.text
+        assert "Usage" in result.text
+        assert "Options" in result.text
+        assert "Examples" in result.text
+        assert "Reference documentation" in result.text
 
 
