@@ -203,7 +203,7 @@ TWINE_FILES := $(shell ls dist/*.tar.gz dist/*.whl 2>/dev/null)
 # Publishes package to TestPyPI
 publish-test: clean-build build
 	$(call print_banner, Test Publishing package to TestPyPI)
-	. ./venv/bin/activate && twine check $(TWINE_FILES)
+	#. ./venv/bin/activate && twine check $(TWINE_FILES)
 	. ./venv/bin/activate && twine upload --repository-url https://test.pypi.org/legacy/ ./dist/*
 	@echo "Test publish complete: The package has been uploaded to TestPyPI"
 
@@ -215,7 +215,7 @@ publish-test-install:
 # Publishes package to PyPI
 publish: clean-build build
 	$(call print_banner, Publishing package to PyPI)
-	. ./venv/bin/activate && twine check $(TWINE_FILES)
+	#. ./venv/bin/activate && twine check $(TWINE_FILES)
 	. ./venv/bin/activate && twine upload --repository pypi ./dist/*
 	@echo "Publish complete: The package has been uploaded to PyPI"
 

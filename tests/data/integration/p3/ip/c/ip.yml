@@ -1,6 +1,6 @@
 ip:
   sync: true
-  sync_id: 1
+  sync_id: 1000000
   pkg_type: block
   vendor: "datron"
   name: "c_block"

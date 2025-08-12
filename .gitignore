@@ -79,3 +79,5 @@ venv.bak/
 .DS_Store
 reports
 ov-report=xml:reports
+
+.mio

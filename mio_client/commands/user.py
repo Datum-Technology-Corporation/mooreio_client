@@ -132,9 +132,7 @@ class LogoutCommand(Command):
             except Exception as e:
                 phase.error = e
             else:
-                self.rmh.user.authenticated = False
-                self.rmh.user.session_cookies = {}
-                self.rmh.user.session_headers = {}
+                self.rmh.user.reset()
         else:
             phase.end_process = True
             phase.end_process_message = "Not authenticated: no action taken"

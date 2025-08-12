@@ -21,6 +21,12 @@ class User(Model):
     session_cookies: Optional[dict] = {}
     session_headers: Optional[dict] = {}
 
+    def reset(self):
+        self.authenticated = False
+        self.username = "__ANONYMOUS__"
+        self.session_cookies = {}
+        self.session_headers = {}
+
     @classmethod
     def new(cls):
         data= {}

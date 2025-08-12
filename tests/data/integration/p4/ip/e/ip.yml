@@ -1,6 +1,6 @@
 ip:
   sync: true
-  sync_id: 2
+  sync_id: 2000000
   pkg_type: ss
   vendor: "acme"
   name: "e_ss"
