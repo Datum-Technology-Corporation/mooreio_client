@@ -410,7 +410,7 @@ class SiArxCommand(Command):
                 self.print_infos()
             self.print_warnings()
             if self.mode == SiArxMode.NEW_PROJECT:
-                self.rmh.info(f"Initialized Project '{self.rmh.configuration.project.full_name}' with Datum SiArx successfully.")
+                self.rmh.info(f"Initialized Project ID '{self._project_id}' with SiArx successfully.")
             elif self.mode == SiArxMode.UPDATE_PROJECT:
                 self.rmh.info(f"Updated Project with Datum SiArx successfully.")
             print(banner)
@@ -421,7 +421,7 @@ class SiArxCommand(Command):
             self.print_warnings()
             self.print_errors()
             if self.mode == SiArxMode.NEW_PROJECT:
-                self.rmh.error(f"Failed to initialize Project '{self.project_id}' with Datum SiArx.")
+                self.rmh.error(f"Failed to initialize Project '{self.project_id}' with SiArx.")
             elif self.mode == SiArxMode.UPDATE_PROJECT:
                 self.rmh.error(f"Failed to update project with Datum SiArx.")
             print(banner)

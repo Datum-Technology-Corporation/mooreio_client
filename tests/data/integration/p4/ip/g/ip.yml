@@ -1,6 +1,6 @@
 ip:
   sync: true
-  sync_id: 6
+  sync_id: 6000000
   pkg_type: dv_tb
   vendor: "acme"
   name: "g_tb"

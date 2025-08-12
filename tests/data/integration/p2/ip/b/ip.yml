@@ -1,6 +1,6 @@
 ip:
   sync: true
-  sync_id: 3
+  sync_id: 3000000
   pkg_type: dv_agent
   mlicensed: true
   encrypted: ['dsim']

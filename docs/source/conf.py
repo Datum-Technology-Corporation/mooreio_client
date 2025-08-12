@@ -18,7 +18,7 @@ import sphinx_rtd_theme
 project = 'Moore.io CLI Client'
 copyright = '2025, Datum Technology Corporation'
 author = 'Datum Technology Corporation'
-release = '2.1.0'
+release = '2.1.1'
 
 
 #######################################################################################################################
