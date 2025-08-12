@@ -1,5 +1,7 @@
-![Moore.io Client Logo](https://mooreio.com/dab41100c71545e7520e.png)
+![Moore.io Client Logo](https://mooreio.com/logo.png)
 
+[![PyPI](https://img.shields.io/pypi/v/mooreio_client?label=pypi%20package)](https://pypi.org/project/mooreio-client/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/mooreio_client)](https://pypi.org/project/mooreio-client/#files)
 [![Documentation Status](https://readthedocs.org/projects/mooreio-client/badge/?version=latest)](https://mooreio-client.readthedocs.io/en/latest/?badge=latest)
 
 # Moore.io Client
@@ -150,20 +152,9 @@ Errors are handled via the `raise` of Python Exceptions. The RM catches these an
     ```
 
 ## Continuous Integration
-Most popular CI/CD tools are supported out-of-the-box. Some systems are better fleshed out than others; please don't
-hesitate to contribute your tweaks!
 
 ### Supported Continuous Integration Tools
-- Azure Pipelines
-- Bamboo
-- Bitbucket Pipelines
-- CircleCI
-- Codeship
-- GitHub Actions
-- GitLab CI/CD
 - Jenkins
-- TeamCity
-- Travis CI
 
 ## Contributing
 
