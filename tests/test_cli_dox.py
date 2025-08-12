@@ -35,13 +35,11 @@ class TestCliDox(TestBase):
         assert self.valid_local_simplest_doxygen_output_path.is_dir() and any(self.valid_local_simplest_doxygen_output_path.iterdir())
         return result
 
-    @pytest.mark.single_process
     @pytest.mark.core
     def test_cli_dox_ip(self, capsys):
         self.reset_workspace()
         result = self.doxygen_ip(capsys, self.valid_local_simplest_path,'def_ss_tb')
 
-    @pytest.mark.single_process
     @pytest.mark.core
     def test_cli_dox_all_ip(self, capsys):
         self.reset_workspace()

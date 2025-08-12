@@ -67,13 +67,11 @@ class TestCliInit(TestBase):
         assert result.return_code == 0
         return result
 
-    @pytest.mark.single_process
     @pytest.mark.core
     def test_cli_init_project(self, capsys):
         self.reset_workspace()
         result = self.init(capsys, self.uninit_local_simplest_path, self.uninit_local_simplest_project_answers_path)
 
-    @pytest.mark.single_process
     @pytest.mark.core
     def test_cli_init_project_ip(self, capsys):
         self.reset_workspace()
@@ -88,11 +86,10 @@ class TestCliInit(TestBase):
         result = self.init(capsys, self.uninit_local_simplest_def_ss_tb_path, self.uninit_local_simplest_def_ss_tb_answers_path)
         result = self.sim_ip(capsys, self.uninit_local_simplest_path, app, "def_ss_tb", "smoke", 1)
 
-    @pytest.mark.single_process
     @pytest.mark.dsim
     def test_cli_init_project_ip_sim_dsim(self, capsys):
         self.cli_init_project_ip_sim(capsys, 'dsim')
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_init_project_ip_sim_vivado(self, capsys):
         self.cli_init_project_ip_sim(capsys, 'vivado')

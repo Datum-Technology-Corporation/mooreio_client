@@ -129,67 +129,65 @@ class TestCliSim(TestBase):
         self.elab_ip(capsys, test_project_path, app, "tb")
 
     # DSim
-    @pytest.mark.single_process
     @pytest.mark.dsim
     def test_cli_cmp_ip_dsim(self, capsys):
         self.cli_cmp_ip(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_cmp_elab_ip_dsim(self, capsys):
         self.cli_cmp_elab_ip(capsys, "dsim")
-    @pytest.mark.single_process
-    @pytest.mark.dsim
+
+    #@pytest.mark.dsim
     def test_cli_cmpelab_ip_dsim(self, capsys):
         self.cli_cmpelab_ip(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_cmp_elab_sim_ip_dsim(self, capsys):
         self.cli_cmp_elab_sim_ip(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_cmpelab_sim_ip_dsim(self, capsys):
         self.cli_cmpelab_sim_ip(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_sim_args_ip_dsim(self, capsys):
         self.cli_sim_args_ip(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_sim_targets_ip_dsim(self, capsys):
         self.cli_sim_targets_ip(capsys, "dsim")
 
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_prep_dut_fsoc_dsim(self, capsys):
         self.cli_prep_dut_fsoc(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_cmp_elab_fsoc_dsim(self, capsys):
         self.cli_cmp_elab_fsoc(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_cmpelab_fsoc_dsim(self, capsys):
         self.cli_cmpelab_fsoc(capsys, "dsim")
 
 
     # Vivado
-    @pytest.mark.single_process
     @pytest.mark.vivado
     def test_cli_cmp_ip_vivado(self, capsys):
         self.cli_cmp_ip(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_cmp_elab_ip_vivado(self, capsys):
         self.cli_cmp_elab_ip(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_cmp_elab_sim_ip_vivado(self, capsys):
         self.cli_cmp_elab_sim_ip(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_sim_args_ip_vivado(self, capsys):
         self.cli_sim_args_ip(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_sim_targets_ip_vivado(self, capsys):
         self.cli_sim_targets_ip(capsys, "vivado")

@@ -80,53 +80,51 @@ class TestCliRegr(TestBase):
         self.deep_clean(capsys, test_project_path)
 
     # DSim
-    @pytest.mark.single_process
     @pytest.mark.dsim
     def test_cli_regr_dry_no_target_no_ts_dsim(self, capsys):
         self.cli_regr_dry_no_target_no_ts(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_regr_dry_target_no_ts_dsim(self, capsys):
         self.cli_regr_dry_target_no_ts(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_regr_dry_target_ts_dsim(self, capsys):
         self.cli_regr_dry_target_ts(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_regr_wet_no_target_no_ts_dsim(self, capsys):
         self.cli_regr_wet_no_target_no_ts(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_regr_wet_target_no_ts_dsim(self, capsys):
         self.cli_regr_wet_target_no_ts(capsys, "dsim")
-    @pytest.mark.single_process
+
     @pytest.mark.dsim
     def test_cli_regr_wet_target_ts_dsim(self, capsys):
         self.cli_regr_wet_target_ts(capsys, "dsim")
 
     # Vivado
-    @pytest.mark.single_process
     @pytest.mark.vivado
     def test_cli_regr_dry_no_target_no_ts_vivado(self, capsys):
         self.cli_regr_dry_no_target_no_ts(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_regr_dry_target_no_ts_vivado(self, capsys):
         self.cli_regr_dry_target_no_ts(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_regr_dry_target_ts_vivado(self, capsys):
         self.cli_regr_dry_target_ts(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_regr_wet_no_target_no_ts_vivado(self, capsys):
         self.cli_regr_wet_no_target_no_ts(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_regr_wet_target_no_ts_vivado(self, capsys):
         self.cli_regr_wet_target_no_ts(capsys, "vivado")
-    @pytest.mark.single_process
+
     @pytest.mark.vivado
     def test_cli_regr_wet_target_ts_vivado(self, capsys):
         self.cli_regr_wet_target_ts(capsys, "vivado")

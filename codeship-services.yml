@@ -1,9 +1,0 @@
-# Copyright 2020-2024 Datum Technology Corporation
-# All rights reserved.
-#######################################################################################################################
-
-
-app:
-  image: python:3.12
-  environment:
-    - PIP_ENV=production

@@ -16,8 +16,7 @@ class TestCliUser(TestBase):
     def setup(self):
         mio_client.cli.TEST_MODE = True
 
-    @pytest.mark.single_process
-    #@pytest.mark.integration
+    @pytest.mark.integration
     def test_cli_login_logout(self, capsys):
         result = self.login(capsys, 'admin', 'admin')
         result = self.logout(capsys)

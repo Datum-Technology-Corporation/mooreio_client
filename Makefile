@@ -123,31 +123,35 @@ clean-venv:
 
 #######################################################################################################################
 # Testing Targets
-.PHONY: test lint
+.PHONY: test test-core test-dsim test-vivado lint
 #######################################################################################################################
 # Run all pytest test suites
-test: venv
-	$(call print_banner, Running all pytest tests)
-	mkdir -p reports
-	$(PYTEST)
+test: test-core test-integration test-dsim test-vivado
 
 # Run only core tests
 test-core: venv
 	$(call print_banner, Running core tests)
 	mkdir -p reports
 	$(PYTEST) -m core
+	$(PYTEST) -n 1 -m core_single
+
+# Run only integration tests
+test-integration: venv
+	$(call print_banner, Running integration tests)
+	mkdir -p reports
+	$(PYTEST) -n 1 -m integration
 
 # Run only dsim tests
 test-dsim: venv
 	$(call print_banner, Running DSim tests)
 	mkdir -p reports
-	$(PYTEST) -m dsim
+	$(PYTEST) -n 1 -m dsim
 
 # Run only vivado tests
 test-vivado: venv
 	$(call print_banner, Running Vivado tests)
 	mkdir -p reports
-	$(PYTEST) -m vivado
+	$(PYTEST) -n 1 -m vivado
 
 # Lints codebase
 lint: venv
