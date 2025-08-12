@@ -44,8 +44,9 @@ Full Command List (`mio help CMD` for help on a specific command):
       x              Generates IP HDL code using Datum SiArx (requires license)
 
    IP and Credentials Management
+      list           Enumerates local/installed IP visible to Moore.io
+      login/logout   Starts/ends session with IP Marketplace
       install        Installs all IP dependencies from IP Marketplace
-      login          Starts session with IP Marketplace
       package        Creates a compressed (and encrypted) archive of an IP
       publish        Publishes IP to Server (must have mio admin account)
 
