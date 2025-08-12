@@ -1,0 +1,25 @@
+ip:
+  sync: false
+  pkg_type: dv_tb
+  vendor: "acme"
+  name: "tb"
+  full_name: "TB"
+  version: "5.3.7"
+
+dut:
+  type: fsoc
+  name: "core-v-mcu"
+  full_name: "openhwgroup.org:systems:core-v-mcu"
+  target: "sim"
+  version: "*"
+
+structure:
+  hdl_src_path: "src"
+
+hdl_src:
+  directories: ["."]
+  top_sv_files: ["tb_pkg.sv"]
+  top: ["tb"]
+  tests_path: "tests"
+  tests_name_template: "{{ name }}_test_c"
+

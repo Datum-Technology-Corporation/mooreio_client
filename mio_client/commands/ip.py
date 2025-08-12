@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 
@@ -12,8 +12,8 @@ from semantic_version import SimpleSpec
 from ..core.phase import Phase
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
-from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionConfiguration, \
-    LogicSimulatorLibraryDeletionConfiguration, LogicSimulatorLibraryDeletionReport
+from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionRequest, \
+    LogicSimulatorLibraryDeletionRequest, LogicSimulatorLibraryDeletionReport
 from ..core.command import Command
 from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
@@ -38,7 +38,9 @@ Usage:
    mio list
 
 Examples:
-   mio list"""
+   mio list
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#list"""
 
 class List(Command):
     @staticmethod
@@ -49,12 +51,16 @@ class List(Command):
     def add_to_subparsers(subparsers):
         parser_list = subparsers.add_parser('list', help=LIST_HELP_TEXT, add_help=False)
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
+
     def needs_authentication(self) -> bool:
         return False
 
     def phase_post_ip_discovery(self, phase):
         all_ip_unsorted = self.rmh.ip_database.get_all_ip()
-        print(f"Found {len(all_ip_unsorted)} IP(s):")
+        self.rmh.info(f"Found {len(all_ip_unsorted)} IP(s):")
         sorted_ip = sorted(all_ip_unsorted, key=lambda current_ip: (current_ip.has_owner, current_ip.ip.vendor if current_ip.has_owner else '', current_ip.ip.name))
         for ip in sorted_ip:
             if ip.has_owner:
@@ -79,7 +85,9 @@ Usage:
    mio package IP DEST
    
 Examples:
-   mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory."""
+   mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory.
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#package"""
 
 class PackageCommand(Command):
     def __init__(self):
@@ -110,6 +118,10 @@ class PackageCommand(Command):
         parser_package.add_argument('ip'            , help='Target IP'                          )
         parser_package.add_argument('dest'          , help='Destination path'                   )
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -135,7 +147,7 @@ class PackageCommand(Command):
     def phase_main(self, phase):
         try:
             if (len(self.ip.ip.encrypted) > 0) or self.ip.ip.mlicensed:
-                encryption_config = LogicSimulatorEncryptionConfiguration()
+                encryption_config = LogicSimulatorEncryptionRequest()
                 tgz_path = self.ip.create_encrypted_compressed_tarball(encryption_config)
             else:
                 tgz_path = self.ip.create_unencrypted_compressed_tarball()
@@ -144,7 +156,7 @@ class PackageCommand(Command):
             phase.error = Exception(f"Failed to package IP '{self.ip}': {e}")
 
     def phase_report(self, phase):
-        print(f"Packaged IP '{self.ip}' successfully.")
+        self.rmh.info(f"Packaged IP '{self.ip}' successfully.")
 
 
 
@@ -163,7 +175,9 @@ Options:
 
 Examples:
    mio publish uvma_my_ip          # Publish Public IP 'uvma_my_ip'.
-   mio publish uvma_my_ip -c acme  # Publish Commercial IP 'uvma_my_ip' for customer 'acme'."""
+   mio publish uvma_my_ip -c acme  # Publish Commercial IP 'uvma_my_ip' for customer 'acme'.
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#publish"""
 
 class PublishCommand(Command):
     def __init__(self):
@@ -203,6 +217,10 @@ class PublishCommand(Command):
             required=False
         )
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
+
     def needs_authentication(self) -> bool:
         return True
 
@@ -233,7 +251,7 @@ class PublishCommand(Command):
 
     def phase_main(self, phase):
         try:
-            encryption_config = LogicSimulatorEncryptionConfiguration()
+            encryption_config = LogicSimulatorEncryptionRequest()
             self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip, encryption_config, self.customer)
         except Exception as e:
             phase.error = Exception(f"Failed to publish IP '{self.ip}': {e}")
@@ -247,7 +265,7 @@ class PublishCommand(Command):
             #self.rmh.remove_file(self.self._publishing_certificate._tgz_path)
             pass
         except Exception as e:
-            warnings.warn(f"Failed to delete compressed tarball for IP '{self.ip}': {e}")
+            self.rmh.warning(f"Failed to delete compressed tarball for IP '{self.ip}': {e}")
 
 
 
@@ -270,7 +288,9 @@ Examples:
    mio install                     # Install all dependencies for all IPs in the current Project
    mio install my_ip               # Install all dependencies for a specific IP in the current Project
    mio install acme/abc            # Install latest version of IP from Moore.io Server and its dependencies into current Project
-   mio install acme/abc -v "1.2.3" # Install specific version of IP from Moore.io Server and its dependencies into current Project"""
+   mio install acme/abc -v "1.2.3" # Install specific version of IP from Moore.io Server and its dependencies into current Project
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#install"""
 
 class InstallMode(Enum):
     UNKNOWN = 0
@@ -310,6 +330,10 @@ class InstallCommand(Command):
             help='IP version spec (remote IPs only)',
             required=False
         )
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return True
@@ -377,12 +401,9 @@ class InstallCommand(Command):
 
     def phase_report(self, phase: Phase):
         if self.mode == InstallMode.ALL:
-            print(f"Installed all IPs successfully.")
+            self.rmh.info(f"Installed all IPs successfully.")
         else:
-            print(f"Installed IP '{self.ip}' successfully.")
-
-    def phase_cleanup(self, phase: Phase):
-        pass
+            self.rmh.info(f"Installed IP '{self.ip}' successfully.")
 
 
 #######################################################################################################################
@@ -400,7 +421,9 @@ Usage:
 Examples:
    mio uninstall           # Delete all installed IPs in current project
    mio uninstall my_ip     # Delete all installed dependencies for a specific local IP in the current project
-   mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project"""
+   mio uninstall acme/abc  # Delete specific installed IP and all its installed dependencies from current project
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#uninstall"""
 
 class UninstallCommand(Command):
     def __init__(self):
@@ -430,6 +453,10 @@ class UninstallCommand(Command):
         parser_uninstall = subparsers.add_parser('uninstall', help=UNINSTALL_HELP_TEXT, add_help=False)
         parser_uninstall.add_argument('ip', help='Target IP', nargs='?', default="*")
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
+
     def needs_authentication(self) -> bool:
         return False
 
@@ -458,12 +485,9 @@ class UninstallCommand(Command):
 
     def phase_report(self, phase: Phase):
         if self.uninstall_all:
-            print(f"Uninstalled all IPs successfully.")
+            self.rmh.info(f"Uninstalled all IPs successfully.")
         else:
-            print(f"Uninstalled IP '{self.ip}' successfully.")
-
-    def phase_cleanup(self, phase: Phase):
-        pass
+            self.rmh.info(f"Uninstalled IP '{self.ip}' successfully.")
 
 
 #######################################################################################################################
@@ -481,7 +505,9 @@ Options:
    
 Examples:
    mio clean my_ip   # Delete compilation, elaboration and simulation artifacts for IP 'my_ip'
-   mio clean --deep  # Removes contents of Project Moore.io directory (/.mio)"""
+   mio clean --deep  # Removes contents of Project Moore.io directory (/.mio)
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#clean"""
 
 class CleanCommand(Command):
     def __init__(self):
@@ -491,7 +517,7 @@ class CleanCommand(Command):
         self._deep_clean: bool
         self._scheduler: JobScheduler
         self._simulators: list[LogicSimulator] = []
-        self._configuration: LogicSimulatorLibraryDeletionConfiguration = LogicSimulatorLibraryDeletionConfiguration()
+        self._request: LogicSimulatorLibraryDeletionRequest = LogicSimulatorLibraryDeletionRequest()
         self._reports: Dict[LogicSimulator, LogicSimulatorLibraryDeletionReport] = {}
         self._success: bool = False
 
@@ -520,8 +546,8 @@ class CleanCommand(Command):
         return self._scheduler
 
     @property
-    def configuration(self) -> LogicSimulatorLibraryDeletionConfiguration:
-        return self._configuration
+    def request(self) -> LogicSimulatorLibraryDeletionRequest:
+        return self._request
 
     @property
     def reports(self) -> Dict[LogicSimulator, LogicSimulatorLibraryDeletionReport]:
@@ -536,6 +562,10 @@ class CleanCommand(Command):
         parser_clean = subparsers.add_parser('clean', help=CLEAN_HELP_TEXT, add_help=False)
         parser_clean.add_argument('ip', help='Target IP', nargs='?', default="*")
         parser_clean.add_argument('-d', "--deep", help='Removes Project Moore.io directory (/.mio)', action="store_true", default=False , required=False)
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return False
@@ -580,7 +610,7 @@ class CleanCommand(Command):
         else:
             self._success = True
             for simulator in self._simulators:
-                self._reports[simulator] = simulator.delete_library(self.ip, self.configuration, self.scheduler)
+                self._reports[simulator] = simulator.delete_library(self.ip, self.request, self.scheduler)
                 self._success &= self._reports[simulator].success
             if not self._success:
                 phase.error = Exception(f"Failed to clean IP '{self.ip}'")

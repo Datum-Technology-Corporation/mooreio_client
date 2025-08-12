@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -28,11 +28,11 @@ from ..core.service import Service, ServiceType
 from ..core.ip import Ip
 from ..core.model import Model, VALID_NAME_REGEX
 from ..core.phase import Phase
-from .simulation import LogicSimulatorSimulationConfiguration, LogicSimulatorCompilationConfiguration, \
-    LogicSimulatorElaborationConfiguration, LogicSimulatorCompilationAndElaborationConfiguration, \
+from .simulation import LogicSimulatorSimulationRequest, LogicSimulatorCompilationRequest, \
+    LogicSimulatorElaborationRequest, LogicSimulatorCompilationAndElaborationRequest, \
     LogicSimulatorSimulationReport, LogicSimulator, LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, \
-    LogicSimulatorCompilationAndElaborationReport, SimulatorMetricsDSim, DSimCloudJob, DSimCloudSimulationConfiguration, \
-    UvmVerbosity, LogicSimulatorCoverageMergeConfiguration, LogicSimulatorCoverageMergeReport
+    LogicSimulatorCompilationAndElaborationReport, SimulatorMetricsDSim, DSimCloudJob, DSimCloudSimulationRequest, \
+    UvmVerbosity, LogicSimulatorCoverageMergeRequest, LogicSimulatorCoverageMergeReport
 
 
 #######################################################################################################################
@@ -148,8 +148,8 @@ class Regression:
             self.test_sets[name] = test_set
             return test_set
     
-    def render_cmp_config(self, target_name: str="default") -> LogicSimulatorCompilationConfiguration:
-        config = LogicSimulatorCompilationConfiguration()
+    def render_cmp_config(self, target_name: str="default") -> LogicSimulatorCompilationRequest:
+        config = LogicSimulatorCompilationRequest()
         config.use_custom_logs_path = True
         config.custom_logs_path = self.results_path
         config.max_errors = self.max_errors
@@ -158,14 +158,14 @@ class Regression:
         config.target = target_name
         return config
     
-    def render_elab_config(self, target_name: str="default") -> LogicSimulatorElaborationConfiguration:
-        config = LogicSimulatorElaborationConfiguration()
+    def render_elab_config(self, target_name: str="default") -> LogicSimulatorElaborationRequest:
+        config = LogicSimulatorElaborationRequest()
         config.use_custom_logs_path = True
         config.custom_logs_path = self.results_path
         return config
     
-    def render_cmp_elab_config(self, target_name: str="default") -> LogicSimulatorCompilationAndElaborationConfiguration:
-        config = LogicSimulatorCompilationAndElaborationConfiguration()
+    def render_cmp_elab_config(self, target_name: str="default") -> LogicSimulatorCompilationAndElaborationRequest:
+        config = LogicSimulatorCompilationAndElaborationRequest()
         config.use_custom_logs_path = True
         config.custom_sim_results_path = self.results_path
         config.max_errors = self.max_errors
@@ -174,8 +174,8 @@ class Regression:
         config.target = target_name
         return config
     
-    def render_sim_configs(self, target_name: str="default") -> Dict[int, LogicSimulatorSimulationConfiguration]:
-        sim_configs: Dict[int, LogicSimulatorSimulationConfiguration] = {}
+    def render_sim_configs(self, target_name: str="default") -> Dict[int, LogicSimulatorSimulationRequest]:
+        sim_configs: Dict[int, LogicSimulatorSimulationRequest] = {}
         for set_name in self.test_sets:
             for group_name in self.test_sets[set_name].test_groups:
                 for test_spec in self.test_sets[set_name].test_groups[group_name].test_specs:
@@ -189,7 +189,7 @@ class Regression:
                                 random_int = randint(1, ((1 << 31) - 1))
                             seeds.append(random_int)
                     for seed in seeds:
-                        config = LogicSimulatorSimulationConfiguration()
+                        config = LogicSimulatorSimulationRequest()
                         config.use_custom_logs_path = True
                         config.custom_logs_path = self.results_path
                         config.seed = seed
@@ -393,15 +393,15 @@ class TestSuite(Model):
                 self._resolved_regressions[regression_name].verbosity = self.ts.verbosity[regression_name]
 
 
-class RegressionConfiguration:
+class RegressionRequest:
     def __init__(self):
         self.target: str = ""
         self.dry_mode: bool = False
         self.app: LogicSimulators = LogicSimulators.UNDEFINED
-        self.compilation_config: LogicSimulatorCompilationConfiguration = None
-        self.elaboration_config: LogicSimulatorElaborationConfiguration = None
-        self.compilation_and_elaboration_config: LogicSimulatorCompilationAndElaborationConfiguration = None
-        self.simulation_configs: Dict[int, LogicSimulatorSimulationConfiguration] = {}
+        self.compilation_request: LogicSimulatorCompilationRequest = None
+        self.elaboration_request: LogicSimulatorElaborationRequest = None
+        self.compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest = None
+        self.simulation_requests: Dict[int, LogicSimulatorSimulationRequest] = {}
 
 class RegressionSimulationReport:
     def __init__(self):
@@ -568,10 +568,10 @@ class RegressionReport(Model):
 
 
 class RegressionRunner:
-    def __init__(self, db: 'RegressionDatabase', ip: Ip, regression: Regression, simulator: LogicSimulator, config: RegressionConfiguration):
+    def __init__(self, db: 'RegressionDatabase', ip: Ip, regression: Regression, simulator: LogicSimulator, request: RegressionRequest):
         self.db: 'RegressionDatabase' = db
         self.rmh: 'RootManager' = self.db.rmh
-        self.config: RegressionConfiguration = config
+        self.request: RegressionRequest = request
         self.report: RegressionReport = RegressionReport(self.rmh)
         self.phase: Phase = None
         self.ip: Ip = ip
@@ -584,9 +584,9 @@ class RegressionRunner:
         
     def execute_regression(self, scheduler: JobScheduler) -> RegressionReport:
         self.scheduler = scheduler
-        self.config.simulation_configs = self.regression.render_sim_configs(self.config.target)
+        self.request.simulation_requests = self.regression.render_sim_configs(self.request.target)
         self.rmh.create_directory(self.regression.results_path)
-        if self.config.app == LogicSimulators.DSIM:
+        if self.request.app == LogicSimulators.DSIM:
             self.dsim_cloud_simulation()
         else:
             self.parallel_simulation()
@@ -596,12 +596,12 @@ class RegressionRunner:
         return self.report
     
     def parallel_simulation(self):
-        if not self.config.dry_mode:
+        if not self.request.dry_mode:
             timeout = self.regression.max_duration * 3600
             with ThreadPoolExecutor(max_workers=self.regression.max_jobs) as executor:
-                future_simulations = [executor.submit(self.launch_simulation, self.config.simulation_configs[seed]) for seed in
-                                      self.config.simulation_configs]
-                with tqdm(total=len(self.config.simulation_configs), desc="Simulations") as pbar:
+                future_simulations = [executor.submit(self.launch_simulation, self.request.simulation_requests[seed]) for seed in
+                                      self.request.simulation_requests]
+                with tqdm(total=len(self.request.simulation_requests), desc="Simulations") as pbar:
                     for future in as_completed(future_simulations):
                         try:
                             result = future.result(timeout=timeout)
@@ -614,9 +614,9 @@ class RegressionRunner:
             for simulation_report in self.report.simulation_reports:
                 self.report.success &= simulation_report.sim_report.success
     
-    def launch_simulation(self, config: LogicSimulatorSimulationConfiguration):
-        sim_report: LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, config, self.scheduler)
-        test_spec: ResolvedTestSpec = self.regression.test_specs[config.seed]
+    def launch_simulation(self, request: LogicSimulatorSimulationRequest):
+        sim_report: LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, request, self.scheduler)
+        test_spec: ResolvedTestSpec = self.regression.test_specs[request.seed]
         regression_sim_report: RegressionSimulationReport = RegressionSimulationReport()
         regression_sim_report.test_spec = test_spec
         regression_sim_report.sim_report = sim_report
@@ -633,27 +633,27 @@ class RegressionRunner:
         simulator.cloud_mode = True
         # 2. Amass configuration objects for compilation/elaboration
         if self.ip.has_vhdl_content:
-            self.config.compilation_config = self.regression.render_cmp_config(self.config.target)
-            self.config.compilation_config.use_relative_paths = True
-            self.config.elaboration_config = self.regression.render_elab_config(self.config.target)
-            self.config.elaboration_config.use_relative_paths = True
+            self.request.compilation_request = self.regression.render_cmp_config(self.request.target)
+            self.request.compilation_request.use_relative_paths = True
+            self.request.elaboration_request = self.regression.render_elab_config(self.request.target)
+            self.request.elaboration_request.use_relative_paths = True
         else:
-            self.config.compilation_and_elaboration_config = self.regression.render_cmp_elab_config(self.config.target)
-            self.config.compilation_and_elaboration_config.use_relative_paths = True
+            self.request.compilation_and_elaboration_request = self.regression.render_cmp_elab_config(self.request.target)
+            self.request.compilation_and_elaboration_request.use_relative_paths = True
         # 3. Create DSim Cloud Configuration object and fill it in from our regression configuration
-        cloud_simulation_config: DSimCloudSimulationConfiguration = DSimCloudSimulationConfiguration()
+        cloud_simulation_config: DSimCloudSimulationRequest = DSimCloudSimulationRequest()
         cloud_simulation_config.name = f"{self.ip.ip.name}-{self.regression.name}"
         cloud_simulation_config.name = cloud_simulation_config.name.replace("_", "-")
         cloud_simulation_config.results_path = self.regression.results_path
-        cloud_simulation_config.dry_mode = self.config.dry_mode
+        cloud_simulation_config.dry_mode = self.request.dry_mode
         cloud_simulation_config.timeout = self.regression.max_duration
         cloud_simulation_config.max_parallel_tasks = self.regression.max_jobs
-        cloud_simulation_config.compute_size = self.db.rmh.configuration.logic_simulation.metrics_dsim_cloud_max_compute_size
-        cloud_simulation_config.compilation_config = self.config.compilation_config
-        cloud_simulation_config.elaboration_config = self.config.elaboration_config
-        cloud_simulation_config.compilation_and_elaboration_config = self.config.compilation_and_elaboration_config
-        for seed in self.config.simulation_configs:
-            simulation_config = self.config.simulation_configs[seed]
+        cloud_simulation_config.compute_size = self.db.rmh.configuration.logic_simulation.altair_dsim_cloud_max_compute_size
+        cloud_simulation_config.compilation_config = self.request.compilation_request
+        cloud_simulation_config.elaboration_config = self.request.elaboration_request
+        cloud_simulation_config.compilation_and_elaboration_config = self.request.compilation_and_elaboration_request
+        for seed in self.request.simulation_requests:
+            simulation_config = self.request.simulation_requests[seed]
             cloud_simulation_config.simulation_configs.append(simulation_config)
         # 4. Launch job on the cloud via simulator
         cloud_simulation_report = simulator.dsim_cloud_simulate(self.ip, cloud_simulation_config, self.scheduler)
@@ -674,7 +674,7 @@ class RegressionRunner:
 
     def merge_coverage(self):
         if self.report.success and self.regression.cov_enabled:
-            coverage_merge_config: LogicSimulatorCoverageMergeConfiguration = LogicSimulatorCoverageMergeConfiguration()
+            coverage_merge_config: LogicSimulatorCoverageMergeRequest = LogicSimulatorCoverageMergeRequest()
             coverage_merge_config.output_path = self.regression.results_path / "coverage_report"
             coverage_merge_config.create_html_report = True
             coverage_merge_config.html_report_path = self.regression.results_path / "coverage_report"
@@ -686,10 +686,10 @@ class RegressionRunner:
 
 
     def fill_report(self):
-        self.report.target_name = self.config.target
+        self.report.target_name = self.request.target
         self.report.test_suite_file_path = self.regression.test_suite.file_path
         self.report.verbosity = self.regression.verbosity
-        if self.config.dry_mode:
+        if self.request.dry_mode:
             self.report.success = True
             if self.report.compilation_report:
                 self.report.compilation_report.success = True
@@ -749,7 +749,7 @@ class RegressionRunner:
                         self.report.passing_tests_with_warnings.append(simulation_report)
                 else:
                     self.report.failing_tests.append(simulation_report)
-            self.report.simulator = self.config.app
+            self.report.simulator = self.request.app
             self.report.num_tests = len(self.report.simulation_reports)
             self.report.num_passing_tests = len(self.report.passing_tests)
             self.report.num_passing_tests_with_no_warnings = len(self.report.passing_tests_with_no_warnings)
@@ -856,7 +856,7 @@ class RegressionDatabase(Service):
                 raise Exception(f"Regression '{regression_name}' not found in default Test Suite")
             return None
     
-    def get_regression_runner(self, ip: Ip, regression: Regression, simulator: LogicSimulator, config: RegressionConfiguration) -> RegressionRunner:
+    def get_regression_runner(self, ip: Ip, regression: Regression, simulator: LogicSimulator, config: RegressionRequest) -> RegressionRunner:
         regression_runner: RegressionRunner = RegressionRunner(self, ip, regression, simulator, config)
         return regression_runner
     

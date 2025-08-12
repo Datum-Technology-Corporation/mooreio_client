@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 from pathlib import Path
@@ -18,8 +18,8 @@ class User(Model):
         self._pre_set_password = ""
     authenticated: bool = False
     username: Optional[constr(pattern=VALID_NAME_REGEX)] = "__ANONYMOUS__"
-    access_token: Optional[str] = ""
-    refresh_token: Optional[str] = ""
+    session_cookies: Optional[dict] = {}
+    session_headers: Optional[dict] = {}
 
     @classmethod
     def new(cls):

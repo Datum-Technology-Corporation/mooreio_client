@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import os
@@ -24,7 +24,7 @@ def get_services():
 #######################################################################################################################
 # Support Classes
 #######################################################################################################################
-class DoxygenServiceConfiguration:
+class DoxygenServiceRequest:
     def __init__(self):
         self.dry_mode: bool = False
         self.private: bool = False
@@ -61,7 +61,7 @@ class DoxygenService(Service):
     def get_version(self) -> Version:
         return Version('1.0.0')
 
-    def generate_documentation(self, ip: Ip, configuration: DoxygenServiceConfiguration, scheduler: JobScheduler) -> DoxygenServiceReport:
+    def generate_documentation(self, ip: Ip, request: DoxygenServiceRequest, scheduler: JobScheduler) -> DoxygenServiceReport:
         # 1. Initialize report
         report = DoxygenServiceReport()
         report.output_path = self._output_path / ip.lib_name
@@ -76,7 +76,7 @@ class DoxygenService(Service):
         self.rmh.create_directory(report.output_path)
         self.rmh.create_directory(report.html_output_path)
         report.scheduler_config = JobSchedulerConfiguration(self.rmh)
-        report.scheduler_config.dry_run = configuration.dry_mode
+        report.scheduler_config.dry_run = request.dry_mode
         report.scheduler_config.output_to_terminal = self.rmh.print_trace
         # 5. Prepare Job arguments and environment variables
         pre_args: List[str] = []
@@ -99,7 +99,7 @@ class DoxygenService(Service):
         if ip.has_examples:
             pre_args.append(f"EXAMPLE_PATH='{ip.resolved_examples_path}'")
         args: List[str] = []
-        if configuration.private:
+        if request.private:
             args.append(str(self.rmh.data_files_path / "doxygen.private.cfg"))
         else:
             args.append(str(self.rmh.data_files_path / "doxygen.public.cfg"))
@@ -108,7 +108,7 @@ class DoxygenService(Service):
                                 Path(os.path.join(self._installation_path, "doxygen")), args)
         job_generate.pre_arguments = pre_args
         report.jobs.append(job_generate)
-        if configuration.dry_mode:
+        if request.dry_mode:
             report.success = True
         else:
             results_generate = scheduler.dispatch_job(job_generate, report.scheduler_config)

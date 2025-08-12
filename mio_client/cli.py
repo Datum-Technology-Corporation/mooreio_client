@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import argparse
@@ -6,18 +6,18 @@ import pathlib
 import sys
 import os
 
-from mio_client.commands import sim, ip, misc, project, team, user, web, gen
+from mio_client.commands import sim, ip, misc, user, gen
 from mio_client.core.root_manager import RootManager
 
 #######################################################################################################################
 # User Manual Top
 #######################################################################################################################
-VERSION = "2.0.4"
+VERSION = "2.1.0"
 
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}
-                                    User Manual: http://mooreio-client.rtfd.io/
-             https://mooreio.com - Copyright 2020-2024 Datum Technology Corporation - https://datumtc.ca
+                                    User Manual: https://mooreio-client.rtfd.io/
+             https://mooreio.com - Copyright 2020-2025 Datum Technology Corporation - https://datumtc.ca
 Usage:
   mio [--version] [--help]
   mio [--wd WD] [--dbg] CMD [OPTIONS]
@@ -41,6 +41,7 @@ Full Command List (`mio help CMD` for help on a specific command):
       
    Project and Code Management
       init           Creates essential files necessary for new Projects/IPs
+      x              Generates IP HDL code using Datum SiArx (requires license)
 
    IP and Credentials Management
       install        Installs all IP dependencies from IP Marketplace
@@ -56,42 +57,47 @@ Full Command List (`mio help CMD` for help on a specific command):
 
 
 #######################################################################################################################
-# Main
+# Global Variables
 #######################################################################################################################
-URL_BASE = 'https://mooreio.com'
-URL_AUTHENTICATION = f'{URL_BASE}/auth/token'
 TEST_MODE = False
 USER_HOME_PATH = pathlib.Path(os.path.expanduser("~/.mio"))
 root_manager: RootManager
+
+
+#######################################################################################################################
+# Main
+#######################################################################################################################
 def main(args=None) -> int:
     """
     Main entry point. Performs the following steps in order:
-    - Create CLI argument parser
-    - Find all commands and register them
-    - Parse CLI arguments
-    - Find the command which matches the parsed arguments
-    - Create the Root instance
-    - Run the command via the Root instance
+    - 1. Create CLI argument parser
+    - 2. Find all commands and register them
+    - 3. Parse CLI arguments
+    - 4. Find the command which matches the parsed arguments
+    - 5. Create the Root Manage instance
+    - 6. Run the command via the Root instance
     :return: Exit code
     """
     global root_manager
-
+    # 1. Create CLI argument parser
     try:
         parser = create_top_level_parser()
         subparsers = parser.add_subparsers(dest='command', help='Sub-command help')
+        # 2. Find all commands and register them
         commands = register_all_commands(subparsers)
+        # 3. Parse CLI arguments
         args = parser.parse_args(args)
     except Exception as e:
         print(f"Error during parsing of CLI arguments: {e}", file=sys.stderr)
         return 1
-
+    # Version/Help (--version, --help) commands are handled here
     if args.version:
         print_version_text()
         return 0
     if (not args.command) or args.help:
         print_help_text()
         return 0
-
+    # 4. Find the command which matches the parsed arguments
     command = next(
         (
             cmd for cmd in commands
@@ -102,7 +108,7 @@ def main(args=None) -> int:
     if not command:
         print(f"Unknown command '{args.command}' specified.", file=sys.stderr)
         return 1
-
+     # If we're using a custom Work Directory, ensure it exists
     wd = None
     if args.wd is None:
         wd = pathlib.Path.cwd()
@@ -112,13 +118,13 @@ def main(args=None) -> int:
         except Exception as e:
             print(f"Invalid path '{wd}' provided as working directory: {e}", file=sys.stderr)
             return 1
-
-    root_manager = RootManager("Moore.io Client Root Manager", wd, URL_BASE, URL_AUTHENTICATION, TEST_MODE, USER_HOME_PATH)
+    # 5. Create the Root Manager instance
+    root_manager = RootManager("Moore.io Client Root Manager", wd, TEST_MODE, USER_HOME_PATH)
     command.parsed_cli_arguments = args
-
+    # Enable Moore.io debug output if specified
     if args.dbg:
         root_manager.print_trace = True
-
+    # 6. Run the command via the Root Manager instance
     return root_manager.run(command)
 
 
@@ -147,10 +153,7 @@ def register_all_commands(subparsers):
     register_commands(commands, sim.get_commands())
     register_commands(commands, ip.get_commands())
     register_commands(commands, misc.get_commands())
-    register_commands(commands, project.get_commands())
-    register_commands(commands, team.get_commands())
     register_commands(commands, user.get_commands())
-    register_commands(commands, web.get_commands())
     register_commands(commands, gen.get_commands())
     for command in commands:
         command.add_to_subparsers(subparsers)

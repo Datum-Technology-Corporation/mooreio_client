@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import base64
@@ -17,12 +17,12 @@ from pydantic import constr, PositiveInt, ValidationError
 from semantic_version import SimpleSpec
 
 from .model import Model, VALID_NAME_REGEX, VALID_IP_OWNER_NAME_REGEX, VALID_FSOC_NAMESPACE_REGEX, \
-    VALID_POSIX_PATH_REGEX, UNDEFINED_CONST
+    VALID_POSIX_PATH_REGEX, UNDEFINED_CONST, PosixPath, PosixPathList, HdlNameList, HdlName, OrgName
 
 from enum import Enum
 
 from .version import SemanticVersion, SemanticVersionSpec
-from .configuration import Ip
+from .configuration import Ip, LogicSimulators
 from .service import ServiceType
 
 
@@ -147,10 +147,10 @@ class IpDefinition:
 
 
 class Structure(Model):
-    scripts_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    docs_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    examples_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    hdl_src_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    scripts_path: Optional[PosixPath] = UNDEFINED_CONST
+    docs_path: Optional[PosixPath] = UNDEFINED_CONST
+    examples_path: Optional[PosixPath] = UNDEFINED_CONST
+    hdl_src_path: PosixPath
 
     def model_dump(self, **kwargs):
         return_dict = {
@@ -166,13 +166,13 @@ class Structure(Model):
 
 
 class HdlSource(Model):
-    directories: List[constr(pattern=VALID_POSIX_PATH_REGEX)]
-    top_sv_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
-    top_vhdl_files: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
-    top: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
-    tests_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    directories: PosixPathList
+    top_sv_files: Optional[PosixPathList] = []
+    top_vhdl_files: Optional[PosixPathList] = []
+    top: Optional[HdlNameList] = []
+    tests_path: Optional[PosixPath] = UNDEFINED_CONST
     tests_name_template: Optional[str] = UNDEFINED_CONST
-    so_libs: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
+    so_libs: Optional[PosixPathList] = []
 
     def model_dump(self, **kwargs):
         return_dict = {
@@ -195,17 +195,27 @@ class HdlSource(Model):
 
 class DesignUnderTest(Model):
     type: DutType
-    name: Union[constr(pattern=VALID_NAME_REGEX), constr(pattern=VALID_FSOC_NAMESPACE_REGEX)] = UNDEFINED_CONST
+    name: str = UNDEFINED_CONST
+    full_name: Optional[str] = UNDEFINED_CONST
     version: Optional[SemanticVersionSpec] = SemanticVersionSpec()
-    target: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
+    target: Optional[HdlName] = UNDEFINED_CONST
 
     def model_dump(self, **kwargs):
-        return_dict = {
-            'type': self.type.value,
-            'name': self.name,
-            'version': str(self.version),
-            'target': self.target,
-        }
+        if self.type.value == DutType.FUSE_SOC.value:
+            return_dict = {
+                'type': self.type.value,
+                'name': self.name,
+                'full_name': self.full_name,
+                'version': str(self.version),
+                'target': self.target,
+            }
+        else:
+            return_dict = {
+                'type': self.type.value,
+                'name': self.name,
+                'version': str(self.version),
+                'target': self.target,
+            }
         return return_dict
 
 
@@ -218,9 +228,9 @@ class Parameter(Model):
 
 class Target(Model):
     dut: Optional[str] = UNDEFINED_CONST
-    cmp: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
-    elab: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
-    sim: Optional[dict[constr(pattern=VALID_NAME_REGEX), Union[PositiveInt, bool]]] = {}
+    cmp: Optional[dict[HdlName, Union[PositiveInt, bool]]] = {}
+    elab: Optional[dict[HdlName, Union[PositiveInt, bool]]] = {}
+    sim: Optional[dict[HdlName, Union[PositiveInt, bool]]] = {}
 
     def model_dump(self, **kwargs):
         return_dict = {
@@ -238,14 +248,14 @@ class Target(Model):
 
 class About(Model):
     sync: bool
-    vendor: constr(pattern=VALID_NAME_REGEX)
-    name: constr(pattern=VALID_NAME_REGEX)
+    vendor: HdlName
+    name: HdlName
     full_name: str
     version: SemanticVersion
     pkg_type: IpPkgType
     sync_id: Optional[PositiveInt] = 0
     sync_revision: Optional[str] = UNDEFINED_CONST
-    encrypted: Optional[List[constr(pattern=VALID_NAME_REGEX)]] = []
+    encrypted: Optional[HdlNameList] = []
     mlicensed: Optional[bool] = False
 
     def model_dump(self, **kwargs):
@@ -271,9 +281,9 @@ class Ip(Model):
     ip: About
     structure: Structure
     hdl_src: HdlSource
-    dependencies: Optional[dict[constr(pattern=VALID_IP_OWNER_NAME_REGEX), SemanticVersionSpec]] = {}
+    dependencies: Optional[dict[OrgName, SemanticVersionSpec]] = {}
     dut: Optional[DesignUnderTest] = None
-    targets: Optional[dict[constr(pattern=VALID_NAME_REGEX), Target]] = {}
+    targets: Optional[dict[HdlName, Target]] = {}
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -296,7 +306,6 @@ class Ip(Model):
         self._resolved_top_sv_files: List[Path] = []
         self._resolved_top_vhdl_files: List[Path] = []
         self._resolved_encrypted_hdl_directories: dict[str, List[Path]] = {}
-        self._resolved_encrypted_shared_objects: dict[str, List[Path]] = {}
         self._resolved_encrypted_top_sv_files: dict[str, List[Path]] = {}
         self._resolved_encrypted_top_vhdl_files: dict[str, List[Path]] = {}
         self._resolved_top: List[str] = []
@@ -499,12 +508,12 @@ class Ip(Model):
         return self._resolved_top_vhdl_files
 
     @property
-    def resolved_encrypted_hdl_directories(self) -> dict[str, List[Path]]:
-        return self._resolved_encrypted_hdl_directories
+    def resolved_tests_path(self) -> Path:
+        return self._root_path / self.hdl_src.tests_path
 
     @property
-    def resolved_encrypted_shared_objects(self) -> dict[str, List[Path]]:
-        return self._resolved_encrypted_shared_objects
+    def resolved_encrypted_hdl_directories(self) -> dict[str, List[Path]]:
+        return self._resolved_encrypted_hdl_directories
 
     @property
     def resolved_encrypted_top_sv_files(self) -> dict[str, List[Path]]:
@@ -549,14 +558,31 @@ class Ip(Model):
         return self._resolved_dut
 
     @property
+    def dut_needs_prep(self) -> bool:
+        if self.has_dut:
+            return self.dut.type != DutType.MIO_IP.value
+        return False
+
+    @property
     def uninstalled(self) -> bool:
         return self._uninstalled
+
+    def resolve_shared_objects(self, simulator:str):
+        for so in self.hdl_src.so_libs:
+            so_path: Path = self.resolved_scripts_path / f"{so}.{simulator}.so"
+            if self.rmh.file_exists(so_path):
+                self._resolved_shared_objects.append(so_path)
+            else:
+                raise Exception(f"Shared object '{so}' for simulator '{simulator}' cannot be found at '{so_path}'")
 
     def check(self):
         # If configured to local_mode, global IPs must 'relocate' to the project's mio work directory
         if (self.location_type == IpLocationType.GLOBAL) and self.rmh.configuration.project.local_mode:
             current_ip_root_path = self.file_path.parent
             new_ip_root_path = self.rmh.global_ip_local_copy_dir / self.installation_directory_name
+            self.rmh.debug(f"Relocating GLOBAL IP '{self}' from '{current_ip_root_path}' to '{new_ip_root_path}' ...")
+            if self.rmh.directory_exists(new_ip_root_path):
+                self.rmh.remove_directory(new_ip_root_path)
             self.rmh.copy_directory(current_ip_root_path, new_ip_root_path)
             self.file_path = new_ip_root_path / self.file_path.name
         # Check hdl-src directories & files
@@ -574,17 +600,17 @@ class Ip(Model):
             self._has_scripts = True
             self._resolved_scripts_path = self.root_path / self.structure.scripts_path
             if not self.rmh.directory_exists(self.resolved_scripts_path):
-                raise Exception(f"IP '{self}' scripts path '{self.resolved_scripts_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' scripts path '{self.resolved_scripts_path}' does not exist")
         if self.structure.docs_path != UNDEFINED_CONST:
             self._has_docs = True
             self._resolved_docs_path = self.root_path / self.structure.docs_path
             if not self.rmh.directory_exists(self.resolved_docs_path):
-                raise Exception(f"IP '{self}' docs path '{self.resolved_docs_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' docs path '{self.resolved_docs_path}' does not exist")
         if self.structure.examples_path != UNDEFINED_CONST:
             self._has_examples = True
             self._resolved_examples_path = self.root_path / self.structure.examples_path
             if not self.rmh.directory_exists(self.resolved_examples_path):
-                raise Exception(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' examples path '{self.resolved_examples_path}' does not exist")
         # Check targets
         if 'default' not in self.targets:
             default_target = Target()
@@ -593,11 +619,11 @@ class Ip(Model):
 
     def check_hdl_src(self, path: Path, simulator: str=""):
         if not self.rmh.directory_exists(path):
-            raise Exception(f"IP '{self}' src path '{path}' does not exist")
+            self.rmh.warning(f"IP '{self}' src path '{path}' does not exist")
         for directory in self.hdl_src.directories:
             directory_path = path / directory
             if not self.rmh.directory_exists(directory_path):
-                raise Exception(f"IP '{self}' HDL src path '{directory_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' HDL src path '{directory_path}' does not exist")
             else:
                 if simulator == "":
                     self.resolved_hdl_directories.append(directory_path)
@@ -608,7 +634,7 @@ class Ip(Model):
         if self.hdl_src.tests_path != UNDEFINED_CONST:
             tests_directory_path = path / self.hdl_src.tests_path
             if not self.rmh.directory_exists(tests_directory_path):
-                raise Exception(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
+                self.rmh.warning(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
             else:
                 if simulator == "":
                     self.resolved_hdl_directories.append(tests_directory_path)
@@ -638,27 +664,14 @@ class Ip(Model):
                     if simulator not in self.resolved_encrypted_top_vhdl_files:
                         self._resolved_encrypted_top_vhdl_files[simulator] = []
                     self.resolved_encrypted_top_vhdl_files[simulator].append(full_path)
-        for shared_object in self.hdl_src.so_libs:
-            if simulator == "":
-                full_path = path / f"{shared_object}.so"
-            else:
-                full_path = path / f"{shared_object}.{simulator}.so"
-            if not self.rmh.file_exists(full_path):
-                raise Exception(f"IP '{self}' src shared object file path '{full_path}' does not exist")
-            else:
-                if simulator == "":
-                    self.resolved_shared_objects.append(full_path)
-                else:
-                    if simulator not in self.resolved_encrypted_shared_objects:
-                        self._resolved_encrypted_shared_objects[simulator] = []
-                    self.resolved_encrypted_shared_objects[simulator].append(full_path)
 
     def add_resolved_dependency(self, ip_definition: IpDefinition, ip: Ip):
         num_dependencies = len(self.dependencies)
         if self.has_dut:
             num_dependencies += 1
             if ip_definition.is_dut:
-                self._resolved_dut = ip
+                if self.dut.type == DutType.MIO_IP:
+                    self._resolved_dut = ip
             else:
                 self._resolved_dependencies[ip_definition] = ip
         else:
@@ -743,27 +756,32 @@ class Ip(Model):
     def __hash__(self):
         return hash(self.archive_name)
     
-    def get_dependencies(self, src_dest_map: Dict[Ip, Ip]):
+    def get_dependencies(self, src_dest_map: Dict[Ip, List[Ip]]):
+        src_dest_map[self] = []
         for dep in self.resolved_dependencies:
             dependency = self.resolved_dependencies[dep]
-            src_dest_map[self] = dependency
+            src_dest_map[self].append(dependency)
             dependency.get_dependencies(src_dest_map)
-    
+        if self.has_dut and self.dut.type == DutType.MIO_IP:
+            src_dest_map[self].append(self.resolved_dut)
+            self.resolved_dut.get_dependencies(src_dest_map)
+
     def get_dependencies_in_order(self) -> List[Ip]:
         """
         Apply a topological sorting algorithm to determine the order of compilation (Khan's algorithm)
         :return: List of IPs in order of compilation
         """
-        all_ip = self.ip_database.get_all_ip()
         dependencies = {}
         self.get_dependencies(dependencies)
+        all_ip = list(dependencies.keys())
         # Create a graph and a dictionary to keep track of in-degrees of nodes
         graph = defaultdict(list)
         in_degree = {package: 0 for package in all_ip}
         # Populate the graph and in-degrees based on dependencies
-        for dep in dependencies:
-            graph[dep].append(dependencies[dep])
-            in_degree[dependencies[dep]] += 1
+        for dep_ip in dependencies:
+            for dep in dependencies[dep_ip]:
+                graph[dep_ip].append(dep)
+                in_degree[dep] += 1
         # Find all nodes with in-degree 0
         queue = deque([ip for ip in all_ip if in_degree[ip] == 0])
         topo_order = []
@@ -777,7 +795,6 @@ class Ip(Model):
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
         # If topological sort includes all nodes, return the order
-        # TODO Remove IP that aren't related to this IP
         if len(topo_order) == len(all_ip):
             # Remove self from the topological order if it exists
             if self in topo_order:
@@ -824,7 +841,7 @@ class Ip(Model):
         if self.targets:
             for define, value in self.targets[target_name].cmp.items():
                 if not isinstance(value, bool):
-                    defines[define] = value
+                    defines[define] = str(value)
         return defines
     
     def get_target_sim_bool_args(self, target_name: str="default") -> Dict[str, bool]:
@@ -846,7 +863,7 @@ class Ip(Model):
         if self.targets:
             for define, value in self.targets[target_name].sim.items():
                 if not isinstance(value, bool):
-                    defines[define] = value
+                    defines[define] = str(value)
         return defines
 
 
@@ -913,6 +930,13 @@ class IpDataBase():
         if raise_exception_if_not_found:
             raise ValueError(f"IP with name '{name}', owner '{owner}', version '{version_spec}' not found.")
 
+    def find_ip_by_sync_id(self, sync_id: str, raise_exception_if_not_found: bool=True) -> Ip:
+        for ip in self._ip_list:
+            if ip.ip.sync and (ip.ip.sync_id == sync_id):
+                return ip
+        if raise_exception_if_not_found:
+            raise ValueError(f"IP with sync_id '{sync_id}' not found.")
+
     def discover_ip(self, path: Path, ip_location_type: IpLocationType, error_on_malformed: bool=False, error_on_nothing_found: bool=False) -> List[Ip]:
         ip_list: List[Ip] = []
         ip_files: List[str] = []
@@ -963,34 +987,41 @@ class IpDataBase():
         if reset_list_of_dependencies_to_find_online:
             self._dependencies_to_find_online = []
             self._need_to_find_dependencies_on_remote = False
-        if ip.has_dut and not ip.dependencies_resolved:
-            dut_definition = Ip.parse_ip_definition(ip.dut.name)
-            dut_definition.version_spec = ip.dut.version
-            dut_definition.is_dut = True
-            dut_dependency = self.find_ip_definition(dut_definition, raise_exception_if_not_found=False)
-            if dut_dependency is None:
-                ip.add_dependency_to_find_on_remote(dut_definition)
-                self._need_to_find_dependencies_on_remote = True
-                self._ip_with_missing_dependencies[ip.uid] = ip
-                self._dependencies_to_find_online.append(dut_definition)
-            else:
-                ip.add_resolved_dependency(dut_definition, dut_dependency)
-                if recursive:
-                    self.resolve_dependencies(dut_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
-        for ip_definition_str, ip_version_spec in ip.dependencies.items():
-            if not ip.dependencies_resolved:
-                ip_definition = Ip.parse_ip_definition(ip_definition_str)
-                ip_definition.version_spec = ip_version_spec
-                ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
-                if ip_dependency is None:
-                    ip.add_dependency_to_find_on_remote(ip_definition)
+        if ip.has_dut:
+            if ip.dut.type == DutType.MIO_IP and not ip.dependencies_resolved:
+                dut_definition = Ip.parse_ip_definition(ip.dut.name)
+                dut_definition.version_spec = ip.dut.version
+                dut_definition.is_dut = True
+                dut_dependency = self.find_ip_definition(dut_definition, raise_exception_if_not_found=False)
+                if dut_dependency is None:
+                    ip.add_dependency_to_find_on_remote(dut_definition)
                     self._need_to_find_dependencies_on_remote = True
                     self._ip_with_missing_dependencies[ip.uid] = ip
-                    self._dependencies_to_find_online.append(ip_definition)
+                    self._dependencies_to_find_online.append(dut_definition)
                 else:
-                    ip.add_resolved_dependency(ip_definition, ip_dependency)
+                    ip.add_resolved_dependency(dut_definition, dut_dependency)
                     if recursive:
-                        self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
+                        self.resolve_dependencies(dut_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
+            else:
+                # Custom DUT
+                if ip.dut.type == DutType.FUSE_SOC:
+                    # TODO Add checks for FuseSoC core spec
+                    pass
+        if ip.dependencies is not None:
+            for ip_definition_str, ip_version_spec in ip.dependencies.items():
+                if not ip.dependencies_resolved:
+                    ip_definition = Ip.parse_ip_definition(ip_definition_str)
+                    ip_definition.version_spec = ip_version_spec
+                    ip_dependency = self.find_ip_definition(ip_definition, raise_exception_if_not_found=False)
+                    if ip_dependency is None:
+                        ip.add_dependency_to_find_on_remote(ip_definition)
+                        self._need_to_find_dependencies_on_remote = True
+                        self._ip_with_missing_dependencies[ip.uid] = ip
+                        self._dependencies_to_find_online.append(ip_definition)
+                    else:
+                        ip.add_resolved_dependency(ip_definition, ip_dependency)
+                        if recursive:
+                            self.resolve_dependencies(ip_dependency, recursive=True, reset_list_of_dependencies_to_find_online=False, depth=depth+1)
     
     def find_all_missing_dependencies_on_server(self):
         ordered_deps = {}

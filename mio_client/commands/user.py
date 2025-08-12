@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 import os
@@ -32,7 +32,9 @@ Options:
 Examples:
    mio login                        # Log in with prompts for username and password 
    mio login -u user123             # Specify username inline and only get prompted for the password
-   mio login -u user123 --no-input  # Authenticate without a keyboard (especially handy for CI)"""
+   mio login -u user123 --no-input  # Authenticate without a keyboard (especially handy for CI)
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#login"""
 
 class LoginCommand(Command):
     @staticmethod
@@ -58,6 +60,10 @@ class LoginCommand(Command):
         if self.parsed_cli_arguments.no_input and not self.parsed_cli_arguments.username:
             phase.error = Exception("`--no-input` must be combined with `--username`")
 
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
+
     def needs_authentication(self) -> bool:
         return True
 
@@ -73,14 +79,16 @@ class LoginCommand(Command):
     def phase_post_load_user_data(self, phase: Phase):
         if self.parsed_cli_arguments.no_input and self.parsed_cli_arguments.username:
             self.rmh.user.authenticated = False
-            self.rmh.user.access_token = ""
-            self.rmh.user.refresh_token = ""
+            self.rmh.user.session_cookies = {}
+            self.rmh.user.session_headers = {}
             self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.strip().lower()
             password = os.getenv(f"{PASSWORD_ENV_VAR_NAME}")
             if not password:
                 phase.error = Exception(f"Environment variable `{PASSWORD_ENV_VAR_NAME}` not set")
             else:
                 self.rmh.user.pre_set_password = password
+        elif self.parsed_cli_arguments.username:
+            self.rmh.user.pre_set_username = self.parsed_cli_arguments.username.strip().lower()
 
     def phase_post_save_user_data(self, phase: Phase):
         phase.end_process = True
@@ -97,7 +105,9 @@ Usage:
    mio logout
    
 Examples:
-   mio logout"""
+   mio logout
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#logout"""
 
 class LogoutCommand(Command):
     @staticmethod
@@ -107,6 +117,10 @@ class LogoutCommand(Command):
     @staticmethod
     def add_to_subparsers(subparsers):
         parser_logout = subparsers.add_parser('logout', add_help=False)
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
 
     def needs_authentication(self) -> bool:
         return False
@@ -119,8 +133,8 @@ class LogoutCommand(Command):
                 phase.error = e
             else:
                 self.rmh.user.authenticated = False
-                self.rmh.user.access_token = ""
-                self.rmh.user.refresh_token = ""
+                self.rmh.user.session_cookies = {}
+                self.rmh.user.session_headers = {}
         else:
             phase.end_process = True
             phase.end_process_message = "Not authenticated: no action taken"

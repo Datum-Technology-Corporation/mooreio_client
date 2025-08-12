@@ -1,9 +1,9 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 from typing import Dict, List
 
-from ..services.doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceConfiguration
+from ..services.doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceRequest
 from ..core.ip import IpLocationType, Ip
 from ..core.scheduler import JobScheduler
 from ..core.service import ServiceType
@@ -25,16 +25,19 @@ def get_commands():
 #######################################################################################################################
 HELP_TEXT = """Moore.io Help Command
    Prints out documentation on a specific command.  This is meant for quick lookups and is only a subset of the
-   documentation found in the User Manual (https://mio-client.readthedocs.io/).
+   documentation found in the User Manual (https://mooreio-client.rtfd.io/).
    
 Usage:
    mio help CMD
    
 Examples:
-   mio help sim  # Prints out a summary on the Logic Simulation command and its options"""
+   mio help sim  # Prints out a summary on the Logic Simulation command and its options
+
+Reference documentation: https://mooreio-client.rtfd.io//en/latest/commands.html#help"""
 
 ALL_COMMANDS = [
-    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox", "init"
+    "help", "login", "logout", "list", "package", "publish", "install", "uninstall", "clean", "sim", "regr", "dox",
+    "init", "x"
 ]
 
 class HelpCommand(Command):
@@ -78,6 +81,12 @@ class HelpCommand(Command):
             self.print_text_and_exit(phase, DOX_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "init":
             self.print_text_and_exit(phase, gen.INIT_HELP_TEXT)
+        if self.parsed_cli_arguments.cmd == "x":
+            self.print_text_and_exit(phase, gen.SIARX_HELP_TEXT)
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return False
 
     def needs_authentication(self) -> bool:
         return False
@@ -94,7 +103,9 @@ Usage:
    
 Examples:
    mio dox my_ip  # Generates HTML documentation for IP 'my_ip'
-   mio dox        # Generates HTML all local Project IPs"""
+   mio dox        # Generates HTML all local Project IPs
+
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#dox"""
 
 class DoxygenCommand(Command):
     def __init__(self):
@@ -103,7 +114,7 @@ class DoxygenCommand(Command):
         self._ip: List['Ip'] = []
         self._scheduler: JobScheduler
         self._doxygen: DoxygenService
-        self._configuration: DoxygenServiceConfiguration = DoxygenServiceConfiguration()
+        self._configuration: DoxygenServiceRequest = DoxygenServiceRequest()
         self._reports: Dict[Ip, DoxygenServiceReport] = {}
         self._all_ip: bool = False
         self._success: bool = False
@@ -129,7 +140,7 @@ class DoxygenCommand(Command):
         return self._doxygen
 
     @property
-    def configuration(self) -> DoxygenServiceConfiguration:
+    def configuration(self) -> DoxygenServiceRequest:
         return self._configuration
 
     @property
@@ -148,6 +159,10 @@ class DoxygenCommand(Command):
     def add_to_subparsers(subparsers):
         parser_dox = subparsers.add_parser('dox', help=DOX_HELP_TEXT, add_help=False)
         parser_dox.add_argument('ip', help='Target IP', nargs='?', default="*")
+
+    @property
+    def executes_main_phase(self) -> bool:
+        return True
 
     def needs_authentication(self) -> bool:
         return False

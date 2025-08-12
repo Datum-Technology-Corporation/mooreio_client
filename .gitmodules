@@ -1,0 +1,20 @@
+[submodule "tests/data/fsoc/rtl/core-v-mcu"]
+	path = tests/data/fsoc/rtl/core-v-mcu
+	url = https://github.com/openhwgroup/core-v-mcu
+	branch = master
+[submodule "tests/data/integration/rvmcu_raw/rtl/core-v-mcu"]
+	path = tests/data/integration/rvmcu_raw/rtl/core-v-mcu
+	url = https://github.com/Datum-Technology-Corporation/core-v-mcu
+	branch = shelled_core
+[submodule "rtl/core-v-mcu"]
+	path = rtl/core-v-mcu
+	url = https://github.com/Datum-Technology-Corporation/core-v-mcu
+	branch = shelled_core
+[submodule "tests/data/integration/mapu_raw"]
+	path = tests/data/integration/mapu_raw
+	url = https://github.com/Datum-Technology-Corporation/uvmx_demo
+	branch = start
+[submodule "tests/data/integration/mapu_update"]
+	path = tests/data/integration/mapu_update
+	url = https://github.com/Datum-Technology-Corporation/uvmx_demo
+	branch = main

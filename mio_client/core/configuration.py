@@ -1,11 +1,11 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2025 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 from typing import List, Optional
 
-from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat
+from pydantic import BaseModel, constr, FilePath, PositiveInt, PositiveFloat, conlist, StrictInt
 from .model import Model, VALID_NAME_REGEX, VALID_LOGIC_SIMULATION_TIMESCALE_REGEX, \
-    VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST
+    VALID_POSIX_PATH_REGEX, VALID_POSIX_DIR_NAME_REGEX, UNDEFINED_CONST, PosixPathList, PosixPath, PosixDirName
 from enum import Enum
 
 
@@ -28,7 +28,7 @@ class LogicSimulators(Enum):
     QUESTA = "questa"
     RIVIERA = "riviera"
     #UNDEFINED = "!Undefined!"
-    #DSIM = "Metrics DSim"
+    #DSIM = "Altair DSim"
     #VIVADO = "Xilinx Vivado"
     #VCS = "Synopsys VCS"
     #XCELIUM = "Cadence XCelium"
@@ -41,8 +41,8 @@ class DSimCloudComputeSizes(Enum):
 
 
 class Project(Model):
-    sync: bool
-    sync_id: Optional[PositiveInt] = 0
+    sync: Optional[bool] = False
+    sync_id: Optional[StrictInt] = -1
     local_mode: bool
     name: Optional[constr(pattern=VALID_NAME_REGEX)] = UNDEFINED_CONST
     full_name: Optional[str] = UNDEFINED_CONST
@@ -51,18 +51,20 @@ class Project(Model):
 
 class Authentication(Model):
     offline: bool
+    server_url: str
+    server_api_url: str
 
 
 class Applications(Model):
-    editor: constr(pattern=VALID_POSIX_PATH_REGEX)
-    web_browser: constr(pattern=VALID_POSIX_PATH_REGEX)
+    editor: PosixPath
+    web_browser: PosixPath
 
 
 class LogicSimulation(Model):
-    root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
-    regression_directory_name: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
-    results_directory_name: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
-    logs_directory: constr(pattern=VALID_POSIX_DIR_NAME_REGEX)
+    root_path: PosixPath
+    regression_directory_name: PosixDirName
+    results_directory_name: PosixDirName
+    logs_directory: PosixDirName
     test_result_path_template: str
     uvm_version: UvmVersions
     timescale: constr(pattern=VALID_LOGIC_SIMULATION_TIMESCALE_REGEX)
@@ -70,46 +72,51 @@ class LogicSimulation(Model):
     elaboration_timeout: PositiveFloat
     compilation_and_elaboration_timeout: PositiveFloat
     simulation_timeout: PositiveFloat
-    vscode_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    metrics_dsim_license_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    metrics_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
-    metrics_dsim_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    metrics_dsim_cloud_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    xilinx_vivado_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    metrics_dsim_default_compilation_sv_arguments: List[str] = []
+    vscode_installation_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_license_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_cloud_max_compute_size: Optional[DSimCloudComputeSizes] = DSimCloudComputeSizes.S4
+    altair_dsim_installation_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_cloud_installation_path: Optional[PosixPath] = UNDEFINED_CONST
+    xilinx_vivado_installation_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_default_compilation_sv_arguments: List[str] = []
     xilinx_vivado_default_compilation_sv_arguments: List[str] = []
-    metrics_dsim_default_compilation_vhdl_arguments: List[str] = []
+    altair_dsim_default_compilation_vhdl_arguments: List[str] = []
     xilinx_vivado_default_compilation_vhdl_arguments: List[str] = []
-    metrics_dsim_default_elaboration_arguments: List[str] = []
+    altair_dsim_default_elaboration_arguments: List[str] = []
     xilinx_vivado_default_elaboration_arguments: List[str] = []
-    metrics_dsim_default_compilation_and_elaboration_arguments: List[str] = []
-    metrics_dsim_default_simulation_arguments: List[str] = []
+    altair_dsim_default_compilation_and_elaboration_arguments: List[str] = []
+    altair_dsim_default_simulation_arguments: List[str] = []
     xilinx_vivado_default_simulation_arguments: List[str] = []
     default_simulator: Optional[LogicSimulators] = LogicSimulators.UNDEFINED
 
 
 class LogicSynthesis(Model):
-    root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    root_path: PosixPath
 
 
 class Linting(Model):
-    root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
+    root_path: PosixPath
 
 
 class Ip(Model):
-    global_paths: Optional[List[constr(pattern=VALID_POSIX_PATH_REGEX)]] = []
-    local_paths: [List[constr(pattern=VALID_POSIX_PATH_REGEX)]]
+    global_paths: PosixPathList = []
+    local_paths: PosixPathList
+
+
+class PackageManagement(Model):
+    fsoc_cores_global_paths: PosixPathList = []
+    fsoc_cores_local_paths: PosixPathList = []
 
 
 class Docs(Model):
-    root_path: constr(pattern=VALID_POSIX_PATH_REGEX)
-    doxygen_installation_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    root_path: PosixPath
+    doxygen_installation_path: Optional[PosixPath] = UNDEFINED_CONST
 
 
 class Encryption(Model):
-    metrics_dsim_sv_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    metrics_dsim_vhdl_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
-    xilinx_vivado_key_path: Optional[constr(pattern=VALID_POSIX_PATH_REGEX)] = UNDEFINED_CONST
+    altair_dsim_sv_key_path: Optional[PosixPath] = UNDEFINED_CONST
+    altair_dsim_vhdl_key_path: Optional[PosixPath] = UNDEFINED_CONST
+    xilinx_vivado_key_path: Optional[PosixPath] = UNDEFINED_CONST
 
 
 class Configuration(Model):
@@ -117,6 +124,7 @@ class Configuration(Model):
     Model for mio.toml configuration files.
     """
     project: Project
+    package_management: PackageManagement
     logic_simulation: LogicSimulation
     logic_synthesis: LogicSynthesis
     lint: Linting

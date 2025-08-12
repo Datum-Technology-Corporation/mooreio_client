@@ -77,5 +77,5 @@ venv.bak/
 
 # macOS files
 .DS_Store
-/reports/report.xml
+reports
 ov-report=xml:reports

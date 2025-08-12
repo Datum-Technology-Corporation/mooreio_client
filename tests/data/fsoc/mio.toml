@@ -1,0 +1,12 @@
+[authentication]
+offline=true
+
+[project]
+sync=false
+name="fsoc"
+
+[ip]
+local_paths=["dv/"]
+
+[package_management]
+fsoc_cores_local_paths=["rtl/core-v-mcu"]

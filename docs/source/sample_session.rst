@@ -78,7 +78,7 @@ essential features.  This example assumes you are familiar with CLI basics.
   - Seed: ``1``
   - Waveform capture: ``Enabled``
   - Coverage sampling: ``Enabled``
-  - Simulator: ``Metrics DSim``
+  - Simulator: ``Altair DSim``
 
 
 2. View simulation results.

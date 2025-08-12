@@ -44,6 +44,24 @@ offline
 
 Prohibits ``mio`` from attempting to authenticate with the Moore.io Server.
 
+server_url
+*******
+
+- Required: Yes
+- Type: ``String``
+- Default: ``https://mooreio.com``
+
+Moore.io Server URL.
+
+server_api_url
+*******
+
+- Required: Yes
+- Type: ``String``
+- Default: ``https://mooreio.com/api``
+
+Moore.io API Server URL.
+
 
 
 docs
@@ -75,25 +93,25 @@ Directory for Project documents.  Doxygen outputs to ``./doxygen_output`` under 
 encryption
 ----------
 
-metrics_dsim_sv_key_path
+altair_dsim_sv_key_path
 ***************
 
 - Required: No
 - Type: ``Path``
 - Example: ``/tools/dsim_sv.key``
 
-Absolute path to location of Metrics DSim SystemVerilog encryption key file.  This must be set in order to encrypt IP using DSim.
-See https://help.metrics.ca/support/solutions/articles/154000141181-user-guide-dsim-ieee-1735-encryption-verilog-and-vhdl- for more information.
+Absolute path to location of Altair DSim SystemVerilog encryption key file.  This must be set in order to encrypt IP using DSim.
+See https://help.Altair.ca/support/solutions/articles/154000141181-user-guide-dsim-ieee-1735-encryption-verilog-and-vhdl- for more information.
 
-metrics_dsim_vhdl_key_path
+altair_dsim_vhdl_key_path
 ***************
 
 - Required: No
 - Type: ``Path``
 - Example: ``/tools/dsim_vhdl.key``
 
-Absolute path to location of Metrics DSim VHDL encryption key file.  This must be set in order to encrypt IP using DSim.
-See https://help.metrics.ca/support/solutions/articles/154000141181-user-guide-dsim-ieee-1735-encryption-verilog-and-vhdl- for more information.
+Absolute path to location of Altair DSim VHDL encryption key file.  This must be set in order to encrypt IP using DSim.
+See https://help.Altair.ca/support/solutions/articles/154000141181-user-guide-dsim-ieee-1735-encryption-verilog-and-vhdl- for more information.
 
 
 xilinx_vivado_key_path
@@ -260,84 +278,84 @@ logs_directory
 Name of directory where compilation and elaboration results are output.  This directory is always created directly under ``root_path``.
 
 
-metrics_dsim_default_compilation_and_elaboration_arguments
+altair_dsim_default_compilation_and_elaboration_arguments
 ************************
 
 - Required: Yes
 - Type: ``List[String]``
 - Default: ``["+acc+b", "-suppress MultiBlockWrite:ReadingOutputModport", "-warn UndefinedMacro:DupModuleDefn"]``
 
-Compilation arguments always passed to Metrics DSim during compilation+elaboration.
+Compilation arguments always passed to Altair DSim during compilation+elaboration.
 
 
-metrics_dsim_default_compilation_sv_arguments
+altair_dsim_default_compilation_sv_arguments
 ************************
 
 - Required: Yes
 - Type: ``List[String]``
 - Default: ``["-suppress MultiBlockWrite:ReadingOutputModport:UndefinedMacro"]``
 
-Compilation arguments always passed to Metrics DSim during SystemVerilog compilation.
+Compilation arguments always passed to Altair DSim during SystemVerilog compilation.
 
 
-metrics_dsim_default_compilation_vhdl_arguments
+altair_dsim_default_compilation_vhdl_arguments
 ************************
 
 - Required: Yes
 - Type: ``List[String]``
 - Default: ``[]``
 
-Compilation arguments always passed to Metrics DSim during VHDL compilation.
+Compilation arguments always passed to Altair DSim during VHDL compilation.
 
 
-metrics_dsim_default_elaboration_arguments
+altair_dsim_default_elaboration_arguments
 ************************
 
 - Required: Yes
 - Type: ``List[String]``
 - Default: ``["+acc+b", "-suppress DupModuleDefn"]``
 
-Compilation arguments always passed to Metrics DSim during elaboration.
+Compilation arguments always passed to Altair DSim during elaboration.
 
 
-metrics_dsim_default_simulation_arguments
+altair_dsim_default_simulation_arguments
 ************************
 
 - Required: Yes
 - Type: ``List[String]``
 - Default: ``[]``
 
-Compilation arguments always passed to Metrics DSim during simulation.
+Compilation arguments always passed to Altair DSim during simulation.
 
 
-.. _metrics_dsim_license_path:
-metrics_dsim_license_path
+.. _altair_dsim_license_path:
+altair_dsim_license_path
 ************************
 
 - Required: No
 - Type: ``Path``
 
-Path to Metrics DSim Desktop license key.
+Path to Altair DSim Desktop license key.
 
 
-.. _metrics_dsim_cloud_installation_path:
-metrics_dsim_cloud_installation_path
+.. _altair_dsim_cloud_installation_path:
+altair_dsim_cloud_installation_path
 ************************
 
 - Required: No
 - Type: ``Path``
 
-Path to Metrics DSim Cloud simulator installation directory.
+Path to Altair DSim Cloud simulator installation directory.
 
 
-.. _metrics_dsim_installation_path:
-metrics_dsim_installation_path
+.. _altair_dsim_installation_path:
+altair_dsim_installation_path
 ************************
 
 - Required: No
 - Type: ``Path``
 
-Path to Metrics DSim Desktop installation directory.
+Path to Altair DSim Desktop installation directory.
 
 
 root_path
@@ -485,3 +503,30 @@ root_path
 - Default: ``syn``
 
 Project-relative path to directory where logic synthesis results and reports are stored.
+
+
+
+
+
+package_management
+------------------
+
+fsoc_cores_global_paths
+***********************
+
+- Required: Yes
+- Type: ``List[Path]``
+- Default: ``[]``
+
+FuseSoc searches these absolute paths for core files.
+
+
+fsoc_cores_local_paths
+**********************
+
+- Required: Yes
+- Type: ``List[Path]``
+- Default: ``["dv","rtl"]``
+
+FuseSoc searches these relative (to the project root) paths for core files.
+

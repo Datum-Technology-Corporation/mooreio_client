@@ -37,7 +37,7 @@ managers:
  * A layered Configuration Space defined with TOML files (`mio.toml`) at the user (`~/.mio/mio.toml`) and project levels
  * Packaging of HDL source file into IPs (Intellectual Property) identified by `ip.yml` descriptors in their root directory
  * Performing tasks at the IP-level, including generating code, specifying and installing dependencies
- * Ability to drive all Logic Simulators (VCS, XCelium, Questa, Vivado, Metrics DSim, Riviera-PRO) with a single set of commands and parameters
+ * Ability to drive all Logic Simulators (DSim, Vivado, (soon: Questa, VCS, XCelium & Riviera-PRO)) with a single set of commands and parameters
  * A feature-driven Test Suite schema for specifying Regressions in UVM Test Benches, AND the ability to run these Regressions on Job Schedulers (LSF, GRID, etc.)
  * Built-in compatibility with Continuous Integration (CI) tools like Jenkins
 
