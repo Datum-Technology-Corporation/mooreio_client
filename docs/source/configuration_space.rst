@@ -44,6 +44,24 @@ offline
 
 Prohibits ``mio`` from attempting to authenticate with the Moore.io Server.
 
+server_url
+*******
+
+- Required: Yes
+- Type: ``String``
+- Default: ``https://mooreio.com``
+
+Moore.io Server URL.
+
+server_api_url
+*******
+
+- Required: Yes
+- Type: ``String``
+- Default: ``https://mooreio.com/api``
+
+Moore.io API Server URL.
+
 
 
 docs
