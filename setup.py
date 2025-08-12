@@ -12,7 +12,7 @@ def parse_requirements(filename):
 
 setup(
     name="mooreio_client",
-    version="2.1.3",
+    version="2.1.4",
     description="CLI tool to automate EDA tasks for ASICs, FPGAs, and UVM IP.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
