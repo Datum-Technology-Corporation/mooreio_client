@@ -8,7 +8,7 @@ import os
 import sys
 from docutils import nodes
 from docutils.parsers.rst import Directive
-import sphinx_rtd_theme
+#import sphinx_rtd_theme
 
 
 #######################################################################################################################
@@ -18,7 +18,7 @@ import sphinx_rtd_theme
 project = 'Moore.io CLI Client'
 copyright = '2025, Datum Technology Corporation'
 author = 'Datum Technology Corporation'
-release = '2.1.2'
+release = '2.1.3'
 
 
 #######################################################################################################################
@@ -26,7 +26,7 @@ release = '2.1.2'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 #######################################################################################################################
 extensions = [
-    'sphinx_book_theme',
+    #'sphinx_book_theme',
     #'sphinx.ext.viewcode',
     #'sphinx.ext.napoleon',
     #'sphinx.ext.autosectionlabel',
