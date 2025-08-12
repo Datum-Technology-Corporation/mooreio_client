@@ -73,7 +73,7 @@ endef
 #######################################################################################################################
 # Binaries
 #######################################################################################################################
-PYTHON         := venv/bin/python3
+PYTHON         := python3.12
 PIP            := venv/bin/pip3
 PYTEST         := venv/bin/pytest
 TWINE          := twine
@@ -184,7 +184,8 @@ clean-docs:
 # Builds package for PyPI
 build: venv
 	$(call print_banner, Building package)
-	. ./venv/bin/activate && $(PYTHON) setup.py sdist bdist_wheel
+	. ./venv/bin/activate && python -m pip install --upgrade build
+	. ./venv/bin/activate && python -m build
 
 # Cleans up all build files
 clean-build:
@@ -196,10 +197,14 @@ clean-build:
 	find . -type d -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
 
+
+TWINE_FILES := $(shell ls dist/*.tar.gz dist/*.whl 2>/dev/null)
+
 # Publishes package to TestPyPI
-publish-test: clean-build build docs
+publish-test: clean-build build
 	$(call print_banner, Test Publishing package to TestPyPI)
-	. ./venv/bin/activate && $(TWINE) upload --repository-url https://test.pypi.org/legacy/ dist/*
+	. ./venv/bin/activate && twine check $(TWINE_FILES)
+	. ./venv/bin/activate && twine upload --repository-url https://test.pypi.org/legacy/ ./dist/*
 	@echo "Test publish complete: The package has been uploaded to TestPyPI"
 
 # Installs package from TestPyPI
@@ -208,9 +213,10 @@ publish-test-install:
 	$(PIP) install --index-url https://test.pypi.org/simple/ $(PACKAGE_NAME)
 
 # Publishes package to PyPI
-publish: clean build docs
+publish: clean-build build
 	$(call print_banner, Publishing package to PyPI)
-	. ./venv/bin/activate && $(TWINE) upload --repository pypi dist/*
+	. ./venv/bin/activate && twine check $(TWINE_FILES)
+	. ./venv/bin/activate && twine upload --repository pypi ./dist/*
 	@echo "Publish complete: The package has been uploaded to PyPI"
 
 # Installs package from TestPyPI
