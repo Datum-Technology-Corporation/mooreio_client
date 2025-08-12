@@ -152,20 +152,9 @@ Errors are handled via the `raise` of Python Exceptions. The RM catches these an
     ```
 
 ## Continuous Integration
-Most popular CI/CD tools are supported out-of-the-box. Some systems are better fleshed out than others; please don't
-hesitate to contribute your tweaks!
 
 ### Supported Continuous Integration Tools
-- Azure Pipelines
-- Bamboo
-- Bitbucket Pipelines
-- CircleCI
-- Codeship
-- GitHub Actions
-- GitLab CI/CD
 - Jenkins
-- TeamCity
-- Travis CI
 
 ## Contributing
 
