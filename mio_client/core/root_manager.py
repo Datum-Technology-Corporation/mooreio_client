@@ -1239,7 +1239,7 @@ class RootManager:
         for path in local_paths:
             self.ip_database.discover_ip(Path(path), IpLocationType.PROJECT_USER)
         if not self.ip_database.has_ip:
-            phase.error = Exception("No IP definitions found in the project")
+            phase.warning = Exception("No IP definitions found in the project")
         else:
             for path in global_paths:
                 self.ip_database.discover_ip(Path(path), IpLocationType.GLOBAL)
