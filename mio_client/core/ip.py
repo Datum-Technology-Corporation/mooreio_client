@@ -1145,7 +1145,7 @@ class IpDataBase():
     def get_publishing_certificate(self, ip: Ip, customer: str) -> IpPublishingCertificate:
         request = {
             'vendor': ip.ip.vendor,
-            "ip_name": ip.ip.name,
+            "package_name": ip.ip.name,
             "ip_id": ip.ip.sync_id,
             "ip_version": str(ip.ip.version),
             "customer": customer
