@@ -574,6 +574,8 @@ class LogicSimulator(Service, ABC):
     def encrypt(self, ip: Ip, request: LogicSimulatorEncryptionRequest, scheduler: JobScheduler) -> LogicSimulatorEncryptionReport:
         report = LogicSimulatorEncryptionReport(name=f"Encryption for '{ip}' using '{self.full_name}'")
         report.path_to_encrypted_files = self.work_temp_path / f'encrypt_{ip.lib_name}'
+        if self.rmh.directory_exists(report.path_to_encrypted_files):
+            self.rmh.remove_directory(report.path_to_encrypted_files)
         self.rmh.copy_directory(ip.resolved_src_path, report.path_to_encrypted_files)
         # Find all SystemVerilog files within `ip.resolved_src_path` (recursively)
         sv_file_extensions = ["v", "vh", "sv", "svh"]
