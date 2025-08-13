@@ -623,8 +623,8 @@ class LogicSimulator(Service, ABC):
                     with file_path.open("w") as file:
                         file.write(file_content)
                     found_key_check = True
-            if not found_key_check:
-                raise Exception(f"Did not find Moore.io License Key Check insertion points in HDL source code")
+            #if not found_key_check:
+            #    raise Exception(f"Did not find Moore.io License Key Check insertion points in HDL source code")
         scheduler_config = JobSchedulerConfiguration(self.rmh)
         scheduler_config.dry_run = request.dry_mode
         scheduler_config.output_to_terminal = False
