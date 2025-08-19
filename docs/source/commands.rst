@@ -225,17 +225,52 @@ Usage
 
 Options
 ^^^^^^^
-======  ================  =============================================
+======  ================  ==========================================================
 ``-i``  ``--input-file``  Specifies YAML input file path (instead of prompting user)
-======  ================  =============================================
+======  ================  ==========================================================
 
 Examples
 ^^^^^^^^
-=============================  ===========
+=============================  ==========================================================
 ``mio init``                   Create a new empty Project/IP in this location.
 ``mio init -i ~/answers.yml``  Create a new empty Project/IP in this location with pre-filled data.
 ``mio -C ~/my_proj init``      Create a new empty Project at a specific location.
-=============================  ===========
+=============================  ==========================================================
+
+
+
+siarx
+*****
+
+Description
+^^^^^^^^^^^
+Generates IP HDL code using Datum SiArx (requires license).  If not within an initialized Project, the ID must be
+specified via ``-p/--project-id``.
+
+Usage
+^^^^^
+``mio x [OPTIONS]``
+
+Options
+^^^^^^^
+=========  ===================  ====================================================
+``-p ID``  ``--project-id=ID``  Specifies Project ID when initializing a new project
+``-f``     ``--force``          Overwrites user changes
+=========  ===================  ====================================================
+
+
+Examples
+^^^^^^^^
+================  =======================================================
+``mio x``         Sync (generate) project with SiArx definition on server
+``mio x -p 123``  Initialize and generate Project from empty directory
+================  =======================================================
+
+
+
+
+
+
 
 
 
