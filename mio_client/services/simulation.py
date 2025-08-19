@@ -730,7 +730,7 @@ class LogicSimulator(Service, ABC):
             file_list.custom_dut_defines_boolean = request.custom_dut_defines_boolean
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
-            if dep.ip.mlicensed:
+            if dep.ip.mlicensed and dep.location_type == IpLocationType.PROJECT_INSTALLED:
                 if self.name not in dep.resolved_encrypted_hdl_directories:
                     raise Exception(f"IP '{dep}' is licensed but has no encrypted SystemVerilog content defined for '{self.name}'")
                 else:
@@ -766,7 +766,7 @@ class LogicSimulator(Service, ABC):
             for define in request.defines_boolean:
                 file_list.defines_boolean[define] = True
             file_list.defines_values.update(request.defines_value)
-        if ip.ip.mlicensed:
+        if ip.ip.mlicensed and dep.location_type == IpLocationType.PROJECT_INSTALLED:
             if self.name not in ip.resolved_encrypted_hdl_directories:
                 raise Exception(f"IP '{ip}' is licensed but has no encrypted SystemVerilog content defined for '{self.name}'")
             else:
@@ -835,7 +835,7 @@ class LogicSimulator(Service, ABC):
         target_name = request.target
         for dep in report.ordered_dependencies:
             sub_file_list = LogicSimulatorFileList(name=dep.as_ip_definition)
-            if dep.ip.mlicensed:
+            if dep.ip.mlicensed and dep.location_type == IpLocationType.PROJECT_INSTALLED:
                 if self.name not in dep.resolved_encrypted_hdl_directories:
                     raise Exception(f"IP '{dep}' is licensed but has no encrypted VHDL content defined for '{self.name}'")
                 else:
@@ -866,7 +866,7 @@ class LogicSimulator(Service, ABC):
         for define in request.defines_boolean:
             file_list.defines_boolean[define] = True
         file_list.defines_values.update(request.defines_value)
-        if ip.ip.mlicensed:
+        if ip.ip.mlicensed and dep.location_type == IpLocationType.PROJECT_INSTALLED:
             if self.name not in ip.resolved_encrypted_hdl_directories:
                 raise Exception(f"IP '{ip}' is licensed but has no encrypted VHDL content defined for '{self.name}'")
             else:
