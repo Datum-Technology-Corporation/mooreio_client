@@ -2,6 +2,7 @@
 # All rights reserved.
 #######################################################################################################################
 import argparse
+import contextlib
 import importlib
 import pathlib
 import sys
@@ -188,7 +189,7 @@ def register_commands(existing_commands, new_commands):
         existing_names.add(name)
 
 def _iter_python_files(root: pathlib.Path):
-    """Yield all .py files under root, recursively, excluding __pycache__ and __init__.py."""
+    """Yield .py files under root, recursively, excluding __pycache__ and __init__.py."""
     if not root.exists() or not root.is_dir():
         return
     for p in root.rglob("*.py"):
@@ -198,8 +199,54 @@ def _iter_python_files(root: pathlib.Path):
             continue
         yield p
 
+def _package_importable_root(root: pathlib.Path) -> tuple[bool, pathlib.Path, str]:
+    """
+    Decide if `root` is a package root we can import via a dotted name.
+
+    Returns (is_pkg, sys_path_to_add, pkg_base_name)
+
+    Rules:
+      - If root has __init__.py → treat as a regular package (pkg name = root.name, sys.path += root.parent)
+      - If no __init__.py, still try PEP 420 namespace (pkg name = root.name, sys.path += root.parent)
+      - If parent isn’t a directory, return (False, root, "")
+    """
+    if not root.exists() or not root.is_dir():
+        return (False, root, "")
+    parent = root.parent
+    if not parent.exists():
+        return (False, root, "")
+    # Accept both classic and namespace packages
+    return (True, parent, root.name)
+
+def _import_module_dotted(sys_path_entry: pathlib.Path, pkg_name: str, pyfile: pathlib.Path) -> ModuleType | None:
+    """
+    Import module by dotted name, e.g. pkg_name.subpkg.module, after temporarily
+    inserting sys_path_entry (the dir that contains pkg_name) at the front of sys.path.
+    """
+    rel = pyfile.with_suffix("").relative_to(sys_path_entry / pkg_name)
+    dotted = ".".join((pkg_name, *rel.parts))
+    with _sys_path_prepend(sys_path_entry):
+        try:
+            return importlib.import_module(dotted)
+        except Exception as e:
+            if TEST_MODE:
+                print(f"[mio] Skipping {pyfile} (package import {dotted}): {e}", file=sys.stderr)
+            return None
+
+@contextlib.contextmanager
+def _sys_path_prepend(p: pathlib.Path):
+    p_str = str(p)
+    orig = list(sys.path)
+    try:
+        if p_str in sys.path:
+            sys.path.remove(p_str)
+        sys.path.insert(0, p_str)
+        yield
+    finally:
+        sys.path[:] = orig
+
 def _load_module_from_file(mod_name: str, file_path: pathlib.Path) -> ModuleType | None:
-    """Safely import a module from an arbitrary file path."""
+    """Safely import a module from an arbitrary file path (only as a fallback)."""
     try:
         spec = importlib.util.spec_from_file_location(mod_name, str(file_path))
         if spec and spec.loader:
@@ -207,7 +254,6 @@ def _load_module_from_file(mod_name: str, file_path: pathlib.Path) -> ModuleType
             spec.loader.exec_module(mod)  # type: ignore[attr-defined]
             return mod
     except Exception as e:
-        # Don’t crash the CLI for a bad plugin; just print a debug line
         if TEST_MODE:
             print(f"[mio] Skipping {file_path}: {e}", file=sys.stderr)
     return None
@@ -215,8 +261,10 @@ def _load_module_from_file(mod_name: str, file_path: pathlib.Path) -> ModuleType
 def _discover_commands_in_paths(env_var: str = "MIO_CUSTOM_COMMANDS"):
     """
     Scan directories from MIO_CUSTOM_COMMANDS for modules exposing get_commands().
-    Multiple paths are supported, separated by os.pathsep (':' on POSIX, ';' on Windows).
-    Returns a flat list of command classes.
+
+    Strategy:
+      1) If the path looks like a package directory (classic or namespace), import modules by dotted name.
+      2) Otherwise, fall back to file-based import.
     """
     value = os.getenv(env_var, "") or ""
     cmd_classes = []
@@ -228,16 +276,24 @@ def _discover_commands_in_paths(env_var: str = "MIO_CUSTOM_COMMANDS"):
         if not root_str:
             continue
         root = pathlib.Path(root_str).expanduser().resolve()
+
+        is_pkg, sys_entry, pkg_name = _package_importable_root(root)
+
         for pyfile in _iter_python_files(root):
-            # Create a unique module name so we don’t collide
-            safe_name = "mio_custom_" + "_".join(pyfile.relative_to(root).with_suffix("").parts)
-            mod = _load_module_from_file(safe_name, pyfile)
+            mod = None
+            if is_pkg and pkg_name:
+                mod = _import_module_dotted(sys_entry, pkg_name, pyfile)
+            if mod is None:
+                # fallback: unique synthetic name for file import
+                safe_name = "mio_custom_" + "_".join(pyfile.relative_to(root).with_suffix("").parts)
+                mod = _load_module_from_file(safe_name, pyfile)
             if not mod:
                 continue
+
             get_cmds = getattr(mod, "get_commands", None)
             if callable(get_cmds):
                 try:
-                    cmds = list(get_cmds())  # expect iterable of command classes
+                    cmds = list(get_cmds())
                     cmd_classes.extend(cmds)
                 except Exception as e:
                     if TEST_MODE:
