@@ -2,9 +2,11 @@
 # All rights reserved.
 #######################################################################################################################
 import argparse
+import importlib
 import pathlib
 import sys
 import os
+from types import ModuleType
 
 from mio_client.commands import sim, ip, misc, user, gen
 from mio_client.core.root_manager import RootManager
@@ -156,6 +158,9 @@ def register_all_commands(subparsers):
     register_commands(commands, misc.get_commands())
     register_commands(commands, user.get_commands())
     register_commands(commands, gen.get_commands())
+    # Custom commands from env var
+    custom_cmds = _discover_commands_in_paths("MIO_CUSTOM_COMMANDS")
+    register_commands(commands, custom_cmds)
     for command in commands:
         command.add_to_subparsers(subparsers)
     return commands
@@ -163,20 +168,81 @@ def register_all_commands(subparsers):
 def register_commands(existing_commands, new_commands):
     """
     Registers new commands into an existing list of commands.
-    :param existing_commands: A list of existing commands.
-    :param new_commands: A list of new commands to be registered.
-    :return: None
-    Raises:
-        ValueError: If a command name in `new_commands` is already registered in `existing_commands`.
-
+    :param existing_commands: A list of existing commands (classes).
+    :param new_commands: A list (or iterable) of new command classes to be registered.
     """
-    new_command_names = {command.name for command in new_commands}
-    existing_command_names = {command.name for command in existing_commands}
+    # Build a set of existing names (call name() if available)
+    def _cmd_name(cmd_cls):
+        try:
+            return cmd_cls.name()
+        except Exception:
+            # Fallback: attribute or class name
+            return getattr(cmd_cls, "name", None) or getattr(cmd_cls, "__name__", str(cmd_cls))
+    existing_names = { _cmd_name(c) for c in existing_commands }
     for command in new_commands:
-        if command.name not in existing_command_names:
-            existing_commands.append(command)
-        else:
-            raise ValueError(f"Command '{command}' is already registered.")
+        name = _cmd_name(command)
+        if name in existing_names:
+            # silently skip duplicates to allow overriding, or raise if you prefer strict
+            continue
+        existing_commands.append(command)
+        existing_names.add(name)
+
+def _iter_python_files(root: pathlib.Path):
+    """Yield all .py files under root, recursively, excluding __pycache__ and __init__.py."""
+    if not root.exists() or not root.is_dir():
+        return
+    for p in root.rglob("*.py"):
+        if "__pycache__" in p.parts:
+            continue
+        if p.name == "__init__.py":
+            continue
+        yield p
+
+def _load_module_from_file(mod_name: str, file_path: pathlib.Path) -> ModuleType | None:
+    """Safely import a module from an arbitrary file path."""
+    try:
+        spec = importlib.util.spec_from_file_location(mod_name, str(file_path))
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+            return mod
+    except Exception as e:
+        # Don’t crash the CLI for a bad plugin; just print a debug line
+        if TEST_MODE:
+            print(f"[mio] Skipping {file_path}: {e}", file=sys.stderr)
+    return None
+
+def _discover_commands_in_paths(env_var: str = "MIO_CUSTOM_COMMANDS"):
+    """
+    Scan directories from MIO_CUSTOM_COMMANDS for modules exposing get_commands().
+    Multiple paths are supported, separated by os.pathsep (':' on POSIX, ';' on Windows).
+    Returns a flat list of command classes.
+    """
+    value = os.getenv(env_var, "") or ""
+    cmd_classes = []
+    if not value.strip():
+        return cmd_classes
+
+    for root_str in value.split(os.pathsep):
+        root_str = root_str.strip()
+        if not root_str:
+            continue
+        root = pathlib.Path(root_str).expanduser().resolve()
+        for pyfile in _iter_python_files(root):
+            # Create a unique module name so we don’t collide
+            safe_name = "mio_custom_" + "_".join(pyfile.relative_to(root).with_suffix("").parts)
+            mod = _load_module_from_file(safe_name, pyfile)
+            if not mod:
+                continue
+            get_cmds = getattr(mod, "get_commands", None)
+            if callable(get_cmds):
+                try:
+                    cmds = list(get_cmds())  # expect iterable of command classes
+                    cmd_classes.extend(cmds)
+                except Exception as e:
+                    if TEST_MODE:
+                        print(f"[mio] get_commands() failed in {pyfile}: {e}", file=sys.stderr)
+    return cmd_classes
 
 def print_help_text():
     print(HELP_TEXT)
