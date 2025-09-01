@@ -476,6 +476,7 @@ class SimulateCommand(Command):
             self.simulate(phase)
         if self.dry_run:
             self.create_sim_tarball(phase)
+        self._success = True
 
     def prepare_dut(self, phase: Phase):
         if self.ip.has_dut:
@@ -677,7 +678,6 @@ class SimulateCommand(Command):
         self.rmh.remove_file(shell_script_path)
 
     def phase_report(self, phase: Phase):
-        self._success = True
         has_dut_report = False
         if self.do_prepare_dut:
             if self.ip.has_dut and self.ip.dut_needs_prep:
