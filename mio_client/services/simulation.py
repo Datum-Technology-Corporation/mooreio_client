@@ -1246,67 +1246,67 @@ class SimulatorMetricsDSim(LogicSimulator):
 
     @property
     def library_creation_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$']
+        return [r'(?ms)^=E:.*?(?=^=[A-Z]:|\Z)']
     @property
     def library_creation_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$']
+        return [r'(?ms)^=W:.*?(?=^=[A-Z]:|\Z)']
     @property
     def library_creation_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$']
+        return [r'(?ms)^=F:.*?(?=^=[A-Z]:|\Z)']
     @property
     def compilation_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$']
+        return [r'(?ms)^=E:.*?(?=^=[A-Z]:|\Z)']
     @property
     def compilation_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$']
+        return [r'(?ms)^=W:.*?(?=^=[A-Z]:|\Z)']
     @property
     def compilation_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$']
+        return [r'(?ms)^=F:.*?(?=^=[A-Z]:|\Z)']
     @property
     def elaboration_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$']
+        return [r'(?ms)^=E:.*?(?=^=[A-Z]:|\Z)']
     @property
     def elaboration_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$']
+        return [r'(?ms)^=W:.*?(?=^=[A-Z]:|\Z)']
     @property
     def elaboration_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$']
+        return [r'(?ms)^=F:.*?(?=^=[A-Z]:|\Z)']
     @property
     def compilation_and_elaboration_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$']
+        return [r'(?ms)^=E:.*?(?=^=[A-Z]:|\Z)']
     @property
     def compilation_and_elaboration_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$']
+        return [r'(?ms)^=W:.*?(?=^=[A-Z]:|\Z)']
     @property
     def compilation_and_elaboration_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$']
+        return [r'(?ms)^=F:.*?(?=^=[A-Z]:|\Z)']
     @property
     def simulation_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$', r'^UVM_ERROR @.*$']
+        return [r'(?ms)^=E:.*?(?=^=[A-Z]:|\Z)', r'^UVM_ERROR @.*$']
     @property
     def simulation_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$', r'^UVM_WARNING @.*$']
+        return [r'(?ms)^=W:.*?(?=^=[A-Z]:|\Z)', r'^UVM_WARNING @.*$']
     @property
     def simulation_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$', r'^UVM_FATAL @.*$']
+        return [r'(?ms)^=F:.*?(?=^=[A-Z]:|\Z)', r'^UVM_FATAL @.*$']
     @property
     def encryption_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$']
+        return [r'(?ms)^=E:.*?(?=^=[A-Z]:|\Z)']
     @property
     def encryption_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$']
+        return [r'(?ms)^=W:.*?(?=^=[A-Z]:|\Z)']
     @property
     def encryption_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$']
+        return [r'(?ms)^=F:.*?(?=^=[A-Z]:|\Z)']
     @property
     def coverage_merge_error_patterns(self) -> List[str]:
-        return [r'^.*=E:.*$']
+        return [r'(?ms)^=E:.*?(?=^=[A-Z]:|\Z)']
     @property
     def coverage_merge_warning_patterns(self) -> List[str]:
-        return [r'^.*=W:.*$']
+        return [r'(?ms)^=W:.*?(?=^=[A-Z]:|\Z)']
     @property
     def coverage_merge_fatal_patterns(self) -> List[str]:
-        return [r'^.*=F:.*$']
+        return [r'(?ms)^=F:.*?(?=^=[A-Z]:|\Z)']
 
     def get_version(self) -> Version:
         # TODO Get version string from dsim
