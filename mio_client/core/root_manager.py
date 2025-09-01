@@ -256,7 +256,7 @@ class RootManager:
     def info(self, message: str):
         print(f"\033[35m[MIO]\033[0m {message}")
 
-    def debug(self, message: str):
+    def debug(self, message: str, level: int=1):
         if self.print_trace:
             print(f"\033[32m[MIO-DBG] {message} \033[0m")
 
