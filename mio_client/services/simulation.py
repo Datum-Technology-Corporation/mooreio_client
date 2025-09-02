@@ -486,8 +486,8 @@ class LogicSimulator(Service, ABC):
         # Generate test result dir name from jinja template
         test_template = Template(ip.hdl_src.tests_name_template)
         test_result_dir_template = Template(self.rmh.configuration.logic_simulation.test_result_path_template)
-        report.user_args_boolean = request.args_boolean
-        report.user_args_value = request.args_value
+        report.user_args_boolean = list(request.args_boolean)
+        report.user_args_value = dict(request.args_value)
         user_args = []
         for arg in report.user_args_boolean:
             if arg:

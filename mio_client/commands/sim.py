@@ -161,6 +161,7 @@ class SimulateCommand(Command):
         self._defines_value: Dict[str, str] = {}
         self._args_boolean: List[str] = []
         self._args_value: Dict[str, str] = {}
+        self._quiet: bool = False
 
     @property
     def simulator(self) -> LogicSimulator:
@@ -605,9 +606,11 @@ class SimulateCommand(Command):
         self.simulation_request.enable_waveform_capture = self.parsed_cli_arguments.waves
         self.simulation_request.enable_coverage = self.parsed_cli_arguments.cov
         self.simulation_request.test_name = self.parsed_cli_arguments.test.strip().lower()
-        self.simulation_request.args_boolean = self.args_boolean
-        self.simulation_request.args_value = self.args_value
+        self.simulation_request.args_boolean = list(self.args_boolean)
+        self.simulation_request.args_value = dict(self.args_value)
         self.simulation_request.target = self.ip_definition.target
+        if self._quiet and not self.rmh.print_trace:
+            self.simulation_request.print_to_terminal = False
         if self.dry_run:
             self.simulation_request.dry_mode = True
             self.simulation_request.use_relative_paths = True
