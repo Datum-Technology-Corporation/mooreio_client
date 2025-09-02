@@ -398,8 +398,8 @@ class LogicSimulator(Service, ABC):
         self.build_vhdl_flist(ip, request, report)
         if (not report.has_sv_files_to_compile) and (not report.has_vhdl_files_to_compile):
             raise Exception(f"No files to compile for IP '{ip}'")
-        report.user_defines_boolean = request.defines_boolean
-        report.user_defines_value = request.defines_value
+        report.user_defines_boolean = list(request.defines_boolean)
+        report.user_defines_value = dict(request.defines_value)
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         if request.use_custom_logs_path:
             logs_path = request.custom_logs_path
@@ -453,8 +453,8 @@ class LogicSimulator(Service, ABC):
         self.build_sv_flist(ip, request, report)
         if not report.has_files_to_compile:
             raise Exception(f"No files to compile for IP '{ip}'")
-        report.user_defines_boolean = request.defines_boolean
-        report.user_defines_value = request.defines_value
+        report.user_defines_boolean = list(request.defines_boolean)
+        report.user_defines_value = dict(request.defines_value)
         report.work_directory = self.work_path / f"{ip.work_directory_name}"
         if request.use_custom_logs_path:
             logs_path = request.custom_logs_path

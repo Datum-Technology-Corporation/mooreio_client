@@ -546,8 +546,8 @@ class SimulateCommand(Command):
             self.compilation_request.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
             self.compilation_request.enable_coverage = True
-        self.compilation_request.defines_boolean = self.defines_boolean
-        self.compilation_request.defines_value = self.defines_value
+        self.compilation_request.defines_boolean = list(self.defines_boolean)
+        self.compilation_request.defines_value = dict(self.defines_value)
         self.compilation_request.target = self.ip_definition.target
         if self.dry_run:
             self.compilation_request.dry_mode = True
@@ -581,8 +581,8 @@ class SimulateCommand(Command):
             self._compilation_and_elaboration_request.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
             self._compilation_and_elaboration_request.enable_coverage = True
-        self.compilation_and_elaboration_request.defines_boolean = self.defines_boolean
-        self.compilation_and_elaboration_request.defines_value = self.defines_value
+        self.compilation_and_elaboration_request.defines_boolean = list(self.defines_boolean)
+        self.compilation_and_elaboration_request.defines_value = dict(self.defines_value)
         self.compilation_and_elaboration_request.target = self.ip_definition.target
         if self.dry_run:
             self.compilation_and_elaboration_request.dry_mode = True
