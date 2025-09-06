@@ -1337,16 +1337,16 @@ class RegressionCommand(Command):
 
     def print_regression_report(self, phase: Phase):
         if self.dry_mode:
-            self.info(f" Regression Dry Mode - {len(self.regression_request.simulation_requests)} tests would have been run:")
+            self.info(f"Regression Dry Mode - {len(self.regression_request.simulation_requests)} tests would have been run:")
             for simulation_config in self.regression_request.simulation_requests:
                 print(f" * {simulation_config.summary_str()}")
             if self.parsed_cli_arguments.app == "dsimc":
-                self.info(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
+                self.info(f" * DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
         else:
             self.regression_report.generate_junit_xml_report()
             self.regression_report.generate_html_report()
             if self.regression_report.success:
-                self.info(f" Regression passed: {len(self.regression_report.simulation_reports)} tests")
+                self.info(f"Regression passed: {len(self.regression_report.simulation_reports)} tests")
             else:
                 self.info(f"{len(self.regression_report.failing_tests)} tests failed:")
                 for failed_test in self.regression_report.failing_tests:
@@ -1357,7 +1357,7 @@ class RegressionCommand(Command):
                         args_str += f" +{arg}={failed_test.sim_report.user_args_value[arg]}"
                     print(f" * {failed_test.sim_report.test_name} - {failed_test.sim_report.seed}{args_str}")
             web_browser =  self.rmh.configuration.applications.web_browser
-            self.info(f"Test Report: {web_browser} {self.regression_report.html_report_file_name} &")
+            self.info(f" * Test Report: {web_browser} {self.regression_report.html_report_file_name} &")
             if self.regression_report.cov_enabled:
                 self.info(f"Coverage Report: {web_browser} {self.regression_report.coverage_report_file_name} &")
-            self.info(f"JUnit XML Report: {web_browser} {self.regression_report.junit_xml_report_file_name} &")
+            self.info(f" * JUnit XML Report: {web_browser} {self.regression_report.junit_xml_report_file_name} &")
