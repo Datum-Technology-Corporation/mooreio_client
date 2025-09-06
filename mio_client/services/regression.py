@@ -129,7 +129,7 @@ class Regression:
         self.max_duration: float = 1.0
         self.max_jobs: int = 1
         self.test_suite: 'TestSuite'
-        self.test_specs: Dict[int, ResolvedTestSpec] = {}
+        self.test_specs: Dict[LogicSimulatorSimulationRequest, ResolvedTestSpec] = {}
 
     def set_ip(self, ip: Ip):
         self.ip = ip
@@ -174,8 +174,8 @@ class Regression:
         config.target = target_name
         return config
     
-    def render_sim_configs(self, target_name: str="default") -> Dict[int, LogicSimulatorSimulationRequest]:
-        sim_configs: Dict[int, LogicSimulatorSimulationRequest] = {}
+    def render_sim_configs(self, target_name: str="default") -> List[LogicSimulatorSimulationRequest]:
+        sim_configs: List[LogicSimulatorSimulationRequest] = []
         for set_name in self.test_sets:
             for group_name in self.test_sets[set_name].test_groups:
                 for test_spec in self.test_sets[set_name].test_groups[group_name].test_specs:
@@ -207,8 +207,8 @@ class Regression:
                             else:
                                 config.args_value[key] = value
                         config.target = target_name
-                        sim_configs[seed] = config
-                        self.test_specs[seed] = test_spec
+                        sim_configs.append(config)
+                        self.test_specs[config] = test_spec
         return sim_configs
 
 
@@ -402,7 +402,7 @@ class RegressionRequest:
         self.compilation_request: LogicSimulatorCompilationRequest = None
         self.elaboration_request: LogicSimulatorElaborationRequest = None
         self.compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest = None
-        self.simulation_requests: Dict[int, LogicSimulatorSimulationRequest] = {}
+        self.simulation_requests: List[LogicSimulatorSimulationRequest] = []
 
 class RegressionSimulationReport:
     def __init__(self):
@@ -604,7 +604,7 @@ class RegressionRunner:
         if not self.request.dry_mode:
             timeout = self.regression.max_duration * 3600
             with ThreadPoolExecutor(max_workers=self.regression.max_jobs) as executor:
-                future_simulations = [executor.submit(self.launch_simulation, self.request.simulation_requests[seed]) for seed in
+                future_simulations = [executor.submit(self.launch_simulation, sim_request) for sim_request in
                                       self.request.simulation_requests]
                 with tqdm(total=len(self.request.simulation_requests), desc="Simulations") as pbar:
                     for future in as_completed(future_simulations):
@@ -621,7 +621,7 @@ class RegressionRunner:
     
     def launch_simulation(self, request: LogicSimulatorSimulationRequest):
         sim_report: LogicSimulatorSimulationReport = self.simulator.simulate(self.ip, request, self.scheduler)
-        test_spec: ResolvedTestSpec = self.regression.test_specs[request.seed]
+        test_spec: ResolvedTestSpec = self.regression.test_specs[request]
         regression_sim_report: RegressionSimulationReport = RegressionSimulationReport()
         regression_sim_report.test_spec = test_spec
         regression_sim_report.sim_report = sim_report
@@ -657,8 +657,7 @@ class RegressionRunner:
         cloud_simulation_config.compilation_config = self.request.compilation_request
         cloud_simulation_config.elaboration_config = self.request.elaboration_request
         cloud_simulation_config.compilation_and_elaboration_config = self.request.compilation_and_elaboration_request
-        for seed in self.request.simulation_requests:
-            simulation_config = self.request.simulation_requests[seed]
+        for simulation_config in self.request.simulation_requests:
             cloud_simulation_config.simulation_configs.append(simulation_config)
         # 4. Launch job on the cloud via simulator
         cloud_simulation_report = simulator.dsim_cloud_simulate(self.ip, cloud_simulation_config, self.scheduler)
@@ -671,9 +670,8 @@ class RegressionRunner:
         self.report.elaboration_report = cloud_simulation_report.elaboration_report
         self.report.compilation_and_elaboration_report = cloud_simulation_report.compilation_and_elaboration_report
         for simulation_report in cloud_simulation_report.simulation_reports:
-            test_spec: ResolvedTestSpec = self.regression.test_specs[simulation_report.seed]
             regression_sim_report: RegressionSimulationReport = RegressionSimulationReport()
-            regression_sim_report.test_spec = test_spec
+            #regression_sim_report.test_spec = test_spec
             regression_sim_report.sim_report = simulation_report
             self.report.simulation_reports.append(regression_sim_report)
 
@@ -720,10 +718,10 @@ class RegressionRunner:
                     test_group_report.test_set_report = test_set_report
                     test_group_report.name = test_group_name
                     test_group_report.num_tests = 0
-            for seed in self.regression.test_specs:
-                test_spec = self.regression.test_specs[seed]
+            for sim_config in self.regression.test_specs:
+                test_spec = self.regression.test_specs[sim_config]
                 for simulation_report in self.report.simulation_reports:
-                    if simulation_report.sim_report.seed == seed:
+                    if simulation_report.sim_report.seed == sim_config.seed and simulation_report.sim_report.test_name == sim_config.test_name:
                         test_group_report = test_group_map[test_spec.test_group]
                         test_group_report.num_tests += 1
                         test_group_report.test_set_report.num_tests += 1
@@ -745,7 +743,6 @@ class RegressionRunner:
                             test_group_report.test_set_report.num_failed_tests += 1
                         break
             for simulation_report in self.report.simulation_reports:
-                test_spec: ResolvedTestSpec = self.regression.test_specs[simulation_report.sim_report.seed]
                 if simulation_report.sim_report.success:
                     self.report.passing_tests.append(simulation_report)
                     if simulation_report.sim_report.num_warnings == 0:

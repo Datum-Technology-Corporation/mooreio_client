@@ -251,7 +251,7 @@ class SimulateCommand(Command):
 
     @property
     def has_siarx_report(self) -> bool:
-        return self._siarx_report is not None
+        return hasattr(self, "_siarx_report") and self._siarx_report is not None
 
     @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
@@ -259,7 +259,7 @@ class SimulateCommand(Command):
 
     @property
     def has_compilation_report(self) -> bool:
-        return self._compilation_report is not None
+        return hasattr(self, "_compilation_report") and self._compilation_report is not None
 
     @property
     def elaboration_report(self) -> LogicSimulatorElaborationReport:
@@ -267,7 +267,7 @@ class SimulateCommand(Command):
 
     @property
     def has_elaboration_report(self) -> bool:
-        return self._elaboration_report is not None
+        return hasattr(self, "_elaboration_report") and self._elaboration_report is not None
 
     @property
     def compilation_and_elaboration_report(self) -> LogicSimulatorCompilationAndElaborationReport:
@@ -275,7 +275,7 @@ class SimulateCommand(Command):
 
     @property
     def has_compilation_and_elaboration_report(self) -> bool:
-        return self._compilation_and_elaboration_report is not None
+        return hasattr(self, "_compilation_and_elaboration_report") and self._compilation_and_elaboration_report is not None
 
     @property
     def simulation_report(self) -> LogicSimulatorSimulationReport:
@@ -283,7 +283,7 @@ class SimulateCommand(Command):
 
     @property
     def has_simulation_report(self) -> bool:
-        return self._simulation_report is not None
+        return hasattr(self, "_simulation_report") and self._simulation_report is not None
 
     @property
     def coverage_merge_report(self) -> LogicSimulatorCoverageMergeReport:
@@ -973,20 +973,40 @@ class RegressionCommand(Command):
         return self._siarx_report
 
     @property
+    def has_siarx_report(self) -> bool:
+        return hasattr(self, "_siarx_report") and self._siarx_report is not None
+
+    @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
         return self._compilation_report
+
+    @property
+    def has_compilation_report(self) -> bool:
+        return hasattr(self, "_compilation_report") and self._compilation_report is not None
 
     @property
     def elaboration_report(self) -> LogicSimulatorElaborationReport:
         return self._elaboration_report
 
     @property
+    def has_elaboration_report(self) -> bool:
+        return hasattr(self, "_elaboration_report") and self._elaboration_report is not None
+
+    @property
     def compilation_and_elaboration_report(self) -> LogicSimulatorCompilationAndElaborationReport:
         return self._compilation_and_elaboration_report
 
     @property
+    def has_compilation_and_elaboration_report(self) -> bool:
+        return hasattr(self, "_compilation_and_elaboration_report") and self._compilation_and_elaboration_report is not None
+
+    @property
     def regression_report(self) -> RegressionReport:
         return self._regression_report
+
+    @property
+    def has_regression_report(self) -> bool:
+        return hasattr(self, "_regression_report") and self._regression_report is not None
 
     @property
     def success(self) -> bool:
@@ -1063,6 +1083,13 @@ class RegressionCommand(Command):
         else:
             if not self.simulator.supports_uvm:
                 phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
+        if self.do_invoke_siarx:
+            try:
+                self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
+            except Exception as e:
+                phase.error = Exception(f"Failed to load SiArx: '{e}'")
+                self._success = False
+                return
 
     def phase_post_ip_discovery(self, phase: Phase):
         self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
@@ -1166,11 +1193,11 @@ class RegressionCommand(Command):
             compilation_request.has_custom_dut = True
             compilation_request.custom_dut_type = "FuseSoC"
             compilation_request.custom_dut_name = self._fsoc_request.system_name
-            compilation_request.custom_dut_directories = self.fsoc_report.directories
-            compilation_request.custom_dut_sv_files = self.fsoc_report.sv_files
-            compilation_request.custom_dut_vhdl_files = self.fsoc_report.vhdl_files
-            compilation_request.custom_dut_defines_values = self.fsoc_report.defines_values
-            compilation_request.custom_dut_defines_boolean = self.fsoc_report.defines_boolean
+            compilation_request.custom_dut_directories = list(self.fsoc_report.directories)
+            compilation_request.custom_dut_sv_files = list(self.fsoc_report.sv_files)
+            compilation_request.custom_dut_vhdl_files = list(self.fsoc_report.vhdl_files)
+            compilation_request.custom_dut_defines_values = dict(self.fsoc_report.defines_values)
+            compilation_request.custom_dut_defines_boolean = list(self.fsoc_report.defines_boolean)
 
     def compile(self, phase: Phase):
         self._compilation_request = self.regression.render_cmp_config(self.ip_definition.target)
@@ -1218,27 +1245,35 @@ class RegressionCommand(Command):
             self._compilation_and_elaboration_report = self.regression_report.compilation_and_elaboration_report
 
     def phase_report(self, phase: Phase):
-        self._success = True
-        if self.do_compile:
+        has_dut_report = False
+        if self.do_prepare_dut:
+            if self.ip.has_dut and self.ip.dut_needs_prep:
+                if self.ip.dut.type == DutType.FUSE_SOC.value and self._fsoc_report is not None:
+                    self._success &= self._fsoc_report.success
+                    has_dut_report = True
+        if self.has_compilation_report:
             self._success &= self.compilation_report.success
-        if self.do_elaborate:
+        if self.has_elaboration_report:
             self._success &= self.elaboration_report.success
-        if self.do_compile_and_elaborate:
+        if self.has_compilation_and_elaboration_report:
             self._success &= self.compilation_and_elaboration_report.success
-        self._success &= self.regression_report.success
+        if self.has_regression_report:
+            self._success &= self.regression_report.success
         if self.success:
             banner = f"{'*' * 53}\033[32m SUCCESS \033[0m{'*' * 54}"
         else:
             banner = f"{'*' * 53}\033[31m\033[4m FAILURE \033[0m{'*' * 54}"
         print(banner)
-        self.print_prepare_dut_report(phase)
-        if self.do_compile:
+        if has_dut_report:
+            self.print_prepare_dut_report(phase)
+        if self.has_compilation_report:
             self.print_compilation_report(phase)
-        if self.do_elaborate:
+        if self.has_elaboration_report:
             self.print_elaboration_report(phase)
-        if self.do_compile_and_elaborate:
+        if self.has_compilation_and_elaboration_report:
             self.print_compilation_and_elaboration_report(phase)
-        self.print_regression_report(phase)
+        if self.has_regression_report:
+            self.print_regression_report(phase)
         print(banner)
 
     def phase_final(self, phase: Phase):
@@ -1303,10 +1338,9 @@ class RegressionCommand(Command):
     def print_regression_report(self, phase: Phase):
         if self.dry_mode:
             self.info(f" Regression Dry Mode - {len(self.regression_request.simulation_requests)} tests would have been run:")
-            for seed in self.regression_request.simulation_requests:
-                simulation_config = self.regression_request.simulation_requests[seed]
+            for simulation_config in self.regression_request.simulation_requests:
                 print(f" * {simulation_config.summary_str()}")
-            if self.parsed_cli_arguments.app == "dsim":
+            if self.parsed_cli_arguments.app == "dsimc":
                 self.info(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
         else:
             self.regression_report.generate_junit_xml_report()
@@ -1322,7 +1356,8 @@ class RegressionCommand(Command):
                     for arg in failed_test.sim_report.user_args_value:
                         args_str += f" +{arg}={failed_test.sim_report.user_args_value[arg]}"
                     print(f" * {failed_test.sim_report.test_name} - {failed_test.sim_report.seed}{args_str}")
-            self.info(f"Test Report: '{self.regression_report.html_report_file_name}'")
+            web_browser =  self.rmh.configuration.applications.web_browser
+            self.info(f"Test Report: {web_browser} {self.regression_report.html_report_file_name} &")
             if self.regression_report.cov_enabled:
-                self.info(f" Coverage Report: '{self.regression_report.coverage_report_file_name}'")
-            self.info(f" JUnit XML Report: '{self.regression_report.junit_xml_report_file_name}'")
+                self.info(f"Coverage Report: {web_browser} {self.regression_report.coverage_report_file_name} &")
+            self.info(f"JUnit XML Report: {web_browser} {self.regression_report.junit_xml_report_file_name} &")
