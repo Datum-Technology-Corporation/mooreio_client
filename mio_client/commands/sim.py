@@ -1355,7 +1355,7 @@ class RegressionCommand(Command):
                         args_str += f" +{arg}"
                     for arg in failed_test.sim_report.user_args_value:
                         args_str += f" +{arg}={failed_test.sim_report.user_args_value[arg]}"
-                    print(f" * {failed_test.sim_report.test_name} - {failed_test.sim_report.seed}{args_str}")
+                    print(f" * {failed_test.sim_report.test_name}({failed_test.sim_report.seed}){args_str} : {failed_test.sim_report.log_path}")
             web_browser =  self.rmh.configuration.applications.web_browser
             self.info(f" * Test Report: {web_browser} {self.regression_report.html_report_file_name} &")
             if self.regression_report.cov_enabled:
