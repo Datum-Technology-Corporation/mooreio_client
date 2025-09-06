@@ -23,6 +23,9 @@ from ..services.simulation import LogicSimulator, LogicSimulatorCompilationReque
 from ..services.simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
+LOGIC_SIMULATORS = ["dsim", "vivado"]
+REGRESSION_SIMULATORS = LOGIC_SIMULATORS + ["dsimc"]
+
 
 #######################################################################################################################
 # API Entry Point
@@ -82,7 +85,6 @@ Examples:
    mio sim my_ip -CE                             # Compile and elaborate 'my_ip'.
 
 Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#sim"""
-LOGIC_SIMULATORS = ["dsim", "vivado"]
 
 class SimulateCommand(Command):
     @staticmethod
@@ -829,7 +831,7 @@ class RegressionCommand(Command):
         parser_regr = subparsers.add_parser('regr', help=REGR_HELP_TEXT, add_help=False)
         parser_regr.add_argument('ip'         , help='Target IP')
         parser_regr.add_argument('regr'       , help='Regression to be run.  For Test Bench IPs with multiple Test Suites, the suite must be specified. Ex: `mio regr my_ip apbxc.sanity`')
-        parser_regr.add_argument('-a', "--app", help='Specifies which simulator to use: dsim', choices=LOGIC_SIMULATORS , required=False)
+        parser_regr.add_argument('-a', "--app", help='Specifies which simulator to use: dsim', choices=REGRESSION_SIMULATORS , required=False)
         parser_regr.add_argument('-d', "--dry", help='Compiles and elaborates target IP but only prints out the tests that would be run.', action="store_true", default=False , required=False)
 
     def __init__(self):
@@ -851,6 +853,7 @@ class RegressionCommand(Command):
         self._do_compile: bool = False
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
+        self._dsim_cloud_mode: bool = False
         self._compilation_request: LogicSimulatorCompilationRequest
         self._elaboration_request: LogicSimulatorElaborationRequest
         self._compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest
@@ -1024,7 +1027,11 @@ class RegressionCommand(Command):
         else:
             self._regression_name = self.parsed_cli_arguments.regr.strip().lower()
         self._dry_mode = self.parsed_cli_arguments.dry
-        self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
+        if self.parsed_cli_arguments.app.lower() == "dsimc":
+            self._dsim_cloud_mode = True
+            self._app = LogicSimulators.DSIM
+        else:
+            self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
 
     def phase_post_validate_configuration_space(self, phase: Phase):
         if self.app == LogicSimulators.UNDEFINED:
@@ -1200,6 +1207,7 @@ class RegressionCommand(Command):
         self.regression_request.target = self.ip_definition.target
         self.regression_request.dry_mode = self.dry_mode
         self.regression_request.app = self.app
+        self.regression_request.dsim_cloud_mode = self._dsim_cloud_mode
         self._regression_runner = self.regression_database.get_regression_runner(self.ip, self.regression, self.simulator, self.regression_request)
         self.info(f"Starting Regression '{self.regression.name}' for IP '{self.ip}' with '{self.simulator}' ...")
         self._regression_report = self.regression_runner.execute_regression(self.scheduler)

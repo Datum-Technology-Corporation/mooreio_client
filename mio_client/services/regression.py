@@ -398,6 +398,7 @@ class RegressionRequest:
         self.target: str = ""
         self.dry_mode: bool = False
         self.app: LogicSimulators = LogicSimulators.UNDEFINED
+        self.dsim_cloud_mode: bool = False
         self.compilation_request: LogicSimulatorCompilationRequest = None
         self.elaboration_request: LogicSimulatorElaborationRequest = None
         self.compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest = None
@@ -587,7 +588,11 @@ class RegressionRunner:
         self.request.simulation_requests = self.regression.render_sim_configs(self.request.target)
         self.rmh.create_directory(self.regression.results_path)
         if self.request.app == LogicSimulators.DSIM:
-            self.dsim_cloud_simulation()
+            if self.request.dsim_cloud_mode:
+                self.dsim_cloud_simulation()
+            else:
+                self.regression.max_jobs = 1
+                self.parallel_simulation()
         else:
             self.parallel_simulation()
         self.report.duration = self.report.timestamp_end - self.report.timestamp_start
