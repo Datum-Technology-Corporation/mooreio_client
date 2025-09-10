@@ -11,7 +11,8 @@ from http import HTTPMethod
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, List, Dict
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 from semantic_version import Version
 
 from mio_client.core.scheduler import JobScheduler, Job, JobSchedulerConfiguration
@@ -235,33 +236,124 @@ class SiArxService(Service):
                         report.errors.append(f"Failed to unpack IP {ip.name}/{package.name} at path '{package.extract_path}': {e}")
 
     def update_codebase(self, request: SiArxRequest, response: SiArxResponse, report: SiArxReport):
+        """
+        Parallelized file update:
+          - Project-level files first
+          - Then per-IP package files
+          - For each file: merge pragma sections if the destination exists and replace_user_file is True
+        """
+
+        # Build a list of work items to process in parallel.
+        # Each item is a tuple describing the source and destination plus flags.
+        work_items = []
+
+        # 1) Project-level files
         for file in response.files:
             extracted_file_path: Path = response.extract_path / file.path
             current_file_path: Path = self.rmh.project_root_path / file.path
-            if self.rmh.file_exists(current_file_path):
-                if file.replace_user_file and request.force_update:
-                    self.rmh.warning(f"Replacing '{current_file_path}'")
-                    self.rmh.move_file(extracted_file_path, current_file_path)
-        for ip in response.ips:
-            for package in ip.packages:
-                for file in package.files:
+            work_items.append((
+                extracted_file_path,
+                current_file_path,
+                file.replace_user_file,   # may be True/False
+                True                      # is_project_level
+            ))
+
+        # 2) Package-level files
+        for ip in response.ips or []:
+            for package in ip.packages or []:
+                for file in package.files or []:
                     extracted_file_path: Path = package.extract_path / file.path
-                    current_file_path: Path = self.rmh.project_root_path / package.path / file.path # TODO Replace with IP location obtained from DB (if IP exists)
-                    if self.rmh.file_exists(current_file_path) and file.replace_user_file:
-                        try:
-                            user_file_sections = self.find_user_file_sections(current_file_path)
-                        except Exception as e:
-                            if request.force_update:
-                                self.rmh.warning(f"Replacing '{current_file_path}'")
-                                self.rmh.move_file(extracted_file_path, current_file_path)
-                            else:
-                                raise e
+                    # TODO Replace with IP location obtained from DB (if IP exists)
+                    current_file_path: Path = (self.rmh.project_root_path / package.path / file.path)
+                    work_items.append((
+                        extracted_file_path,
+                        current_file_path,
+                        file.replace_user_file,
+                        False                     # is_project_level
+                    ))
+
+        # De-duplicate by destination path (last wins). Also avoids two threads writing same file.
+        dedup = {}
+        for src, dst, replace_user_file, is_project in work_items:
+            dedup[str(dst)] = (src, dst, replace_user_file, is_project)
+        work_items = list(dedup.values())
+
+        # Worker to process a single file update.
+        def _process_one(item):
+            src, dst, replace_user_file, is_project = item
+            local_warnings = []
+            local_errors = []
+
+            try:
+                # Skip if source doesn't exist (nothing was generated for it).
+                if not self.rmh.file_exists(src):
+                    return (local_warnings, [f"Generated file missing: '{src}'"])
+
+                dst_parent = dst.parent
+                dst_parent.mkdir(parents=True, exist_ok=True)  # safe even if exists
+
+                if self.rmh.file_exists(dst):
+                    # Destination exists
+                    if is_project:
+                        # Project-level rule: only replace when replace_user_file and force_update are both True
+                        if replace_user_file and request.force_update:
+                            self.rmh.warning(f"Replacing '{dst}'")
+                            self.rmh.move_file(src, dst)
                         else:
-                            self.replace_generated_file_sections_with_user_contents(extracted_file_path, user_file_sections)
-                            self.rmh.move_file(extracted_file_path, current_file_path)
-                    elif not self.rmh.file_exists(current_file_path) and self.rmh.file_exists(extracted_file_path):
-                        current_file_path.parent.mkdir(parents=True, exist_ok=True)  # TODO Use rmh to create directories
-                        self.rmh.move_file(extracted_file_path, current_file_path)
+                            # Keep user file
+                            pass
+                    else:
+                        # Package-level rule: merge pragma blocks if replace_user_file
+                        if replace_user_file:
+                            try:
+                                user_sections = self.find_user_file_sections(dst)
+                            except Exception as e:
+                                # If merge failed and --force: replace; else bubble the error
+                                if request.force_update:
+                                    self.rmh.warning(f"Replacing '{dst}' (merge failed: {e})")
+                                    self.rmh.move_file(src, dst)
+                                else:
+                                    return (local_warnings, [f"Failed reading user sections in '{dst}': {e}"])
+                            else:
+                                try:
+                                    self.replace_generated_file_sections_with_user_contents(src, user_sections)
+                                    self.rmh.move_file(src, dst)
+                                except Exception as e:
+                                    if request.force_update:
+                                        self.rmh.warning(f"Replacing '{dst}' (section merge failed: {e})")
+                                        self.rmh.move_file(src, dst)
+                                    else:
+                                        return (local_warnings, [f"Failed merging sections for '{dst}': {e}"])
+                        else:
+                            # Not allowed to replace user file; leave as-is
+                            pass
+                else:
+                    # Destination does not exist → just move generated file
+                    self.rmh.move_file(src, dst)
+
+            except Exception as e:
+                local_errors.append(f"Failed to update '{dst}': {e}")
+
+            return (local_warnings, local_errors)
+
+        # Run the workers in parallel and fold results
+        max_workers = min(32, (os.cpu_count() or 1) * 5)
+        warnings_accum, errors_accum = [], []
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = [pool.submit(_process_one, item) for item in work_items]
+            for fut in as_completed(futures):
+                w, e = fut.result()
+                if w:
+                    warnings_accum.extend(w)
+                if e:
+                    errors_accum.extend(e)
+
+        # Aggregate into the report
+        report.warnings.extend(warnings_accum)
+        report.errors.extend(errors_accum)
+        if errors_accum:
+            report.success = False
 
     def find_user_file_sections(self, file: Path) -> Dict:
         file_content: str = ""
