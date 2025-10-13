@@ -4,14 +4,32 @@ Commands
 All commands can be prepended by ``--dbg`` to enable mio's debug printout.  Locations for custom commands are specified
 via the `MIO_CUSTOM_COMMANDS` environment variable.
 
-Custom commands must be in python and extend from a `Command` class. Ex:
+Custom commands must be in Python3 and extend from a `Command` class. Ex:
 
 .. code-block:: python3
+
+   from mio_client.commands.sim import SimulateCommand
 
    class MySimulateCommand(SimulateCommand):
       def phase_main(self, phase: Phase):
          self.rmh.info("Hello, World!")
          super().phase_main(phase)
+
+      def compile(self, phase: Phase):
+         super().compile(phase)
+         # ...
+
+      def elaborate(self, phase: Phase):
+         super().elaborate(phase)
+         # ...
+
+      def simulate(self, phase: Phase):
+         super().simulate(phase)
+         # ...
+
+      def phase_report(self, phase: Phase):
+         super().phase_report(phase)
+         self.rmh.info(f"Custom report:\n# compilation warnings: {self.compilation_report.num_warnings}")
 
 
 Credentials Management

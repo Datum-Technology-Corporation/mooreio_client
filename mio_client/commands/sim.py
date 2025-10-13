@@ -731,7 +731,7 @@ class SimulateCommand(Command):
 
     def print_compilation_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.compilation_report.num_errors}E\033[0m" if self.compilation_report.num_errors > 0 else "0E"
-        warnings_str = f"\033[33m\033[1m{self.compilation_report.num_errors}W\033[0m" if self.compilation_report.num_errors > 0 else "0W"
+        warnings_str = f"\033[33m\033[1m{self.compilation_report.num_warnings}W\033[0m" if self.compilation_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
         if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
             self.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
