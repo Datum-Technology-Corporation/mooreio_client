@@ -812,6 +812,7 @@ Usage:
    mio regr IP[#TARGET] [TEST SUITE.]REGRESSION [OPTIONS]
    
 Options:
+   -a, --app      Specifies which simulator to use: dsim, dsimc, vivado.
    -d, --dry-run  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
    
 Examples:
@@ -831,7 +832,7 @@ class RegressionCommand(Command):
         parser_regr = subparsers.add_parser('regr', help=REGR_HELP_TEXT, add_help=False)
         parser_regr.add_argument('ip'         , help='Target IP')
         parser_regr.add_argument('regr'       , help='Regression to be run.  For Test Bench IPs with multiple Test Suites, the suite must be specified. Ex: `mio regr my_ip apbxc.sanity`')
-        parser_regr.add_argument('-a', "--app", help='Specifies which simulator to use: dsim', choices=REGRESSION_SIMULATORS , required=False)
+        parser_regr.add_argument('-a', "--app", help='Specifies which simulator to use: dsim, dsimc, vivado', choices=REGRESSION_SIMULATORS , required=False)
         parser_regr.add_argument('-d', "--dry", help='Compiles and elaborates target IP but only prints out the tests that would be run.', action="store_true", default=False , required=False)
 
     def __init__(self):

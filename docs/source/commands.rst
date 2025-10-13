@@ -1,8 +1,17 @@
 Commands
 ========
 
-All commands can be prepended by ``--dbg`` to enable mio's debug printout.
+All commands can be prepended by ``--dbg`` to enable mio's debug printout.  Locations for custom commands are specified
+via the `MIO_CUSTOM_COMMANDS` environment variable.
 
+Custom commands must be in python and extend from a `Command` class. Ex:
+
+.. code-block:: python3
+
+   class MySimulateCommand(SimulateCommand):
+      def phase_main(self, phase: Phase):
+         self.rmh.info("Hello, World!")
+         super().phase_main(phase)
 
 
 Credentials Management
@@ -143,7 +152,7 @@ Usage
 
 Options
 ^^^^^^^
-================  =========================  ===========================
+================  =========================  ========================================================================
 ``-t TEST``       ``--test TEST``            Specify the UVM test to be run.
 ``-s SEED``       ``--seed SEED``            Positive Integer. Specify randomization seed  If none is provided, a random one will be picked.
 ``-v VERBOSITY``  ``--verbosity VERBOSITY``  Specifies UVM logging verbosity: ``none``, ``low``, ``medium``, ``high``, ``full``, ``debug``. [default: ``medium``]
@@ -154,7 +163,7 @@ Options
 ``-c``            ``--cov``                  Enable code & functional coverage capture.
 ``-g``            ``--gui``                  Invokes simulator in graphical or 'GUI' mode.
 ``-d DEST``       ``--dry-run   DEST``       Captures simulation command into tarball at DEST instead of invoking simulator.
-================  =========================  ===========================
+================  =========================  ========================================================================
 
 Steps
 ^^^^^
@@ -169,14 +178,14 @@ Steps
 
 Examples
 ^^^^^^^^
-================================================  =============
+================================================  ==========================================================
 ``mio sim my_ip -t smoke -s 1 -w -c``             Compile, elaborate and simulate test ``my_ip_smoke_test_c`` for IP ``my_ip`` with seed ``1`` and waves & coverage capture enabled.
 ``mio sim my_ip -t smoke -s 1 --args +NPKTS=10``  Compile, elaborate and simulate test ``my_ip_smoke_test_c`` for IP ``my_ip`` with seed ``1`` and a simulation argument.
 ``mio sim my_ip -S -t smoke -s 42 -v high -g``    Only simulates test ``my_ip_smoke_test_c`` for IP ``my_ip`` with seed ``42`` and ``UVM_HIGH`` verbosity using the simulator in GUI mode.
 ``mio sim my_ip -C``                              Only compile ``my_ip``.
 ``mio sim my_ip -E``                              Only elaborate ``my_ip``.
 ``mio sim my_ip -CE``                             Compile and elaborate ``my_ip``.
-================================================  =============
+================================================  ==========================================================
 
 
 regr
@@ -194,17 +203,18 @@ Usage
 
 Options
 ^^^^^^^
-======  =============  =============================================
+======  =============  ==========================================================================================
+``-a``  ``--app``      Specifies which simulator to use: ``dsim``, ``dsimc``, ``vivado``.
 ``-d``  ``--dry-run``  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
-======  =============  =============================================
+======  =============  ==========================================================================================
 
 Examples
 ^^^^^^^^
-===================================  =====================
-``mio regr my_ip sanity``            Run sanity regression for IP ``uvm_my_ip``, from test suite ``ts.yml``
-``mio regr my_ip apb_xc.sanity``     Run sanity regression for IP ``uvm_my_ip``, from test suite ``apb_xc.ts.yml``
-``mio regr my_ip axi_xc.sanity -d``  Dry-run sanity regression for IP ``uvm_my_ip``, from test suite ``axi_xc.ts.yml``
-===================================  =====================
+============================================  ==========================================================================================
+``mio regr my_ip sanity -a dsim``             Run sanity regression for IP ``uvm_my_ip``, from test suite ``ts.yml`` using Altair DSim
+``mio regr my_ip apb_xc.sanity``              Run sanity regression for IP ``uvm_my_ip``, from test suite ``apb_xc.ts.yml`` using the default simulator
+``mio regr my_ip axi_xc.sanity -d -a dsimc``  Dry-run sanity regression for IP ``uvm_my_ip``, from test suite ``axi_xc.ts.yml`` using Altair DSim Cloud
+============================================  ==========================================================================================
 
 
 
