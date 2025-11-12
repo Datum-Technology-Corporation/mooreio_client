@@ -414,12 +414,14 @@ class SimulateCommand(Command):
         try:
             self._simulator = self.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, self.app.value)
         except Exception as e:
-            phase.error = e
-            return
+            if not self.rmh.test_mode:
+                phase.error = e
+                return
         else:
             if not self.simulator.supports_uvm:
-                phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
-                return
+                if not self.rmh.test_mode:
+                    phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
+                    return
         if self.do_invoke_siarx:
             try:
                 self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
@@ -444,14 +446,19 @@ class SimulateCommand(Command):
                     self._do_compile_and_elaborate = False
             else:
                 if self.do_compile and self.do_elaborate:
-                    if self.simulator.supports_two_step_simulation:
-                        self._do_compile = False
-                        self._do_elaborate = False
-                        self._do_compile_and_elaborate = True
+                    if self._simulator is None:
+                        if not self.rmh.test_mode:
+                            phase.error = Exception(f"No simulator was found.")
+                            return
                     else:
-                        self._do_compile = True
-                        self._do_elaborate = True
-                        self._do_compile_and_elaborate = False
+                        if self.simulator.supports_two_step_simulation:
+                            self._do_compile = False
+                            self._do_elaborate = False
+                            self._do_compile_and_elaborate = True
+                        else:
+                            self._do_compile = True
+                            self._do_elaborate = True
+                            self._do_compile_and_elaborate = False
 
     def phase_main(self, phase: Phase):
         if self.do_prepare_dut:
