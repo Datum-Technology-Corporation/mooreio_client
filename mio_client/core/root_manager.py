@@ -1113,12 +1113,15 @@ class RootManager:
         except requests.RequestException as e:
             Exception(f"Error during de-authentication with '{final_url}': {e}")
 
-    def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
+    def web_api_call(self, method: HTTPMethod, path: str, data: dict, use_api_as_base:bool=True) -> dict:
         response = {}
         if not self.user.authenticated:
             raise Exception(f"Error during Web API call: user not authenticated")
         else:
-            final_url: str = f"{self.url_api}/{path}"
+            if use_api_as_base:
+                final_url: str = f"{self.url_api}/{path}"
+            else:
+                final_url: str = f"{self.url_base}/{path}"
             try:
                 session = requests.Session()
                 session.cookies = requests.utils.cookiejar_from_dict(self.user.session_cookies)
@@ -1126,6 +1129,9 @@ class RootManager:
                 session.headers['X-CSRFToken'] = session.cookies.get('csrftoken')
                 if method == HTTPMethod.POST:
                     response = session.post(final_url, data=data)
+                    response.raise_for_status()  # Raise an error for bad status codes
+                elif method == HTTPMethod.GET:
+                    response = session.get(final_url, params=data)
                     response.raise_for_status()  # Raise an error for bad status codes
                 else:
                     raise Exception(f"Method {method} is not supported")
