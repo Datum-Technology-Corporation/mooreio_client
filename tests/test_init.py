@@ -12,7 +12,7 @@ import yaml
 
 import mio_client.cli
 from mio_client.services.init import InitProjectRequest, InitIpRequest
-from .common import OutputCapture, TestBase
+from .test_common import OutputCapture, TestBase
 
 
 def get_fixture_data(file: Path) -> Dict:

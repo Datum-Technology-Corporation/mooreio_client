@@ -13,7 +13,7 @@ from mio_client.core.phase import Phase
 from mio_client.core.root_manager import RootManager
 from mio_client.services.simulation import SimulatorMetricsDSim
 from mio_client.services.simulation import SimulatorXilinxVivado
-from .common import OutputCapture, TestBase
+from .test_common import OutputCapture, TestBase
 
 #######################################################################################################################
 # Test (ie mock) classes

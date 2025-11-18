@@ -7,7 +7,7 @@ from typing import Dict
 import pytest
 import toml
 
-from .common import TestBase
+from .test_common import TestBase
 import mio_client.cli
 from mio_client.core.configuration import Configuration
 

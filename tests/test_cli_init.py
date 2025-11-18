@@ -10,7 +10,7 @@ from unittest import SkipTest
 import pytest
 
 import mio_client.cli
-from .common import OutputCapture, TestBase
+from .test_common import OutputCapture, TestBase
 
 
 class TestCliInit(TestBase):
