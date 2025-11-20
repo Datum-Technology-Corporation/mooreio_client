@@ -260,27 +260,11 @@ class RootManager:
 
     def debug(self, message: str, level: int = 1):
         """
-        Write debug output to both stdout and a persistent log file.
-        Safe for PyCharm and subprocess logging.
+        Write debug output to stdout
         """
-
-        # --- 1. stdout (optional) ---
         if self.print_trace:
             sys.stdout.write(f"[MIO-DBG] {message}\n")
             sys.stdout.flush()
-
-        # --- 2. persistent temp log file ---
-        try:
-            logdir = os.path.join("/tmp", "mio_agentic_logs")
-            os.makedirs(logdir, exist_ok=True)
-
-            logfile = os.path.join(logdir, "trace.log")
-
-            with open(logfile, "a", encoding="utf-8") as f:
-                f.write(f"[MIO-DBG] {message}\n")
-        except Exception:
-            # Never allow debug logging to break the main tool
-            pass
 
     def warning(self, message: str):
         print(f"\033[33m\033[1m[MIO-WARNING] {message} \033[0m")
