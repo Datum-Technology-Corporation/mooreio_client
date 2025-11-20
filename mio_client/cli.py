@@ -15,7 +15,7 @@ from mio_client.core.root_manager import RootManager
 #######################################################################################################################
 # User Manual Top
 #######################################################################################################################
-VERSION = "2.2.0"
+VERSION = "2.2.1"
 
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}
@@ -245,17 +245,33 @@ def _sys_path_prepend(p: pathlib.Path):
     finally:
         sys.path[:] = orig
 
+
 def _load_module_from_file(mod_name: str, file_path: pathlib.Path) -> ModuleType | None:
-    """Safely import a module from an arbitrary file path (only as a fallback)."""
     try:
         spec = importlib.util.spec_from_file_location(mod_name, str(file_path))
         if spec and spec.loader:
             mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+
+            # --- The Fix ---
+            module_dir = str(file_path.parent.resolve())
+            if module_dir not in sys.path:
+                sys.path.insert(0, module_dir)  # Add to the beginning of the path
+                path_added = True
+            else:
+                path_added = False
+            # ---------------
+
+            try:
+                spec.loader.exec_module(mod)
+            finally:
+                # --- The Fix (Cleanup) ---
+                if path_added:
+                    sys.path.remove(module_dir)  # Clean up sys.path
+                # -------------------------
+
             return mod
     except Exception as e:
-        if TEST_MODE:
-            print(f"[mio] Skipping {file_path}: {e}", file=sys.stderr)
+        print(f"[mio] Skipping {file_path}: {e}", file=sys.stderr)
     return None
 
 def _discover_commands_in_paths(env_var: str = "MIO_CUSTOM_COMMANDS"):
