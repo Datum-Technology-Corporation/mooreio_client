@@ -15,7 +15,7 @@ from mio_client.core.root_manager import RootManager
 #######################################################################################################################
 # User Manual Top
 #######################################################################################################################
-VERSION = "2.2.1"
+VERSION = "2.2.2"
 
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}
@@ -229,8 +229,7 @@ def _import_module_dotted(sys_path_entry: pathlib.Path, pkg_name: str, pyfile: p
         try:
             return importlib.import_module(dotted)
         except Exception as e:
-            if TEST_MODE:
-                print(f"[mio] Skipping {pyfile} (package import {dotted}): {e}", file=sys.stderr)
+            #print(f"[mio] Skipping {pyfile} (package import {dotted}): {e}", file=sys.stderr)
             return None
 
 @contextlib.contextmanager
@@ -271,7 +270,8 @@ def _load_module_from_file(mod_name: str, file_path: pathlib.Path) -> ModuleType
 
             return mod
     except Exception as e:
-        print(f"[mio] Skipping {file_path}: {e}", file=sys.stderr)
+        pass
+        #print(f"[mio] Skipping {file_path}: {e}", file=sys.stderr)
     return None
 
 def _discover_commands_in_paths(env_var: str = "MIO_CUSTOM_COMMANDS"):
@@ -312,8 +312,7 @@ def _discover_commands_in_paths(env_var: str = "MIO_CUSTOM_COMMANDS"):
                     cmds = list(get_cmds())
                     cmd_classes.extend(cmds)
                 except Exception as e:
-                    if TEST_MODE:
-                        print(f"[mio] get_commands() failed in {pyfile}: {e}", file=sys.stderr)
+                    print(f"[mio] get_commands() failed in {pyfile}: {e}", file=sys.stderr)
     return cmd_classes
 
 def print_help_text():
