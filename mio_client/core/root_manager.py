@@ -15,6 +15,8 @@ from pydantic import ValidationError
 import os
 import getpass
 from rich.console import Console
+from rich.markdown import Markdown
+from rich.pager import SystemPager
 
 from .command import Command
 from .configuration import Configuration
@@ -256,6 +258,10 @@ class RootManager:
 
     def info(self, message: str):
         self._console.print(f"[MIO] {message}", style="")
+
+    def info_md(self, message: str):
+        md = Markdown(message)
+        self._console.print(md)
 
     import os, sys, time
 
