@@ -51,7 +51,7 @@ class HelpCommand(Command):
         parser_help.add_argument("cmd", help='Command whose documentation to print', choices=ALL_COMMANDS)
 
     def print_text_and_exit(self, phase: Phase, text: str):
-        print(text)
+        self.rmh.info(text)
         phase.end_process = True
 
     def phase_init(self, phase):
