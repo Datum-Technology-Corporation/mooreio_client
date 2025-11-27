@@ -177,7 +177,7 @@ docs-html: venv
 docs-pdf: venv
 	$(SPHINX_API_DOC) -o ./docs/source/mio_client ./mio_client/
 	$(SPHINX_BUILD) -M latexpdf ./docs/source ./docs/build
-	cp ./docs/build/latex/MooreIOClientUserManual.pdf ./mio_client/data/user_manual.pdf
+	cp ./docs/build/latex/MooreIOClientUserManual.pdf ./mio_client/data/mio_client_user_manual.pdf
 
 # Cleans up all docs output files
 clean-docs:
