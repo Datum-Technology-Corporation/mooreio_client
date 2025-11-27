@@ -59,3 +59,17 @@ html_css_files = [
 ]
 html_static_path = ['_static']
 
+
+#######################################################################################################################
+# Options for LaTeX / PDF output
+#######################################################################################################################
+# Which LaTeX engine to use
+latex_engine = "pdflatex"  # or "xelatex" if you prefer
+
+# (source start file, target tex file, title, author, documentclass)
+latex_documents = [
+    ("index", "MooreIOClientUserManual.tex",
+     "Moore.io Client User Manual",
+     "Datum Technology Corporation",
+     "manual"),
+]
