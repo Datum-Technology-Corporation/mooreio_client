@@ -11,10 +11,10 @@ import shutil
 import jinja2
 import requests
 import toml
-import yaml
 from pydantic import ValidationError
 import os
 import getpass
+from rich.console import Console
 
 from .command import Command
 from .configuration import Configuration
@@ -57,6 +57,7 @@ class RootManager:
         :param test_mode: Pytest mode
         :param user_home_path: Path to user home directory
         """
+        self._console = Console()
         self._name: str = name
         self._test_mode: bool = test_mode
         self._wd: Path = wd
@@ -254,7 +255,7 @@ class RootManager:
         return self._j2_env
 
     def info(self, message: str):
-        print(f"\033[35m[MIO]\033[0m {message}")
+        self._console.print(f"[MIO] {message}", style="")
 
     import os, sys, time
 
@@ -263,17 +264,16 @@ class RootManager:
         Write debug output to stdout
         """
         if self.print_trace:
-            sys.stdout.write(f"[MIO-DBG] {message}\n")
-            sys.stdout.flush()
+            self._console.print(f"[MIO-DEBUG] {message}", style="bold purple")
 
     def warning(self, message: str):
-        print(f"\033[33m\033[1m[MIO-WARNING] {message} \033[0m")
+        self._console.print(f"[MIO-WARNING] {message}", style="bold yellow")
 
     def error(self, message: str):
-        print(f"\033[31m\033[4m[MIO-ERROR] {message} \033[0m")
+        self._console.print(f"[MIO-ERROR] {message}", style="bold red underline")
 
     def fatal(self, message: str):
-        print(f"\033[31m\033[4m[MIO-FATAL] {message} \033[0m")
+        self._console.print(f"[MIO-FATAL] {message}", style="bold red underline")
 
     @property
     def current_phase(self) -> 'Phase':
@@ -290,6 +290,8 @@ class RootManager:
                 if e.message != "":
                     self.fatal(e.message)
                 return 0
+            except KeyboardInterrupt:
+                return 0
             else:
                 return 0
         else:
@@ -298,6 +300,8 @@ class RootManager:
             except PhaseEndProcessException as e:
                 if e.message != "":
                     self.fatal(e.message)
+                return 0
+            except KeyboardInterrupt:
                 return 0
             except Exception as e:
                 self.fatal(str(e))
