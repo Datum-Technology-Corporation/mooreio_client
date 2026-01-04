@@ -16,9 +16,9 @@ from docutils.parsers.rst import Directive
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 #######################################################################################################################
 project = 'Moore.io CLI Client'
-copyright = '2025, Datum Technology Corporation'
+copyright = '2026, Datum Technology Corporation'
 author = 'Datum Technology Corporation'
-release = '2.2.1'
+release = '2.2.3'
 
 
 #######################################################################################################################
