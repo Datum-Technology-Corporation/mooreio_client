@@ -1144,16 +1144,24 @@ class RootManager:
                 session.headers.update(self.user.session_headers)
                 session.headers['X-CSRFToken'] = session.cookies.get('csrftoken')
                 if method == HTTPMethod.POST:
-                    response = session.post(final_url, data=data)
-                    response.raise_for_status()  # Raise an error for bad status codes
+                    response = session.post(final_url, json=data)
                 elif method == HTTPMethod.GET:
                     response = session.get(final_url, params=data)
-                    response.raise_for_status()  # Raise an error for bad status codes
+                elif method == HTTPMethod.PATCH:
+                    response = session.patch(final_url, json=data)
+                elif method == HTTPMethod.PUT:
+                    response = session.put(final_url, json=data)
+                elif method == HTTPMethod.DELETE:
+                    response = session.delete(final_url, json=data if data else None)
+                elif method == HTTPMethod.OPTIONS:
+                    response = session.options(final_url)
                 else:
                     raise Exception(f"Method {method} is not supported")
             except requests.RequestException as e:
                 raise Exception(f"Error during Web API {method} to '{final_url}': {e}")
-        return response
+            else:
+                response.raise_for_status()
+                return response
 
     def phase_save_user_data(self, phase: Phase):
         try:
