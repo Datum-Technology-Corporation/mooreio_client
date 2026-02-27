@@ -1129,39 +1129,62 @@ class RootManager:
         except requests.RequestException as e:
             Exception(f"Error during de-authentication with '{final_url}': {e}")
 
-    def web_api_call(self, method: HTTPMethod, path: str, data: dict, use_api_as_base:bool=True) -> dict:
-        response = {}
+    def web_api_call(self, method: HTTPMethod, path: str, data: dict, use_api_as_base: bool = True):
         if not self.user.authenticated:
-            raise Exception(f"Error during Web API call: user not authenticated")
-        else:
-            if use_api_as_base:
-                final_url: str = f"{self.url_api}/{path}"
+            raise Exception("Error during Web API call: user not authenticated")
+
+        final_url = f"{self.url_api}/{path}" if use_api_as_base else f"{self.url_base}/{path}"
+
+        session = requests.Session()
+        session.cookies = requests.utils.cookiejar_from_dict(self.user.session_cookies)
+        session.headers.update(self.user.session_headers)
+        session.headers["X-CSRFToken"] = session.cookies.get("csrftoken")
+
+        try:
+            if method == HTTPMethod.POST:
+                resp = session.post(final_url, json=data)
+            elif method == HTTPMethod.GET:
+                resp = session.get(final_url, params=data)
+            elif method == HTTPMethod.PATCH:
+                resp = session.patch(final_url, json=data)
+            elif method == HTTPMethod.PUT:
+                resp = session.put(final_url, json=data)
+            elif method == HTTPMethod.DELETE:
+                resp = session.delete(final_url, json=data if data else None)
+            elif method == HTTPMethod.OPTIONS:
+                resp = session.options(final_url)
             else:
-                final_url: str = f"{self.url_base}/{path}"
+                raise Exception(f"Method {method} is not supported")
+
+            # If error, attach body for debugging
             try:
-                session = requests.Session()
-                session.cookies = requests.utils.cookiejar_from_dict(self.user.session_cookies)
-                session.headers.update(self.user.session_headers)
-                session.headers['X-CSRFToken'] = session.cookies.get('csrftoken')
-                if method == HTTPMethod.POST:
-                    response = session.post(final_url, json=data)
-                elif method == HTTPMethod.GET:
-                    response = session.get(final_url, params=data)
-                elif method == HTTPMethod.PATCH:
-                    response = session.patch(final_url, json=data)
-                elif method == HTTPMethod.PUT:
-                    response = session.put(final_url, json=data)
-                elif method == HTTPMethod.DELETE:
-                    response = session.delete(final_url, json=data if data else None)
-                elif method == HTTPMethod.OPTIONS:
-                    response = session.options(final_url)
-                else:
-                    raise Exception(f"Method {method} is not supported")
-            except requests.RequestException as e:
-                raise Exception(f"Error during Web API {method} to '{final_url}': {e}")
-            else:
-                response.raise_for_status()
-                return response
+                resp.raise_for_status()
+            except requests.HTTPError as e:
+                # Pull as much detail as possible
+                content_type = resp.headers.get("Content-Type", "")
+                body_text = resp.text or ""
+                body_json = None
+                if "application/json" in content_type:
+                    try:
+                        body_json = resp.json()
+                    except Exception:
+                        body_json = None
+
+                # Re-raise with details (keep original as __cause__)
+                detail = {
+                    "status_code": resp.status_code,
+                    "reason": resp.reason,
+                    "url": final_url,
+                    "method": str(method),
+                    "response_text": body_text[:4000],  # guard log size
+                    "response_json": body_json,
+                }
+                raise Exception(f"HTTP {resp.status_code} {resp.reason} for {method} {final_url} :: {detail}") from e
+
+            return resp
+
+        except requests.RequestException as e:
+            raise Exception(f"Error during Web API {method} to '{final_url}': {e}") from e
 
     def phase_save_user_data(self, phase: Phase):
         try:
