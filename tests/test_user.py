@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 import mio_client.cli
-from .common import TestBase
+from .test_common import TestBase
 from mio_client.core.user import User
 
 

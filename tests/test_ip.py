@@ -8,7 +8,7 @@ import pytest
 import yaml
 from semantic_version import SimpleSpec
 
-from .common import TestBase
+from .test_common import TestBase
 from mio_client.core.ip import Ip
 
 

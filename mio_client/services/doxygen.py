@@ -47,7 +47,7 @@ class DoxygenService(Service):
         super().__init__(rmh, 'dimitri_van_heesch', 'doxygen', 'Doxygen')
         self._type = ServiceType.DOCUMENTATION_GENERATOR
         self._installation_path: Path = Path(self.rmh.configuration.docs.doxygen_installation_path)
-        self._output_path: Path = Path(self.rmh.project_root_path, self.rmh.configuration.docs.root_path) / "doxygen_output"
+        self._output_path: Path = self.rmh.md / "doxygen_output"
 
     def is_available(self) -> bool:
         return self.rmh.directory_exists(self._installation_path)

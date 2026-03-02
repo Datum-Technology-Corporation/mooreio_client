@@ -16,9 +16,9 @@ from docutils.parsers.rst import Directive
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 #######################################################################################################################
 project = 'Moore.io CLI Client'
-copyright = '2025, Datum Technology Corporation'
-author = 'Datum Technology Corporation'
-release = '2.1.9'
+copyright = '2026, True North Silicon Inc.'
+author = 'True North Silicon Inc.'
+release = '2.2.5'
 
 
 #######################################################################################################################
@@ -59,3 +59,17 @@ html_css_files = [
 ]
 html_static_path = ['_static']
 
+
+#######################################################################################################################
+# Options for LaTeX / PDF output
+#######################################################################################################################
+# Which LaTeX engine to use
+latex_engine = "pdflatex"  # or "xelatex" if you prefer
+
+# (source start file, target tex file, title, author, documentclass)
+latex_documents = [
+    ("index", "MooreIOClientUserManual.tex",
+     "Moore.io Client User Manual",
+     "True North Silicon Inc.",
+     "manual"),
+]

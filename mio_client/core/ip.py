@@ -624,24 +624,22 @@ class Ip(Model):
             directory_path = path / directory
             if not self.rmh.directory_exists(directory_path):
                 self.rmh.warning(f"IP '{self}' HDL src path '{directory_path}' does not exist")
+            if simulator == "":
+                self.resolved_hdl_directories.append(directory_path)
             else:
-                if simulator == "":
-                    self.resolved_hdl_directories.append(directory_path)
-                else:
-                    if simulator not in self.resolved_encrypted_hdl_directories:
-                        self._resolved_encrypted_hdl_directories[simulator] = []
-                    self.resolved_encrypted_hdl_directories[simulator].append(directory_path)
+                if simulator not in self.resolved_encrypted_hdl_directories:
+                    self._resolved_encrypted_hdl_directories[simulator] = []
+                self.resolved_encrypted_hdl_directories[simulator].append(directory_path)
         if self.hdl_src.tests_path != UNDEFINED_CONST:
             tests_directory_path = path / self.hdl_src.tests_path
             if not self.rmh.directory_exists(tests_directory_path):
                 self.rmh.warning(f"IP '{self}' HDL Tests src path '{tests_directory_path}' does not exist")
+            if simulator == "":
+                self.resolved_hdl_directories.append(tests_directory_path)
             else:
-                if simulator == "":
-                    self.resolved_hdl_directories.append(tests_directory_path)
-                else:
-                    if simulator not in self.resolved_encrypted_hdl_directories:
-                        self._resolved_encrypted_hdl_directories[simulator] = []
-                    self.resolved_encrypted_hdl_directories[simulator].append(tests_directory_path)
+                if simulator not in self.resolved_encrypted_hdl_directories:
+                    self._resolved_encrypted_hdl_directories[simulator] = []
+                self.resolved_encrypted_hdl_directories[simulator].append(tests_directory_path)
         for file in self.hdl_src.top_sv_files:
             full_path = path / file
             if not self.rmh.file_exists(full_path):

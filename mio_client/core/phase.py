@@ -3,6 +3,7 @@
 #######################################################################################################################
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Dict
 
 
 class State(Enum):
@@ -43,9 +44,17 @@ class Phase:
         self._error: Exception = None
         self._end_process: bool = False
         self._end_process_message: str = ""
+        self._data = {}
 
     def __str__(self):
         return self.name
+
+    @property
+    def data(self) -> Dict:
+        return self._data
+    @data.setter
+    def data(self, value: Dict):
+        self._data = value
 
     @property
     def name(self) -> str:

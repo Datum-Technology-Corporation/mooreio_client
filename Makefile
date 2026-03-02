@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Datum Technology Corporation
+# Copyright 2020-2026 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 # Makefile for development of mio_client
@@ -162,7 +162,7 @@ lint: venv
 
 #######################################################################################################################
 # Build Targets
-.PHONY: clean docs clean-docs build clean-build publish-test publish-test-install publish publish-install
+.PHONY: clean docs docs-html docs-pdf clean-docs build clean-build publish-test publish-test-install publish publish-install
 #######################################################################################################################
 # Clean all outputs
 clean: clean-venv clean-build clean-docs
@@ -170,10 +170,14 @@ clean: clean-venv clean-build clean-docs
 	rm -rf ./reports
 
 # Generates documentation
-docs: venv
-	$(call print_banner, Generating documentation)
+docs: docs-html docs-pdf
+docs-html: venv
 	$(SPHINX_API_DOC) -o ./docs/source/mio_client ./mio_client/
 	$(SPHINX_BUILD) -b html ./docs/source docs/build
+docs-pdf: venv
+	$(SPHINX_API_DOC) -o ./docs/source/mio_client ./mio_client/
+	$(SPHINX_BUILD) -M latexpdf ./docs/source ./docs/build
+	cp ./docs/build/latex/MooreIOClientUserManual.pdf ./mio_client/data/mio_client_user_manual.pdf
 
 # Cleans up all docs output files
 clean-docs:

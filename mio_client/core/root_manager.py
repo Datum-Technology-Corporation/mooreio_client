@@ -11,10 +11,12 @@ import shutil
 import jinja2
 import requests
 import toml
-import yaml
 from pydantic import ValidationError
 import os
 import getpass
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.pager import SystemPager
 
 from .command import Command
 from .configuration import Configuration
@@ -57,6 +59,7 @@ class RootManager:
         :param test_mode: Pytest mode
         :param user_home_path: Path to user home directory
         """
+        self._console = Console()
         self._name: str = name
         self._test_mode: bool = test_mode
         self._wd: Path = wd
@@ -254,20 +257,29 @@ class RootManager:
         return self._j2_env
 
     def info(self, message: str):
-        print(f"\033[35m[MIO]\033[0m {message}")
+        self._console.print(f"[MIO] {message}", style="")
 
-    def debug(self, message: str):
+    def info_md(self, message: str):
+        md = Markdown(message)
+        self._console.print(md)
+
+    import os, sys, time
+
+    def debug(self, message: str, level: int = 1):
+        """
+        Write debug output to stdout
+        """
         if self.print_trace:
-            print(f"\033[32m[MIO-DBG] {message} \033[0m")
+            self._console.print(f"[MIO-DEBUG] {message}", style="bold purple")
 
     def warning(self, message: str):
-        print(f"\033[33m\033[1m[MIO-WARNING] {message} \033[0m")
+        self._console.print(f"[MIO-WARNING] {message}", style="bold yellow")
 
     def error(self, message: str):
-        print(f"\033[31m\033[4m[MIO-ERROR] {message} \033[0m")
+        self._console.print(f"[MIO-ERROR] {message}", style="bold red underline")
 
     def fatal(self, message: str):
-        print(f"\033[31m\033[4m[MIO-FATAL] {message} \033[0m")
+        self._console.print(f"[MIO-FATAL] {message}", style="bold red underline")
 
     @property
     def current_phase(self) -> 'Phase':
@@ -284,6 +296,8 @@ class RootManager:
                 if e.message != "":
                     self.fatal(e.message)
                 return 0
+            except KeyboardInterrupt:
+                return 0
             else:
                 return 0
         else:
@@ -292,6 +306,8 @@ class RootManager:
             except PhaseEndProcessException as e:
                 if e.message != "":
                     self.fatal(e.message)
+                return 0
+            except KeyboardInterrupt:
                 return 0
             except Exception as e:
                 self.fatal(str(e))
@@ -1113,25 +1129,62 @@ class RootManager:
         except requests.RequestException as e:
             Exception(f"Error during de-authentication with '{final_url}': {e}")
 
-    def web_api_call(self, method: HTTPMethod, path: str, data: dict) -> dict:
-        response = {}
+    def web_api_call(self, method: HTTPMethod, path: str, data: dict, use_api_as_base: bool = True):
         if not self.user.authenticated:
-            raise Exception(f"Error during Web API call: user not authenticated")
-        else:
-            final_url: str = f"{self.url_api}/{path}"
+            raise Exception("Error during Web API call: user not authenticated")
+
+        final_url = f"{self.url_api}/{path}" if use_api_as_base else f"{self.url_base}/{path}"
+
+        session = requests.Session()
+        session.cookies = requests.utils.cookiejar_from_dict(self.user.session_cookies)
+        session.headers.update(self.user.session_headers)
+        session.headers["X-CSRFToken"] = session.cookies.get("csrftoken")
+
+        try:
+            if method == HTTPMethod.POST:
+                resp = session.post(final_url, json=data)
+            elif method == HTTPMethod.GET:
+                resp = session.get(final_url, params=data)
+            elif method == HTTPMethod.PATCH:
+                resp = session.patch(final_url, json=data)
+            elif method == HTTPMethod.PUT:
+                resp = session.put(final_url, json=data)
+            elif method == HTTPMethod.DELETE:
+                resp = session.delete(final_url, json=data if data else None)
+            elif method == HTTPMethod.OPTIONS:
+                resp = session.options(final_url)
+            else:
+                raise Exception(f"Method {method} is not supported")
+
+            # If error, attach body for debugging
             try:
-                session = requests.Session()
-                session.cookies = requests.utils.cookiejar_from_dict(self.user.session_cookies)
-                session.headers.update(self.user.session_headers)
-                session.headers['X-CSRFToken'] = session.cookies.get('csrftoken')
-                if method == HTTPMethod.POST:
-                    response = session.post(final_url, data=data)
-                    response.raise_for_status()  # Raise an error for bad status codes
-                else:
-                    raise Exception(f"Method {method} is not supported")
-            except requests.RequestException as e:
-                raise Exception(f"Error during Web API {method} to '{final_url}': {e}")
-        return response
+                resp.raise_for_status()
+            except requests.HTTPError as e:
+                # Pull as much detail as possible
+                content_type = resp.headers.get("Content-Type", "")
+                body_text = resp.text or ""
+                body_json = None
+                if "application/json" in content_type:
+                    try:
+                        body_json = resp.json()
+                    except Exception:
+                        body_json = None
+
+                # Re-raise with details (keep original as __cause__)
+                detail = {
+                    "status_code": resp.status_code,
+                    "reason": resp.reason,
+                    "url": final_url,
+                    "method": str(method),
+                    "response_text": body_text[:4000],  # guard log size
+                    "response_json": body_json,
+                }
+                raise Exception(f"HTTP {resp.status_code} {resp.reason} for {method} {final_url} :: {detail}") from e
+
+            return resp
+
+        except requests.RequestException as e:
+            raise Exception(f"Error during Web API {method} to '{final_url}': {e}") from e
 
     def phase_save_user_data(self, phase: Phase):
         try:

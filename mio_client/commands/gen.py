@@ -307,7 +307,7 @@ Examples:
    mio x         # Sync (generate) project with SiArx definition on server
    mio x -p 123  # Initialize and generate Project from empty directory
 
-Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#x"""
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#siarx"""
 
 class SiArxCommand(Command):
     def __init__(self):

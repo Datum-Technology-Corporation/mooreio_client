@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Datum Technology Corporation
+# Copyright 2020-2026 Datum Technology Corporation
 # All rights reserved.
 #######################################################################################################################
 
@@ -12,7 +12,7 @@ def parse_requirements(filename):
 
 setup(
     name="mooreio_client",
-    version="2.1.9",
+    version="2.2.5",
     description="CLI tool to automate EDA tasks for ASICs, FPGAs, and UVM IP.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',

@@ -23,6 +23,9 @@ from ..services.simulation import LogicSimulator, LogicSimulatorCompilationReque
 from ..services.simulation import LogicSimulatorCompilationReport, LogicSimulatorElaborationReport, LogicSimulatorCompilationAndElaborationReport, LogicSimulatorSimulationReport
 
 
+LOGIC_SIMULATORS = ["dsim", "vivado"]
+REGRESSION_SIMULATORS = LOGIC_SIMULATORS + ["dsimc"]
+
 
 #######################################################################################################################
 # API Entry Point
@@ -82,7 +85,6 @@ Examples:
    mio sim my_ip -CE                             # Compile and elaborate 'my_ip'.
 
 Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#sim"""
-LOGIC_SIMULATORS = ["dsim", "vivado"]
 
 class SimulateCommand(Command):
     @staticmethod
@@ -161,6 +163,7 @@ class SimulateCommand(Command):
         self._defines_value: Dict[str, str] = {}
         self._args_boolean: List[str] = []
         self._args_value: Dict[str, str] = {}
+        self._quiet: bool = False
 
     @property
     def simulator(self) -> LogicSimulator:
@@ -239,24 +242,48 @@ class SimulateCommand(Command):
         return self._fsoc_report
 
     @property
+    def has_fsoc_report(self) -> bool:
+        return self._fsoc_report is not None
+
+    @property
     def siarx_report(self) -> SiArxReport:
         return self._siarx_report
+
+    @property
+    def has_siarx_report(self) -> bool:
+        return hasattr(self, "_siarx_report") and self._siarx_report is not None
 
     @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
         return self._compilation_report
 
     @property
+    def has_compilation_report(self) -> bool:
+        return hasattr(self, "_compilation_report") and self._compilation_report is not None
+
+    @property
     def elaboration_report(self) -> LogicSimulatorElaborationReport:
         return self._elaboration_report
+
+    @property
+    def has_elaboration_report(self) -> bool:
+        return hasattr(self, "_elaboration_report") and self._elaboration_report is not None
 
     @property
     def compilation_and_elaboration_report(self) -> LogicSimulatorCompilationAndElaborationReport:
         return self._compilation_and_elaboration_report
 
     @property
+    def has_compilation_and_elaboration_report(self) -> bool:
+        return hasattr(self, "_compilation_and_elaboration_report") and self._compilation_and_elaboration_report is not None
+
+    @property
     def simulation_report(self) -> LogicSimulatorSimulationReport:
         return self._simulation_report
+
+    @property
+    def has_simulation_report(self) -> bool:
+        return hasattr(self, "_simulation_report") and self._simulation_report is not None
 
     @property
     def coverage_merge_report(self) -> LogicSimulatorCoverageMergeReport:
@@ -387,12 +414,14 @@ class SimulateCommand(Command):
         try:
             self._simulator = self.rmh.service_database.find_service(ServiceType.LOGIC_SIMULATION, self.app.value)
         except Exception as e:
-            phase.error = e
-            return
+            if not self.rmh.test_mode:
+                phase.error = e
+                return
         else:
             if not self.simulator.supports_uvm:
-                phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
-                return
+                if not self.rmh.test_mode:
+                    phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
+                    return
         if self.do_invoke_siarx:
             try:
                 self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
@@ -417,14 +446,19 @@ class SimulateCommand(Command):
                     self._do_compile_and_elaborate = False
             else:
                 if self.do_compile and self.do_elaborate:
-                    if self.simulator.supports_two_step_simulation:
-                        self._do_compile = False
-                        self._do_elaborate = False
-                        self._do_compile_and_elaborate = True
+                    if self._simulator is None:
+                        if not self.rmh.test_mode:
+                            phase.error = Exception(f"No simulator was found.")
+                            return
                     else:
-                        self._do_compile = True
-                        self._do_elaborate = True
-                        self._do_compile_and_elaborate = False
+                        if self.simulator.supports_two_step_simulation:
+                            self._do_compile = False
+                            self._do_elaborate = False
+                            self._do_compile_and_elaborate = True
+                        else:
+                            self._do_compile = True
+                            self._do_elaborate = True
+                            self._do_compile_and_elaborate = False
 
     def phase_main(self, phase: Phase):
         if self.do_prepare_dut:
@@ -452,6 +486,7 @@ class SimulateCommand(Command):
             self.simulate(phase)
         if self.dry_run:
             self.create_sim_tarball(phase)
+        self._success = True
 
     def prepare_dut(self, phase: Phase):
         if self.ip.has_dut:
@@ -461,7 +496,7 @@ class SimulateCommand(Command):
                 except Exception as e:
                     phase.error = Exception(f"FuseSoC is not available: {e}")
                 else:
-                    self.rmh.info(f"Invoking FuseSoC on core '{self.ip.dut.name}' ...")
+                    self.info(f"Invoking FuseSoC on core '{self.ip.dut.name}' ...")
                     self._fsoc_request = FuseSocSetupCoreRequest(
                         core_name=self.ip.dut.name, system_name=self.ip.dut.full_name, target=self.ip.dut.target,
                         simulator=self.app
@@ -475,7 +510,7 @@ class SimulateCommand(Command):
                             phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
 
     def perform_siarx_gen(self, phase: Phase):
-        self.rmh.info(f"Generating code with SiArx ...")
+        self.info(f"Generating code with SiArx ...")
         self._siarx_request = SiArxRequest(
             input_path=self.rmh.project_root_path,
             mode=SiArxMode.UPDATE_PROJECT,
@@ -488,11 +523,11 @@ class SimulateCommand(Command):
             phase.error = Exception(f"Failed to generate SiArx Project: {len(self._siarx_report.errors)}E {len(self._siarx_report.warnings)}W")
             if self.rmh.print_trace:
                 for info in self._siarx_report.infos:
-                    self.rmh.info(info)
+                    self.info(info)
             for warning in self._siarx_report.warnings:
-                self.rmh.warning(warning)
+                self.warning(warning)
             for error in self._siarx_report.errors:
-                self.rmh.error(error)
+                self.error(error)
 
     def fsoc_add_to_compilation_request(self, compilation_request: LogicSimulatorCompilationRequest):
         if self._fsoc_report:
@@ -520,14 +555,14 @@ class SimulateCommand(Command):
             self.compilation_request.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
             self.compilation_request.enable_coverage = True
-        self.compilation_request.defines_boolean = self.defines_boolean
-        self.compilation_request.defines_value = self.defines_value
+        self.compilation_request.defines_boolean = list(self.defines_boolean)
+        self.compilation_request.defines_value = dict(self.defines_value)
         self.compilation_request.target = self.ip_definition.target
         if self.dry_run:
             self.compilation_request.dry_mode = True
             self.compilation_request.use_relative_paths = True
             self.compilation_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
-        self.rmh.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_request, self.scheduler)
 
     def elaborate(self, phase: Phase):
@@ -540,7 +575,7 @@ class SimulateCommand(Command):
             self._elaboration_request.dry_mode = True
             self._elaboration_request.use_relative_paths = True
             self._elaboration_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
-        self.rmh.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_request, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
@@ -555,14 +590,14 @@ class SimulateCommand(Command):
             self._compilation_and_elaboration_request.enable_waveform_capture = True
         if self.parsed_cli_arguments.cov:
             self._compilation_and_elaboration_request.enable_coverage = True
-        self.compilation_and_elaboration_request.defines_boolean = self.defines_boolean
-        self.compilation_and_elaboration_request.defines_value = self.defines_value
+        self.compilation_and_elaboration_request.defines_boolean = list(self.defines_boolean)
+        self.compilation_and_elaboration_request.defines_value = dict(self.defines_value)
         self.compilation_and_elaboration_request.target = self.ip_definition.target
         if self.dry_run:
             self.compilation_and_elaboration_request.dry_mode = True
             self.compilation_and_elaboration_request.use_relative_paths = True
             self.compilation_and_elaboration_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
-        self.rmh.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip,
                                                                                         self.compilation_and_elaboration_request,
                                                                                         self.scheduler)
@@ -580,14 +615,16 @@ class SimulateCommand(Command):
         self.simulation_request.enable_waveform_capture = self.parsed_cli_arguments.waves
         self.simulation_request.enable_coverage = self.parsed_cli_arguments.cov
         self.simulation_request.test_name = self.parsed_cli_arguments.test.strip().lower()
-        self.simulation_request.args_boolean = self.args_boolean
-        self.simulation_request.args_value = self.args_value
+        self.simulation_request.args_boolean = list(self.args_boolean)
+        self.simulation_request.args_value = dict(self.args_value)
         self.simulation_request.target = self.ip_definition.target
+        if self._quiet and not self.rmh.print_trace:
+            self.simulation_request.print_to_terminal = False
         if self.dry_run:
             self.simulation_request.dry_mode = True
             self.simulation_request.use_relative_paths = True
             self.simulation_request.start_path = self.rmh.wd / self.rmh.configuration.logic_simulation.root_path
-        self.rmh.info(f"Simulating IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Simulating IP '{self.ip}' with '{self.simulator}' ...")
         self._simulation_report = self.simulator.simulate(self.ip, self.simulation_request, self.scheduler)
         if self.simulation_request.enable_coverage and not self.dry_run:
             self._coverage_merge_request = LogicSimulatorCoverageMergeRequest()
@@ -597,7 +634,7 @@ class SimulateCommand(Command):
             self.coverage_merge_request.html_report_path = self.simulation_report.coverage_directory
             self.coverage_merge_request.merge_log_file_path = self.simulation_report.coverage_directory / f"coverage_merge.{self.simulator.name}.log"
             self.coverage_merge_request.input_simulation_reports.append(self.simulation_report)
-            self.rmh.info(f"Preparing Coverage Report for IP '{self.ip}' with '{self.simulator}' ...")
+            self.info(f"Preparing Coverage Report for IP '{self.ip}' with '{self.simulator}' ...")
             self._coverage_merge_report = self.simulator.coverage_merge(self.ip, self.coverage_merge_request,
                                                                         self.scheduler)
 
@@ -626,7 +663,7 @@ class SimulateCommand(Command):
             cmd_log_files.append(self.simulation_report.cmd_log_file_path)
         shell_script_contents: List[str] = []
         for file in cmd_log_files:
-            self.rmh.debug(f"Adding cmd from '{file}'")
+            self.debug(f"Adding cmd from '{file}'")
             with open(file, "r") as log_file:
                 for line in log_file:
                     line = line.strip()
@@ -640,31 +677,32 @@ class SimulateCommand(Command):
                 shell_script_file.write(line + "\n")
         # Make the script executable
         os.chmod(shell_script_path, 0o755)
-        self.rmh.debug(f"Shell script created: {shell_script_path}")
+        self.debug(f"Shell script created: {shell_script_path}")
         # Assemble tarball
         if self.rmh.file_exists(self.dry_run_tarball_path):
-            self.rmh.debug(f"Removing existing tarball '{self.dry_run_tarball_path}' ...")
+            self.debug(f"Removing existing tarball '{self.dry_run_tarball_path}' ...")
             self.rmh.remove_file(self.dry_run_tarball_path)
-        self.rmh.info(f"Creating tarball '{self.dry_run_tarball_path}' ...")
+        self.info(f"Creating tarball '{self.dry_run_tarball_path}' ...")
         with tarfile.open(self.dry_run_tarball_path, "w:gz") as tarball:
             tarball.add(self.rmh.project_root_path, filter=exclude_files, arcname=os.path.basename(self.rmh.project_root_path))
         # Cleanup
-        self.rmh.info(f"Cleaning up ...")
+        self.info(f"Cleaning up ...")
         self.rmh.remove_file(shell_script_path)
 
     def phase_report(self, phase: Phase):
-        self._success = True
+        has_dut_report = False
         if self.do_prepare_dut:
             if self.ip.has_dut and self.ip.dut_needs_prep:
-                if self.ip.dut.type == DutType.FUSE_SOC.value:
+                if self.ip.dut.type == DutType.FUSE_SOC.value and self._fsoc_report is not None:
                     self._success &= self._fsoc_report.success
-        if self.do_compile:
+                    has_dut_report = True
+        if self.has_compilation_report:
             self._success &= self.compilation_report.success
-        if self.do_elaborate:
+        if self.has_elaboration_report:
             self._success &= self.elaboration_report.success
-        if self.do_compile_and_elaborate:
+        if self.has_compilation_and_elaboration_report:
             self._success &= self.compilation_and_elaboration_report.success
-        if self.do_simulate:
+        if self.has_simulation_report:
             self._success &= self.simulation_report.success
         if self.success:
             banner = f"{'*' * 53}\033[32m SUCCESS \033[0m{'*' * 54}"
@@ -672,17 +710,17 @@ class SimulateCommand(Command):
             banner = f"{'*' * 53}\033[31m\033[4m FAILURE \033[0m{'*' * 54}"
         print(banner)
         if self.dry_run:
-            self.rmh.info(f"Tarball created: {self.dry_run_tarball_path}")
+            self.info(f"Tarball created: {self.dry_run_tarball_path}")
         else:
-            if self.do_prepare_dut:
+            if has_dut_report:
                 self.print_prepare_dut_report(phase)
-            if self.do_compile:
+            if self.has_compilation_report:
                 self.print_compilation_report(phase)
-            if self.do_elaborate:
+            if self.has_elaboration_report:
                 self.print_elaboration_report(phase)
-            if self.do_compile_and_elaborate:
+            if self.has_compilation_and_elaboration_report:
                 self.print_compilation_and_elaboration_report(phase)
-            if self.do_simulate:
+            if self.has_simulation_report:
                 self.print_simulation_report(phase)
         print(banner)
 
@@ -694,24 +732,24 @@ class SimulateCommand(Command):
         if self.ip.dut_needs_prep:
             if self.ip.dut.type == DutType.FUSE_SOC.value:
                 if self._fsoc_report.success:
-                    self.rmh.info(f"FuseSoC core '{self._fsoc_request.core_name}' setup completed successfully.")
+                    self.info(f"FuseSoC core '{self._fsoc_request.core_name}' setup completed successfully.")
                 else:
                     print(f"\033[31mFuseSoC core '{self._fsoc_request.core_name}' setup failed.\033[0m")
 
     def print_compilation_report(self, phase: Phase):
         errors_str = f"\033[31m\033[1m{self.compilation_report.num_errors}E\033[0m" if self.compilation_report.num_errors > 0 else "0E"
-        warnings_str = f"\033[33m\033[1m{self.compilation_report.num_errors}W\033[0m" if self.compilation_report.num_errors > 0 else "0W"
+        warnings_str = f"\033[33m\033[1m{self.compilation_report.num_warnings}W\033[0m" if self.compilation_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
         if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
-            self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+            self.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
             print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
             print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
         else:
             if self.compilation_report.has_sv_files_to_compile:
-                self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                self.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
             elif self.compilation_report.has_vhdl_files_to_compile:
-                self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                self.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
         if not self.compilation_report.success:
             print('*' * 119)
@@ -724,7 +762,7 @@ class SimulateCommand(Command):
         errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_warnings}W\033[0m" if self.elaboration_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
-        self.rmh.info(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+        self.info(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
         print(f"  * Log: {self.rmh.configuration.applications.editor} {self.elaboration_report.log_path}")
         if not self.elaboration_report.success:
             print('*' * 119)
@@ -737,7 +775,7 @@ class SimulateCommand(Command):
         errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_warnings}W\033[0m" if self.compilation_and_elaboration_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
-        self.rmh.info(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+        self.info(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
         print(
             f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
         if not self.compilation_and_elaboration_report.success:
@@ -751,7 +789,7 @@ class SimulateCommand(Command):
         errors_str = f"\033[31m\033[1m{self.simulation_report.num_errors}E\033[0m" if self.simulation_report.num_errors > 0 else "0E"
         warnings_str = f"\033[33m\033[1m{self.simulation_report.num_warnings}W\033[0m" if self.simulation_report.num_warnings > 0 else "0W"
         fatal_str = f" \033[33m\033[1mF\033[0m" if self.simulation_report.num_fatals > 0 else ""
-        self.rmh.info(f" Simulation results - {errors_str} {warnings_str}{fatal_str}:")
+        self.info(f" Simulation results - {errors_str} {warnings_str}{fatal_str}:")
         print(f"  * Log: {self.rmh.configuration.applications.editor} {self.simulation_report.log_path}")
         if self.simulation_request.enable_waveform_capture:
             view_waves_command: str = self.simulator.get_view_waves_command(self.simulation_request,
@@ -781,6 +819,7 @@ Usage:
    mio regr IP[#TARGET] [TEST SUITE.]REGRESSION [OPTIONS]
    
 Options:
+   -a, --app      Specifies which simulator to use: dsim, dsimc, vivado.
    -d, --dry-run  Compiles, elaborates, but only prints the tests mio would normally run (does not actually run them).
    
 Examples:
@@ -800,7 +839,7 @@ class RegressionCommand(Command):
         parser_regr = subparsers.add_parser('regr', help=REGR_HELP_TEXT, add_help=False)
         parser_regr.add_argument('ip'         , help='Target IP')
         parser_regr.add_argument('regr'       , help='Regression to be run.  For Test Bench IPs with multiple Test Suites, the suite must be specified. Ex: `mio regr my_ip apbxc.sanity`')
-        parser_regr.add_argument('-a', "--app", help='Specifies which simulator to use: dsim', choices=LOGIC_SIMULATORS , required=False)
+        parser_regr.add_argument('-a', "--app", help='Specifies which simulator to use: dsim, dsimc, vivado', choices=REGRESSION_SIMULATORS , required=False)
         parser_regr.add_argument('-d', "--dry", help='Compiles and elaborates target IP but only prints out the tests that would be run.', action="store_true", default=False , required=False)
 
     def __init__(self):
@@ -822,6 +861,7 @@ class RegressionCommand(Command):
         self._do_compile: bool = False
         self._do_elaborate: bool = False
         self._do_compile_and_elaborate: bool = False
+        self._dsim_cloud_mode: bool = False
         self._compilation_request: LogicSimulatorCompilationRequest
         self._elaboration_request: LogicSimulatorElaborationRequest
         self._compilation_and_elaboration_request: LogicSimulatorCompilationAndElaborationRequest
@@ -941,20 +981,40 @@ class RegressionCommand(Command):
         return self._siarx_report
 
     @property
+    def has_siarx_report(self) -> bool:
+        return hasattr(self, "_siarx_report") and self._siarx_report is not None
+
+    @property
     def compilation_report(self) -> LogicSimulatorCompilationReport:
         return self._compilation_report
+
+    @property
+    def has_compilation_report(self) -> bool:
+        return hasattr(self, "_compilation_report") and self._compilation_report is not None
 
     @property
     def elaboration_report(self) -> LogicSimulatorElaborationReport:
         return self._elaboration_report
 
     @property
+    def has_elaboration_report(self) -> bool:
+        return hasattr(self, "_elaboration_report") and self._elaboration_report is not None
+
+    @property
     def compilation_and_elaboration_report(self) -> LogicSimulatorCompilationAndElaborationReport:
         return self._compilation_and_elaboration_report
 
     @property
+    def has_compilation_and_elaboration_report(self) -> bool:
+        return hasattr(self, "_compilation_and_elaboration_report") and self._compilation_and_elaboration_report is not None
+
+    @property
     def regression_report(self) -> RegressionReport:
         return self._regression_report
+
+    @property
+    def has_regression_report(self) -> bool:
+        return hasattr(self, "_regression_report") and self._regression_report is not None
 
     @property
     def success(self) -> bool:
@@ -995,7 +1055,11 @@ class RegressionCommand(Command):
         else:
             self._regression_name = self.parsed_cli_arguments.regr.strip().lower()
         self._dry_mode = self.parsed_cli_arguments.dry
-        self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
+        if self.parsed_cli_arguments.app.lower() == "dsimc":
+            self._dsim_cloud_mode = True
+            self._app = LogicSimulators.DSIM
+        else:
+            self._app = LogicSimulators[self.parsed_cli_arguments.app.upper()]
 
     def phase_post_validate_configuration_space(self, phase: Phase):
         if self.app == LogicSimulators.UNDEFINED:
@@ -1027,6 +1091,13 @@ class RegressionCommand(Command):
         else:
             if not self.simulator.supports_uvm:
                 phase.error = Exception(f"Simulator '{self.simulator}' does not support UVM")
+        if self.do_invoke_siarx:
+            try:
+                self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
+            except Exception as e:
+                phase.error = Exception(f"Failed to load SiArx: '{e}'")
+                self._success = False
+                return
 
     def phase_post_ip_discovery(self, phase: Phase):
         self._ip = self.rmh.ip_database.find_ip_definition(self.ip_definition, raise_exception_if_not_found=False)
@@ -1092,7 +1163,7 @@ class RegressionCommand(Command):
                 except Exception as e:
                     phase.error = Exception(f"FuseSoC is not available: {e}")
                 else:
-                    self.rmh.info(f"Invoking FuseSoC on core '{self.ip.dut.name}' ...")
+                    self.info(f"Invoking FuseSoC on core '{self.ip.dut.name}' ...")
                     self._fsoc_request = FuseSocSetupCoreRequest(
                         core_name=self.ip.dut.name, system_name=self.ip.dut.full_name, target=self.ip.dut.target,
                         simulator=self.app
@@ -1106,7 +1177,7 @@ class RegressionCommand(Command):
                             phase.error = Exception(f"FuseSoC '{self.ip.dut.name}' core setup failed")
 
     def perform_siarx_gen(self, phase: Phase):
-        self.rmh.info(f"Generating code with SiArx ...")
+        self.info(f"Generating code with SiArx ...")
         self._siarx_request = SiArxRequest(
             input_path=self.rmh.project_root_path,
             mode=SiArxMode.UPDATE_PROJECT,
@@ -1119,22 +1190,22 @@ class RegressionCommand(Command):
             phase.error = Exception(f"Failed to generate SiArx Project: {len(self._siarx_report.errors)}E {len(self._siarx_report.warnings)}W")
             if self.rmh.print_trace:
                 for info in self._siarx_report.infos:
-                    self.rmh.info(info)
+                    self.info(info)
             for warning in self._siarx_report.warnings:
-                self.rmh.warning(warning)
+                self.warning(warning)
             for error in self._siarx_report.errors:
-                self.rmh.error(error)
+                self.error(error)
 
     def fsoc_add_to_compilation_request(self, compilation_request: LogicSimulatorCompilationRequest):
         if self._fsoc_report:
             compilation_request.has_custom_dut = True
             compilation_request.custom_dut_type = "FuseSoC"
             compilation_request.custom_dut_name = self._fsoc_request.system_name
-            compilation_request.custom_dut_directories = self.fsoc_report.directories
-            compilation_request.custom_dut_sv_files = self.fsoc_report.sv_files
-            compilation_request.custom_dut_vhdl_files = self.fsoc_report.vhdl_files
-            compilation_request.custom_dut_defines_values = self.fsoc_report.defines_values
-            compilation_request.custom_dut_defines_boolean = self.fsoc_report.defines_boolean
+            compilation_request.custom_dut_directories = list(self.fsoc_report.directories)
+            compilation_request.custom_dut_sv_files = list(self.fsoc_report.sv_files)
+            compilation_request.custom_dut_vhdl_files = list(self.fsoc_report.vhdl_files)
+            compilation_request.custom_dut_defines_values = dict(self.fsoc_report.defines_values)
+            compilation_request.custom_dut_defines_boolean = list(self.fsoc_report.defines_boolean)
 
     def compile(self, phase: Phase):
         self._compilation_request = self.regression.render_cmp_config(self.ip_definition.target)
@@ -1143,7 +1214,7 @@ class RegressionCommand(Command):
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_compilation_request(self._compilation_request)
         self.compilation_request.dry_mode = self.dry_mode
-        self.rmh.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Compiling IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_report = self.simulator.compile(self.ip, self.compilation_request, self.scheduler)
 
     def elaborate(self, phase: Phase):
@@ -1153,7 +1224,7 @@ class RegressionCommand(Command):
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_compilation_request(self._elaboration_request)
         self._elaboration_request.dry_mode = self.dry_mode
-        self.rmh.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._elaboration_report = self.simulator.elaborate(self.ip, self.elaboration_request, self.scheduler)
 
     def compile_and_elaborate(self, phase: Phase):
@@ -1163,7 +1234,7 @@ class RegressionCommand(Command):
             if self.ip.dut.type == DutType.FUSE_SOC:
                 self.fsoc_add_to_compilation_request(self._compilation_and_elaboration_request)
         self._compilation_and_elaboration_request.dry_mode = self.dry_mode
-        self.rmh.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Compiling and Elaborating IP '{self.ip}' with '{self.simulator}' ...")
         self._compilation_and_elaboration_report = self.simulator.compile_and_elaborate(self.ip, self.compilation_and_elaboration_request, self.scheduler)
 
     def simulate(self, phase: Phase):
@@ -1171,37 +1242,46 @@ class RegressionCommand(Command):
         self.regression_request.target = self.ip_definition.target
         self.regression_request.dry_mode = self.dry_mode
         self.regression_request.app = self.app
+        self.regression_request.dsim_cloud_mode = self._dsim_cloud_mode
         self._regression_runner = self.regression_database.get_regression_runner(self.ip, self.regression, self.simulator, self.regression_request)
-        self.rmh.info(f"Starting Regression '{self.regression.name}' for IP '{self.ip}' with '{self.simulator}' ...")
+        self.info(f"Starting Regression '{self.regression.name}' for IP '{self.ip}' with '{self.simulator}' ...")
         self._regression_report = self.regression_runner.execute_regression(self.scheduler)
-        self.rmh.info("Finished Regression")
+        self.info("Finished Regression")
         if self.app == LogicSimulators.DSIM:
             self._compilation_report = self.regression_report.compilation_report
             self._elaboration_report = self.regression_report.elaboration_report
             self._compilation_and_elaboration_report = self.regression_report.compilation_and_elaboration_report
 
     def phase_report(self, phase: Phase):
-        self._success = True
-        if self.do_compile:
+        has_dut_report = False
+        if self.do_prepare_dut:
+            if self.ip.has_dut and self.ip.dut_needs_prep:
+                if self.ip.dut.type == DutType.FUSE_SOC.value and self._fsoc_report is not None:
+                    self._success &= self._fsoc_report.success
+                    has_dut_report = True
+        if self.has_compilation_report:
             self._success &= self.compilation_report.success
-        if self.do_elaborate:
+        if self.has_elaboration_report:
             self._success &= self.elaboration_report.success
-        if self.do_compile_and_elaborate:
+        if self.has_compilation_and_elaboration_report:
             self._success &= self.compilation_and_elaboration_report.success
-        self._success &= self.regression_report.success
+        if self.has_regression_report:
+            self._success &= self.regression_report.success
         if self.success:
             banner = f"{'*' * 53}\033[32m SUCCESS \033[0m{'*' * 54}"
         else:
             banner = f"{'*' * 53}\033[31m\033[4m FAILURE \033[0m{'*' * 54}"
         print(banner)
-        self.print_prepare_dut_report(phase)
-        if self.do_compile:
+        if has_dut_report:
+            self.print_prepare_dut_report(phase)
+        if self.has_compilation_report:
             self.print_compilation_report(phase)
-        if self.do_elaborate:
+        if self.has_elaboration_report:
             self.print_elaboration_report(phase)
-        if self.do_compile_and_elaborate:
+        if self.has_compilation_and_elaboration_report:
             self.print_compilation_and_elaboration_report(phase)
-        self.print_regression_report(phase)
+        if self.has_regression_report:
+            self.print_regression_report(phase)
         print(banner)
 
     def phase_final(self, phase: Phase):
@@ -1218,15 +1298,15 @@ class RegressionCommand(Command):
             warnings_str = f"\033[33m\033[1m{self.compilation_report.num_warnings}W\033[0m" if self.compilation_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_report.num_fatals > 0 else ""
             if self.compilation_report.has_sv_files_to_compile and self.compilation_report.has_vhdl_files_to_compile:
-                self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                self.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
                 print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
             else:
                 if self.compilation_report.has_sv_files_to_compile:
-                    self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                    self.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                     print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.sv_log_path}")
                 if self.compilation_report.has_vhdl_files_to_compile:
-                    self.rmh.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
+                    self.info(f" Compilation results - {errors_str} {warnings_str}{fatal_str}:")
                     print(f"  * {self.rmh.configuration.applications.editor} {self.compilation_report.vhdl_log_path}")
             if not self.compilation_report.success:
                 print('*' * 119)
@@ -1240,7 +1320,7 @@ class RegressionCommand(Command):
             errors_str = f"\033[31m\033[1m{self.elaboration_report.num_errors}E\033[0m" if self.elaboration_report.num_errors > 0 else "0E"
             warnings_str = f"\033[33m\033[1m{self.elaboration_report.num_warnings}W\033[0m" if self.elaboration_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.elaboration_report.num_fatals > 0 else ""
-            self.rmh.info(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+            self.info(f" Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
             print(f"  * Log: {self.rmh.configuration.applications.editor} {self.elaboration_report.log_path}")
             if not self.elaboration_report.success:
                 print('*' * 119)
@@ -1254,7 +1334,7 @@ class RegressionCommand(Command):
             errors_str = f"\033[31m\033[1m{self.compilation_and_elaboration_report.num_errors}E\033[0m" if self.compilation_and_elaboration_report.num_errors > 0 else "0E"
             warnings_str = f"\033[33m\033[1m{self.compilation_and_elaboration_report.num_warnings}W\033[0m" if self.compilation_and_elaboration_report.num_warnings > 0 else "0W"
             fatal_str = f" \033[33m\033[1mF\033[0m" if self.compilation_and_elaboration_report.num_fatals > 0 else ""
-            self.rmh.info(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
+            self.info(f" Compilation+Elaboration results - {errors_str} {warnings_str}{fatal_str}:")
             print(f"  * Log: {self.rmh.configuration.applications.editor} {self.compilation_and_elaboration_report.log_path}")
             if not self.compilation_and_elaboration_report.success:
                 print('*' * 119)
@@ -1265,27 +1345,27 @@ class RegressionCommand(Command):
 
     def print_regression_report(self, phase: Phase):
         if self.dry_mode:
-            self.rmh.info(f" Regression Dry Mode - {len(self.regression_request.simulation_requests)} tests would have been run:")
-            for seed in self.regression_request.simulation_requests:
-                simulation_config = self.regression_request.simulation_requests[seed]
+            self.info(f"Regression Dry Mode - {len(self.regression_request.simulation_requests)} tests would have been run:")
+            for simulation_config in self.regression_request.simulation_requests:
                 print(f" * {simulation_config.summary_str()}")
-            if self.parsed_cli_arguments.app == "dsim":
-                self.rmh.info(f" DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
+            if self.parsed_cli_arguments.app == "dsimc":
+                self.info(f" * DSim Cloud Simulation Job File: '{self.regression_report.dsim_cloud_simulation_job_file_path}'")
         else:
             self.regression_report.generate_junit_xml_report()
             self.regression_report.generate_html_report()
             if self.regression_report.success:
-                self.rmh.info(f" Regression passed: {len(self.regression_report.simulation_reports)} tests")
+                self.info(f"Regression passed: {len(self.regression_report.simulation_reports)} tests")
             else:
-                self.rmh.info(f"{len(self.regression_report.failing_tests)} tests failed:")
+                self.info(f"{len(self.regression_report.failing_tests)} tests failed:")
                 for failed_test in self.regression_report.failing_tests:
                     args_str: str = ""
                     for arg in failed_test.sim_report.user_args_boolean:
                         args_str += f" +{arg}"
                     for arg in failed_test.sim_report.user_args_value:
                         args_str += f" +{arg}={failed_test.sim_report.user_args_value[arg]}"
-                    print(f" * {failed_test.sim_report.test_name} - {failed_test.sim_report.seed}{args_str}")
-            self.rmh.info(f"Test Report: '{self.regression_report.html_report_file_name}'")
+                    print(f" * {failed_test.sim_report.test_name}({failed_test.sim_report.seed}){args_str} : {failed_test.sim_report.log_path}")
+            web_browser =  self.rmh.configuration.applications.web_browser
+            self.info(f" * Test Report: {web_browser} {self.regression_report.html_report_file_name} &")
             if self.regression_report.cov_enabled:
-                self.rmh.info(f" Coverage Report: '{self.regression_report.coverage_report_file_name}'")
-            self.rmh.info(f" JUnit XML Report: '{self.regression_report.junit_xml_report_file_name}'")
+                self.info(f"Coverage Report: {web_browser} {self.regression_report.coverage_report_file_name} &")
+            self.info(f" * JUnit XML Report: {web_browser} {self.regression_report.junit_xml_report_file_name} &")

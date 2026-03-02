@@ -45,9 +45,22 @@ class Command:
         :param value: The new root object
         :return: None
         """
-        if not isinstance(value, 'RootManager'):
-            raise TypeError("root must be an instance of Root")
         self._rmh = value
+
+    def info(self, message: str):
+        self.rmh.info(message)
+
+    def debug(self, message: str, level: int=1):
+        self.rmh.debug(message, level)
+
+    def warning(self, message: str):
+        self.rmh.warning(message)
+
+    def error(self, message: str):
+        self.rmh.error(message)
+
+    def fatal(self, message: str):
+        self.rmh.fatal(message)
 
     @property
     def parsed_cli_arguments(self):

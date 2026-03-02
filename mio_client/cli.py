@@ -2,22 +2,25 @@
 # All rights reserved.
 #######################################################################################################################
 import argparse
+import contextlib
+import importlib
 import pathlib
 import sys
 import os
+from types import ModuleType
 
-from mio_client.commands import sim, ip, misc, user, gen
-from mio_client.core.root_manager import RootManager
+from .commands import sim, ip, misc, user, gen
+from .core.root_manager import RootManager
 
 #######################################################################################################################
 # User Manual Top
 #######################################################################################################################
-VERSION = "2.1.9"
+VERSION = "2.2.5"
 
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}
                                     User Manual: https://mooreio-client.rtfd.io/
-             https://mooreio.com - Copyright 2020-2025 Datum Technology Corporation - https://datumtc.ca
+             https://mooreio.com - Copyright 2018-2026 Datum Technology Corporation - https://datumtc.ca
 Usage:
   mio [--version] [--help]
   mio [--wd WD] [--dbg] CMD [OPTIONS]
@@ -156,6 +159,9 @@ def register_all_commands(subparsers):
     register_commands(commands, misc.get_commands())
     register_commands(commands, user.get_commands())
     register_commands(commands, gen.get_commands())
+    # Custom commands from env var
+    custom_cmds = _discover_commands_in_paths("MIO_CUSTOM_COMMANDS")
+    register_commands(commands, custom_cmds)
     for command in commands:
         command.add_to_subparsers(subparsers)
     return commands
@@ -163,20 +169,151 @@ def register_all_commands(subparsers):
 def register_commands(existing_commands, new_commands):
     """
     Registers new commands into an existing list of commands.
-    :param existing_commands: A list of existing commands.
-    :param new_commands: A list of new commands to be registered.
-    :return: None
-    Raises:
-        ValueError: If a command name in `new_commands` is already registered in `existing_commands`.
-
+    :param existing_commands: A list of existing commands (classes).
+    :param new_commands: A list (or iterable) of new command classes to be registered.
     """
-    new_command_names = {command.name for command in new_commands}
-    existing_command_names = {command.name for command in existing_commands}
+    # Build a set of existing names (call name() if available)
+    def _cmd_name(cmd_cls):
+        try:
+            return cmd_cls.name()
+        except Exception:
+            # Fallback: attribute or class name
+            return getattr(cmd_cls, "name", None) or getattr(cmd_cls, "__name__", str(cmd_cls))
+    existing_names = { _cmd_name(c) for c in existing_commands }
     for command in new_commands:
-        if command.name not in existing_command_names:
-            existing_commands.append(command)
-        else:
-            raise ValueError(f"Command '{command}' is already registered.")
+        name = _cmd_name(command)
+        if name in existing_names:
+            # silently skip duplicates to allow overriding, or raise if you prefer strict
+            continue
+        existing_commands.append(command)
+        existing_names.add(name)
+
+def _iter_python_files(root: pathlib.Path):
+    """Yield .py files under root, recursively, excluding __pycache__ and __init__.py."""
+    if not root.exists() or not root.is_dir():
+        return
+    for p in root.rglob("*.py"):
+        if "__pycache__" in p.parts:
+            continue
+        if p.name == "__init__.py":
+            continue
+        yield p
+
+def _package_importable_root(root: pathlib.Path) -> tuple[bool, pathlib.Path, str]:
+    """
+    Decide if `root` is a package root we can import via a dotted name.
+
+    Returns (is_pkg, sys_path_to_add, pkg_base_name)
+
+    Rules:
+      - If root has __init__.py → treat as a regular package (pkg name = root.name, sys.path += root.parent)
+      - If no __init__.py, still try PEP 420 namespace (pkg name = root.name, sys.path += root.parent)
+      - If parent isn’t a directory, return (False, root, "")
+    """
+    if not root.exists() or not root.is_dir():
+        return (False, root, "")
+    parent = root.parent
+    if not parent.exists():
+        return (False, root, "")
+    # Accept both classic and namespace packages
+    return (True, parent, root.name)
+
+def _import_module_dotted(sys_path_entry: pathlib.Path, pkg_name: str, pyfile: pathlib.Path) -> ModuleType | None:
+    """
+    Import module by dotted name, e.g. pkg_name.subpkg.module, after temporarily
+    inserting sys_path_entry (the dir that contains pkg_name) at the front of sys.path.
+    """
+    rel = pyfile.with_suffix("").relative_to(sys_path_entry / pkg_name)
+    dotted = ".".join((pkg_name, *rel.parts))
+    with _sys_path_prepend(sys_path_entry):
+        try:
+            return importlib.import_module(dotted)
+        except Exception as e:
+            print(f"[mio] Skipping {pyfile} (package import {dotted}): {e}", file=sys.stderr)
+            return None
+
+@contextlib.contextmanager
+def _sys_path_prepend(p: pathlib.Path):
+    p_str = str(p)
+    orig = list(sys.path)
+    try:
+        if p_str in sys.path:
+            sys.path.remove(p_str)
+        sys.path.insert(0, p_str)
+        yield
+    finally:
+        sys.path[:] = orig
+
+
+def _load_module_from_file(mod_name: str, file_path: pathlib.Path) -> ModuleType | None:
+    try:
+        spec = importlib.util.spec_from_file_location(mod_name, str(file_path))
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+
+            # --- The Fix ---
+            module_dir = str(file_path.parent.resolve())
+            if module_dir not in sys.path:
+                sys.path.insert(0, module_dir)  # Add to the beginning of the path
+                path_added = True
+            else:
+                path_added = False
+            # ---------------
+
+            try:
+                spec.loader.exec_module(mod)
+            finally:
+                # --- The Fix (Cleanup) ---
+                if path_added:
+                    sys.path.remove(module_dir)  # Clean up sys.path
+                # -------------------------
+
+            return mod
+    except Exception as e:
+        pass
+        print(f"[mio] Skipping {file_path}: {e}", file=sys.stderr)
+    return None
+
+def _discover_commands_in_paths(env_var: str = "MIO_CUSTOM_COMMANDS"):
+    """
+    Scan directories from MIO_CUSTOM_COMMANDS for modules exposing get_commands().
+
+    Strategy:
+      1) If the path looks like a package directory (classic or namespace), import modules by dotted name.
+      2) Otherwise, fall back to file-based import.
+    """
+    value = os.getenv(env_var, "") or ""
+    cmd_classes = []
+    if not value.strip():
+        return cmd_classes
+
+    for root_str in value.split(os.pathsep):
+        root_str = root_str.strip()
+        if not root_str:
+            continue
+        root = pathlib.Path(root_str).expanduser().resolve()
+
+        is_pkg, sys_entry, pkg_name = _package_importable_root(root)
+
+        for pyfile in _iter_python_files(root):
+            mod = None
+            if is_pkg and pkg_name:
+                mod = _import_module_dotted(sys_entry, pkg_name, pyfile)
+            if mod is None:
+                # fallback: unique synthetic name for file import
+                safe_name = "mio_custom_" + "_".join(pyfile.relative_to(root).with_suffix("").parts)
+                mod = _load_module_from_file(safe_name, pyfile)
+            if not mod:
+                continue
+
+            get_cmds = getattr(mod, "get_commands", None)
+            if callable(get_cmds):
+                try:
+                    cmds = list(get_cmds())
+                    cmd_classes.extend(cmds)
+                except Exception as e:
+                    print(f"[mio] get_commands() failed in {pyfile}: {e}", file=sys.stderr)
+    return cmd_classes
 
 def print_help_text():
     print(HELP_TEXT)
