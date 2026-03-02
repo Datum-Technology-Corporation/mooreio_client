@@ -15,12 +15,12 @@ from .core.root_manager import RootManager
 #######################################################################################################################
 # User Manual Top
 #######################################################################################################################
-VERSION = "2.2.4"
+VERSION = "2.2.5"
 
 HELP_TEXT = f"""
                                         Moore.io (`mio`) Client - v{VERSION}
                                     User Manual: https://mooreio-client.rtfd.io/
-             https://mooreio.com - Copyright 2020-2025 Datum Technology Corporation - https://datumtc.ca
+             https://mooreio.com - Copyright 2018-2026 Datum Technology Corporation - https://datumtc.ca
 Usage:
   mio [--version] [--help]
   mio [--wd WD] [--dbg] CMD [OPTIONS]
