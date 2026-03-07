@@ -218,6 +218,7 @@ class DoxygenCommand(Command):
     def phase_main(self, phase: Phase):
         self._success = True
         for ip in self.ip:
+            self._configuration.private = ip.ip.mlicensed
             self.reports[ip] = self.doxygen.generate_documentation(ip, self.configuration, self.scheduler)
             self._success &= self.reports[ip].success
 
