@@ -210,7 +210,7 @@ class DoxygenCommand(Command):
         if ip.has_docs:
             ip_html_docs_path = ip.resolved_docs_path / "html"
             if self.rmh.directory_exists(ip_html_docs_path):
-                docs += f"\n  * HTML Documentation: `{self.rmh.configuration.applications.web_browser} {ip_html_docs_path} &`"
+                docs += f"\n  * HTML Documentation: `{self.rmh.configuration.applications.web_browser} {ip_html_docs_path}/index.html &`"
         if ip.has_examples:
             docs += f"\n  * Code examples: `pushd {ip.resolved_examples_path} && ls`"
         self.rmh.info(f"{ip} documentation:{docs}")
