@@ -197,8 +197,23 @@ class DoxygenCommand(Command):
                 self.ip.append(ip)
             except Exception as e:
                 phase.error = e
+            else:
+                if ip.location_type == IpLocationType.PROJECT_INSTALLED:
+                    # If IP is not local, then print commands to view HTML ref docs and/or code examples, then exit
+                    self.print_installed_ip_documentation(phase, ip)
+                    phase.end_process = True
         else:
             self._ip = self.rmh.ip_database.get_all_ip_by_location_type(IpLocationType.PROJECT_USER)
+
+    def print_installed_ip_documentation(self, phase: Phase, ip: Ip):
+        docs = ""
+        if ip.has_docs:
+            ip_html_docs_path = ip.resolved_docs_path / "html"
+            if self.rmh.directory_exists(ip_html_docs_path):
+                docs += f"\n  * HTML Documentation: `{self.rmh.configuration.applications.web_browser} {ip_html_docs_path} &`"
+        if ip.has_examples:
+            docs += f"\n  * Code examples: `pushd {ip.resolved_examples_path} && ls`"
+        self.rmh.info(f"{ip} documentation:{docs}")
 
     def phase_main(self, phase: Phase):
         self._success = True
