@@ -187,7 +187,7 @@ Steps
 ^^^^^
 ======  ======================================================
 ``-D``   Prepare Device-Under-Test (DUT) for logic simulation. Ex: invoke FuseSoC to prepare core(s) for compilation.
-``-X``   Invoke Datum SiArx for code generation.
+``-X``   Invoke Datum UVMx for code generation.
 ``-C``   Compile
 ``-E``   Elaborate
 ``-S``   Simulate
@@ -267,12 +267,12 @@ Examples
 
 
 
-siarx
+uvmx
 *****
 
 Description
 ^^^^^^^^^^^
-Generates IP HDL code using Datum SiArx (requires license).  If not within an initialized Project, the ID must be
+Generates IP HDL code using Datum UVMx (requires license).  If not within an initialized Project, the ID must be
 specified via ``-p/--project-id``.
 
 Usage
@@ -290,7 +290,7 @@ Options
 Examples
 ^^^^^^^^
 ================  =======================================================
-``mio x``         Sync (generate) project with SiArx definition on server
+``mio x``         Sync (generate) project with UVMx definition on server
 ``mio x -p 123``  Initialize and generate Project from empty directory
 ================  =======================================================
 

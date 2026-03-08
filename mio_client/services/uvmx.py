@@ -25,26 +25,26 @@ from mio_client.core.model import Model
 # API Entry Point
 #######################################################################################################################
 def get_services():
-    return [SiArxService]
+    return [UvmxService]
 
 
 #######################################################################################################################
 # Support Classes
 #######################################################################################################################
-class SiArxMode(Enum):
+class UvmxMode(Enum):
     NEW_PROJECT = "Initialize new Project"
     UPDATE_PROJECT = "Update existing Project"
 
 
-class SiArxRequest(Model):
+class UvmxRequest(Model):
     input_path: Path = Path()
-    mode: SiArxMode
+    mode: UvmxMode
     force_update: bool
     project_id: str
     quiet: Optional[bool] = True
 
 
-class SiArxReport(Model):
+class UvmxReport(Model):
     success: Optional[bool] = False
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
@@ -61,20 +61,20 @@ class SiArxReport(Model):
         return {}
 
 
-class SiArxResponseFile(Model):
+class UvmxResponseFile(Model):
     name: str
     path: str
     replace_user_file: bool
 
 
-class SiArxResponsePackage(Model):
+class UvmxResponsePackage(Model):
     name: str
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
     errors: Optional[List[str]] = []
     payload: Optional[str] = ""
     path: Optional[Path] = Path()
-    files: Optional[List[SiArxResponseFile]] = []
+    files: Optional[List[UvmxResponseFile]] = []
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -88,13 +88,13 @@ class SiArxResponsePackage(Model):
         self._extract_path = value
 
 
-class SiArxResponseIp(Model):
+class UvmxResponseIp(Model):
     sync_id: str
     name: str
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
     errors: Optional[List[str]] = []
-    packages: Optional[List[SiArxResponsePackage]] = []
+    packages: Optional[List[UvmxResponsePackage]] = []
 
     def info_report(self) -> List[str]:
         all_infos: List[str] = []
@@ -115,7 +115,7 @@ class SiArxResponseIp(Model):
         return all_errors
 
 
-class SiArxResponse(Model):
+class UvmxResponse(Model):
     success: bool
     job_id: Optional[str] = ""
     project_id: Optional[str] = ""
@@ -124,9 +124,9 @@ class SiArxResponse(Model):
     infos: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
     errors: Optional[List[str]] = []
-    ips: Optional[List[SiArxResponseIp]] = []
+    ips: Optional[List[UvmxResponseIp]] = []
     project_files_payload: Optional[str] = ""
-    files: Optional[List[SiArxResponseFile]] = []
+    files: Optional[List[UvmxResponseFile]] = []
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -161,11 +161,11 @@ class SiArxResponse(Model):
 #######################################################################################################################
 # Service
 #######################################################################################################################
-class SiArxService(Service):
+class UvmxService(Service):
     def __init__(self, rmh: 'RootManager'):
-        super().__init__(rmh, 'datum', 'siarx', 'SiArx')
+        super().__init__(rmh, 'datum', 'uvmx', 'UVMx')
         self._type = ServiceType.CODE_GENERATION
-        self._work_path = self.rmh.md / "siarx"
+        self._work_path = self.rmh.md / "uvmx"
 
     def is_available(self) -> bool:
         return True
@@ -179,19 +179,19 @@ class SiArxService(Service):
     def get_version(self) -> Version:
         return Version('1.0.0')
 
-    def gen_project(self, request: SiArxRequest) -> SiArxReport:
-        report = SiArxReport()
+    def gen_project(self, request: UvmxRequest) -> UvmxReport:
+        report = UvmxReport()
         report.output_path = request.input_path
-        response: SiArxResponse
+        response: UvmxResponse
         try:
             data = {
                 'project_id': request.project_id,
             }
-            raw_response = self.rmh.web_api_call(HTTPMethod.POST, 'siarx/gen', data)
-            response = SiArxResponse.model_validate(raw_response.json())
+            raw_response = self.rmh.web_api_call(HTTPMethod.POST, 'uvmx/gen', data)
+            response = UvmxResponse.model_validate(raw_response.json())
         except Exception as e:
             report.success = False
-            report.errors.append(f"SiArx failed to generate response for Project '{request.project_id}': {e}")
+            report.errors.append(f"Uvmx failed to generate response for Project '{request.project_id}': {e}")
             return report
         else:
             report.infos = response.info_report()
@@ -200,12 +200,12 @@ class SiArxService(Service):
             report.success = response.success
             if response.success:
                 self.extract_response(request, response, report)
-                if request.mode == SiArxMode.UPDATE_PROJECT:
+                if request.mode == UvmxMode.UPDATE_PROJECT:
                     self.update_codebase(request, response, report)
             return report
 
-    def extract_response(self, request: SiArxRequest, response: SiArxResponse, report: SiArxReport):
-        if request.mode == SiArxMode.NEW_PROJECT:
+    def extract_response(self, request: UvmxRequest, response: UvmxResponse, report: UvmxReport):
+        if request.mode == UvmxMode.NEW_PROJECT:
             response.extract_path = request.input_path
         else:
             response.extract_path = self._work_path / response.project_name
@@ -222,7 +222,7 @@ class SiArxService(Service):
                 for package in ip.packages:
                     if not request.quiet:
                         self.rmh.info(f"Processing IP {ip.name}/{package.name} ...")
-                    if request.mode == SiArxMode.NEW_PROJECT:
+                    if request.mode == UvmxMode.NEW_PROJECT:
                         package.extract_path = request.input_path / package.path
                     else:
                         package.extract_path = self._work_path / package.name
@@ -235,7 +235,7 @@ class SiArxService(Service):
                         report.success = False
                         report.errors.append(f"Failed to unpack IP {ip.name}/{package.name} at path '{package.extract_path}': {e}")
 
-    def update_codebase(self, request: SiArxRequest, response: SiArxResponse, report: SiArxReport):
+    def update_codebase(self, request: UvmxRequest, response: UvmxResponse, report: UvmxReport):
         """
         Parallelized file update:
           - Project-level files first
@@ -359,7 +359,7 @@ class SiArxService(Service):
         file_content: str = ""
         with open(file, 'r') as original_file:
             file_content = original_file.read()
-        section_pattern = r"// pragma siarx (\w+) begin(.*?)// pragma siarx \1 end"
+        section_pattern = r"// pragma uvmx (\w+) begin(.*?)// pragma uvmx \1 end"
         return {match[0]: match[1] for match in re.findall(section_pattern, file_content, re.DOTALL)}
 
     def replace_generated_file_sections_with_user_contents(self, file: Path, sections: Dict):
@@ -368,9 +368,9 @@ class SiArxService(Service):
         def replace_section(match):
             section_name = match.group(1)
             original_section_content = sections.get(section_name, match.group(2))
-            return f"// pragma siarx {section_name} begin{original_section_content}// pragma siarx {section_name} end"
+            return f"// pragma uvmx {section_name} begin{original_section_content}// pragma uvmx {section_name} end"
         updated_content = re.sub(
-            r"// pragma siarx (\w+) begin(.*?)// pragma siarx \1 end",
+            r"// pragma uvmx (\w+) begin(.*?)// pragma uvmx \1 end",
             replace_section,
             generated_file_contents,
             flags=re.DOTALL

@@ -17,6 +17,7 @@ from ..services.simulation import LogicSimulator, LogicSimulatorEncryptionReques
 from ..core.command import Command
 from ..core.ip import Ip, IpDefinition, IpLocationType, IpPublishingCertificate, \
     MAX_DEPTH_DEPENDENCY_INSTALLATION
+from ..services.doxygen import DoxygenServiceReport, DoxygenService, DoxygenServiceRequest
 
 
 
@@ -83,6 +84,9 @@ PACKAGE_HELP_TEXT = """Moore.io IP Package Command
    
 Usage:
    mio package IP DEST
+
+Options:
+   -n, --no-dox  # Disables Doxygen documentation generation and inclusion.
    
 Examples:
    mio package uvma_my_ip ~  # Create compressed archive of IP 'uvma_my_ip' under user's home directory.
@@ -94,7 +98,19 @@ class PackageCommand(Command):
         super().__init__()
         self._ip_definition: 'IpDefinition'
         self._ip: 'Ip'
+        self._scheduler: JobScheduler
+        self._run_doxygen: bool = False
+        self._doxygen: DoxygenService
+        self._doxygen_request: DoxygenServiceRequest = DoxygenServiceRequest()
+        self._doxygen_report: DoxygenServiceReport
+        self._doxygen: DoxygenService
+        self._doxygen_request: DoxygenServiceRequest = DoxygenServiceRequest()
+        self._doxygen_report: DoxygenServiceReport
         self._destination: Path
+
+    @staticmethod
+    def name() -> str:
+        return "package"
 
     @property
     def ip_definition(self) -> 'IpDefinition':
@@ -108,15 +124,35 @@ class PackageCommand(Command):
     def destination(self) -> Path:
         return self._destination
 
-    @staticmethod
-    def name() -> str:
-        return "package"
+    @property
+    def scheduler(self) -> JobScheduler:
+        return self._scheduler
+
+    @property
+    def run_doxygen(self) -> bool:
+        return self._run_doxygen
+
+    @property
+    def doxygen(self) -> DoxygenService:
+        return self._doxygen
+
+    @property
+    def doxygen_request(self) -> DoxygenServiceRequest:
+        return self._doxygen_request
+
+    @property
+    def doxygen_report(self) -> DoxygenServiceReport:
+        return self._doxygen_report
 
     @staticmethod
     def add_to_subparsers(subparsers):
         parser_package = subparsers.add_parser('package', help=PACKAGE_HELP_TEXT, add_help=False)
         parser_package.add_argument('ip'            , help='Target IP'                          )
         parser_package.add_argument('dest'          , help='Destination path'                   )
+        parser_package.add_argument(
+            '-n', "--no-dox", help='Disables Doxygen documentation generation and inclusion.', action="store_true",
+            required=False
+        )
 
     @property
     def executes_main_phase(self) -> bool:
@@ -129,6 +165,20 @@ class PackageCommand(Command):
         try:
             self._destination = Path(self.parsed_cli_arguments.dest)
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+        except Exception as e:
+            phase.error = e
+        self._run_doxygen = not self.parsed_cli_arguments.no_dox
+
+    def phase_post_scheduler_discovery(self, phase: Phase):
+        try:
+            # TODO Add support for other schedulers
+            self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
+        except Exception as e:
+            phase.error = e
+
+    def phase_post_service_discovery(self, phase: Phase):
+        try:
+            self._doxygen = self.rmh.service_database.find_service(ServiceType.DOCUMENTATION_GENERATOR, "doxygen")
         except Exception as e:
             phase.error = e
 
@@ -145,6 +195,25 @@ class PackageCommand(Command):
                 phase.error = Exception(f"Can only package IP local to the project")
 
     def phase_main(self, phase):
+        if self.run_doxygen:
+            self.gen_docs(phase)
+        self.package_ip(phase)
+
+    def gen_docs(self, phase):
+        try:
+            self.doxygen_request.private =self.ip.ip.mlicensed
+            self._doxygen_report = self.doxygen.generate_documentation(self.ip, self.doxygen_request, self.scheduler)
+        except Exception as e:
+            phase.error = Exception(f"Failed to generate IP docs '{self.ip}': {e}")
+        else:
+            ip_html_docs_path = self.ip.resolved_docs_path / "html"
+            if self.doxygen_report.success:
+                if self.rmh.directory_exists(ip_html_docs_path):
+                    self.rmh.remove_directory(ip_html_docs_path)
+                self.rmh.move_directory(self.doxygen_report.html_output_path, ip_html_docs_path)
+
+
+    def package_ip(self, phase):
         try:
             if (len(self.ip.ip.encrypted) > 0) or self.ip.ip.mlicensed:
                 encryption_config = LogicSimulatorEncryptionRequest()
@@ -172,6 +241,7 @@ Usage:
 
 Options:
    -c ORG, --customer ORG  # Specifies Customer Organization name.  Commercial IPs only.
+   -n    , --no-dox        # Disables Doxygen documentation generation and inclusion.
 
 Examples:
    mio publish uvma_my_ip          # Publish Public IP 'uvma_my_ip'.
@@ -184,8 +254,17 @@ class PublishCommand(Command):
         super().__init__()
         self._ip_definition: 'IpDefinition'
         self._ip: 'Ip'
+        self._scheduler: JobScheduler
+        self._run_doxygen: bool = False
+        self._doxygen: DoxygenService
+        self._doxygen_request: DoxygenServiceRequest = DoxygenServiceRequest()
+        self._doxygen_report: DoxygenServiceReport
         self._publishing_certificate: IpPublishingCertificate
         self._customer: str
+
+    @staticmethod
+    def name() -> str:
+        return "publish"
 
     @property
     def ip_definition(self) -> 'IpDefinition':
@@ -200,12 +279,28 @@ class PublishCommand(Command):
         return self._customer
 
     @property
+    def scheduler(self) -> JobScheduler:
+        return self._scheduler
+
+    @property
+    def run_doxygen(self) -> bool:
+        return self._run_doxygen
+
+    @property
+    def doxygen(self) -> DoxygenService:
+        return self._doxygen
+
+    @property
+    def doxygen_request(self) -> DoxygenServiceRequest:
+        return self._doxygen_request
+
+    @property
+    def doxygen_report(self) -> DoxygenServiceReport:
+        return self._doxygen_report
+
+    @property
     def publishing_certificate(self) -> IpPublishingCertificate:
         return self._publishing_certificate
-
-    @staticmethod
-    def name() -> str:
-        return "publish"
 
     @staticmethod
     def add_to_subparsers(subparsers):
@@ -214,6 +309,10 @@ class PublishCommand(Command):
         parser_publish.add_argument(
             '-c', "--customer",
             help='Customer (Moore.io Organization) name.  Commercial IPs only.',
+            required=False
+        )
+        parser_publish.add_argument(
+            '-n', "--no-dox", help='Disables Doxygen documentation generation and inclusion.', action="store_true",
             required=False
         )
 
@@ -229,6 +328,20 @@ class PublishCommand(Command):
             phase.error = Exception(f"No IP specified")
         else:
             self._ip_definition = Ip.parse_ip_definition(self.parsed_cli_arguments.ip)
+        self._run_doxygen = not self.parsed_cli_arguments.no_dox
+
+    def phase_post_scheduler_discovery(self, phase: Phase):
+        try:
+            # TODO Add support for other schedulers
+            self._scheduler = self.rmh.scheduler_database.get_default_scheduler()
+        except Exception as e:
+            phase.error = e
+
+    def phase_post_service_discovery(self, phase: Phase):
+        try:
+            self._doxygen = self.rmh.service_database.find_service(ServiceType.DOCUMENTATION_GENERATOR, "doxygen")
+        except Exception as e:
+            phase.error = e
 
     def phase_post_ip_discovery(self, phase):
         try:
@@ -250,6 +363,24 @@ class PublishCommand(Command):
                 self._customer = "public"
 
     def phase_main(self, phase):
+        if self.run_doxygen:
+            self.gen_docs(phase)
+        self.publish_ip(phase)
+
+    def gen_docs(self, phase):
+        try:
+            self.doxygen_request.private =self.ip.ip.mlicensed
+            self._doxygen_report = self.doxygen.generate_documentation(self.ip, self.doxygen_request, self.scheduler)
+        except Exception as e:
+            phase.error = Exception(f"Failed to generate IP docs '{self.ip}': {e}")
+        else:
+            ip_html_docs_path = self.ip.resolved_docs_path / "html"
+            if self.doxygen_report.success:
+                if self.rmh.directory_exists(ip_html_docs_path):
+                    self.rmh.remove_directory(ip_html_docs_path)
+                self.rmh.move_directory(self.doxygen_report.html_output_path, ip_html_docs_path)
+
+    def publish_ip(self, phase):
         try:
             encryption_config = LogicSimulatorEncryptionRequest()
             self._publishing_certificate = self.rmh.ip_database.publish_new_version_to_server(self.ip, encryption_config, self.customer)

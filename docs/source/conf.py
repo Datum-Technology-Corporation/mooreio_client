@@ -18,7 +18,7 @@ from docutils.parsers.rst import Directive
 project = 'Moore.io CLI Client'
 copyright = '2026, True North Silicon Inc.'
 author = 'True North Silicon Inc.'
-release = '2.2.5'
+release = '2.2.6'
 
 
 #######################################################################################################################
