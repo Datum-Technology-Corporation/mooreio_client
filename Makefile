@@ -100,7 +100,7 @@ submodules:
 	git submodule update --init --recursive
 
 # Set up a virtual environment and install dependencies
-venv/bin/activate: requirements-dev.txt
+venv/bin/activate: requirements.txt requirements-dev.txt
 	$(call print_banner, Setting up virtual environment and installing dependencies)
 	python3 -m venv venv
 	chmod +x venv/bin/activate
