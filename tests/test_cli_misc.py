@@ -171,11 +171,11 @@ class TestCliMisc(TestBase):
         assert "Reference documentation" in result.text
 
     @pytest.mark.core
-    def test_cli_help_command_siarx(self, capsys):
+    def test_cli_help_command_uvmx(self, capsys):
         result = self.run_cmd(capsys, ['help', 'x'])
         assert result.return_code == 0
         assert "Moore.io" in result.text
-        assert "SiArx Command" in result.text
+        assert "UVMx Code Generation Command" in result.text
         assert "Usage" in result.text
         assert "Options" in result.text
         assert "Examples" in result.text

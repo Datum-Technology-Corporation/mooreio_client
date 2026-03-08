@@ -195,7 +195,7 @@ class PackageCommand(Command):
                 phase.error = Exception(f"Can only package IP local to the project")
 
     def phase_main(self, phase):
-        if self.run_doxygen:
+        if self.run_doxygen and self.ip.has_docs:
             self.gen_docs(phase)
         self.package_ip(phase)
 
@@ -363,7 +363,7 @@ class PublishCommand(Command):
                 self._customer = "public"
 
     def phase_main(self, phase):
-        if self.run_doxygen:
+        if self.run_doxygen and self.ip.has_docs:
             self.gen_docs(phase)
         self.publish_ip(phase)
 

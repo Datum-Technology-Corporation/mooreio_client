@@ -17,7 +17,7 @@ class TestCliDox(TestBase):
     def setup(self):
         mio_client.cli.TEST_MODE = True
         self.valid_local_simplest_path: Path = Path(os.path.join(os.path.dirname(__file__), "data", "project", "valid_local_simplest"))
-        self.valid_local_simplest_doxygen_output_path: Path = Path(os.path.join(self.valid_local_simplest_path, "docs", "doxygen_output"))
+        self.valid_local_simplest_doxygen_output_path: Path = Path(os.path.join(self.valid_local_simplest_path, ".mio", "doxygen_output"))
 
     def reset_workspace(self):
         self.remove_directory(self.valid_local_simplest_path / ".mio")
