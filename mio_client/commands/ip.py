@@ -201,6 +201,7 @@ class PackageCommand(Command):
 
     def gen_docs(self, phase):
         try:
+            self.doxygen_request.private =self.ip.ip.mlicensed
             self._doxygen_report = self.doxygen.generate_documentation(self.ip, self.doxygen_request, self.scheduler)
         except Exception as e:
             phase.error = Exception(f"Failed to generate IP docs '{self.ip}': {e}")
@@ -368,6 +369,7 @@ class PublishCommand(Command):
 
     def gen_docs(self, phase):
         try:
+            self.doxygen_request.private =self.ip.ip.mlicensed
             self._doxygen_report = self.doxygen.generate_documentation(self.ip, self.doxygen_request, self.scheduler)
         except Exception as e:
             phase.error = Exception(f"Failed to generate IP docs '{self.ip}': {e}")
