@@ -7,7 +7,7 @@ import tarfile
 from pathlib import Path
 from typing import List, Dict
 
-from ..services.siarx import SiArxReport, SiArxRequest, SiArxMode, SiArxService
+from ..services.uvmx import UvmxReport, UvmxRequest, UvmxMode, UvmxService
 from ..services.fsoc import FuseSocSetupCoreRequest, FuseSocSetupCoreReport
 from ..core.configuration import LogicSimulators
 from ..services.regression import RegressionDatabase, RegressionReport, RegressionRequest, RegressionRunner, Regression
@@ -174,7 +174,7 @@ class SimulateCommand(Command):
         return self._scheduler
 
     @property
-    def siarx_service(self) -> SiArxService:
+    def siarx_service(self) -> UvmxService:
         return self._siarx_service
 
     @property
@@ -214,7 +214,7 @@ class SimulateCommand(Command):
         return self._fsoc_request
 
     @property
-    def siarx_request(self) -> SiArxRequest:
+    def siarx_request(self) -> UvmxRequest:
         return self._siarx_request
 
     @property
@@ -246,7 +246,7 @@ class SimulateCommand(Command):
         return self._fsoc_report is not None
 
     @property
-    def siarx_report(self) -> SiArxReport:
+    def siarx_report(self) -> UvmxReport:
         return self._siarx_report
 
     @property
@@ -511,9 +511,9 @@ class SimulateCommand(Command):
 
     def perform_siarx_gen(self, phase: Phase):
         self.info(f"Generating code with SiArx ...")
-        self._siarx_request = SiArxRequest(
+        self._siarx_request = UvmxRequest(
             input_path=self.rmh.project_root_path,
-            mode=SiArxMode.UPDATE_PROJECT,
+            mode=UvmxMode.UPDATE_PROJECT,
             project_id=str(self.rmh.configuration.project.sync_id),
             force_update=False
         )
@@ -929,7 +929,7 @@ class RegressionCommand(Command):
         return self._scheduler
 
     @property
-    def siarx_service(self) -> SiArxService:
+    def siarx_service(self) -> UvmxService:
         return self._siarx_service
 
     @property
@@ -953,7 +953,7 @@ class RegressionCommand(Command):
         return self._fsoc_request
 
     @property
-    def siarx_request(self) -> SiArxRequest:
+    def siarx_request(self) -> UvmxRequest:
         return self._siarx_request
 
     @property
@@ -977,7 +977,7 @@ class RegressionCommand(Command):
         return self._fsoc_report
 
     @property
-    def siarx_report(self) -> SiArxReport:
+    def siarx_report(self) -> UvmxReport:
         return self._siarx_report
 
     @property
@@ -1178,9 +1178,9 @@ class RegressionCommand(Command):
 
     def perform_siarx_gen(self, phase: Phase):
         self.info(f"Generating code with SiArx ...")
-        self._siarx_request = SiArxRequest(
+        self._siarx_request = UvmxRequest(
             input_path=self.rmh.project_root_path,
-            mode=SiArxMode.UPDATE_PROJECT,
+            mode=UvmxMode.UPDATE_PROJECT,
             project_id=str(self.rmh.configuration.project.sync_id),
             force_update=False
         )

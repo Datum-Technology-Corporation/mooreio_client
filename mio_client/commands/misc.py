@@ -82,7 +82,7 @@ class HelpCommand(Command):
         if self.parsed_cli_arguments.cmd == "init":
             self.print_text_and_exit(phase, gen.INIT_HELP_TEXT)
         if self.parsed_cli_arguments.cmd == "x":
-            self.print_text_and_exit(phase, gen.SIARX_HELP_TEXT)
+            self.print_text_and_exit(phase, gen.UVMX_HELP_TEXT)
 
     @property
     def executes_main_phase(self) -> bool:

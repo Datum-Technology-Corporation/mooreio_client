@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List
 
-from ..services.siarx import SiArxService, SiArxMode, SiArxRequest, SiArxReport
+from ..services.uvmx import UvmxService, UvmxMode, UvmxRequest, UvmxReport
 from ..services.init import InitServiceModes, InitServiceReport, InitService, InitProjectRequest, \
     InitIpRequest
 from ..core.service import ServiceType
@@ -18,7 +18,7 @@ from ..core.ip import Ip, IpPkgType, DutType, IpLocationType
 # API Entry Point
 #######################################################################################################################
 def get_commands():
-    return [InitCommand, SiArxCommand]
+    return [InitCommand, UvmxCommand]
 
 
 
@@ -290,10 +290,10 @@ class InitCommand(Command):
 
 
 #######################################################################################################################
-# SiArx Command
+# UVMx Command
 #######################################################################################################################
-SIARX_HELP_TEXT = """Moore.io SiArx Command
-   Generates IP HDL code using Datum SiArx (requires license).  If not within an initialized Project, the ID must be
+UVMX_HELP_TEXT = """Moore.io UVMx Code Generation Command
+   Generates IP HDL code using Datum UVMx (requires license).  If not within an initialized Project, the ID must be
    specified via `-p/--project-id`.
    
 Usage:
@@ -304,21 +304,21 @@ Options:
    -f   , --force           # Overwrites user changes
    
 Examples:
-   mio x         # Sync (generate) project with SiArx definition on server
+   mio x         # Sync (generate) project with UVMx definition on server
    mio x -p 123  # Initialize and generate Project from empty directory
 
-Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#siarx"""
+Reference documentation: https://mooreio-client.rtfd.io/en/latest/commands.html#uvmx"""
 
-class SiArxCommand(Command):
+class UvmxCommand(Command):
     def __init__(self):
         super().__init__()
-        self._mode: SiArxMode
+        self._mode: UvmxMode
         self._project_id: str = ""
         self._force_update: bool = False
         self._input_path: Path = Path
-        self._siarx_service: SiArxService
-        self._request: SiArxRequest
-        self._report: SiArxReport
+        self._uvmx_service: UvmxService
+        self._request: UvmxRequest
+        self._report: UvmxReport
         self._success: bool = False
 
     @staticmethod
@@ -334,7 +334,7 @@ class SiArxCommand(Command):
         return False
     
     @property
-    def mode(self) -> SiArxMode:
+    def mode(self) -> UvmxMode:
         return self._mode
         
     @property
@@ -354,15 +354,15 @@ class SiArxCommand(Command):
         return self._input_path
 
     @property
-    def siarx_service(self) -> SiArxService:
-        return self._siarx_service
+    def uvmx_service(self) -> UvmxService:
+        return self._uvmx_service
     
     @property
-    def request(self) -> SiArxRequest:
+    def request(self) -> UvmxRequest:
         return self._request
 
     @property
-    def report(self) -> SiArxReport:
+    def report(self) -> UvmxReport:
         return self._report
 
     @property
@@ -371,7 +371,7 @@ class SiArxCommand(Command):
 
     @staticmethod
     def add_to_subparsers(subparsers):
-        parser_x = subparsers.add_parser('x', help=SIARX_HELP_TEXT, add_help=False)
+        parser_x = subparsers.add_parser('x', help=UVMX_HELP_TEXT, add_help=False)
         parser_x.add_argument('-p', "--project-id",
                               help='Specifies Project ID when initializing a new project',
                               type=str, required=False)
@@ -386,21 +386,21 @@ class SiArxCommand(Command):
 
     def phase_post_service_discovery(self, phase: Phase):
         try:
-            self._siarx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "siarx")
+            self._uvmx_service = self.rmh.service_database.find_service(ServiceType.CODE_GENERATION, "uvmx")
         except Exception as e:
             phase.error = e
             self._success = False
         else:
             if self.parsed_cli_arguments.project_id:
-                self._mode = SiArxMode.NEW_PROJECT
+                self._mode = UvmxMode.NEW_PROJECT
                 self._project_id = self.parsed_cli_arguments.project_id
                 self._input_path = self.rmh.wd
-                self.perform_siarx_gen(phase)
+                self.perform_uvmx_gen(phase)
             else:
-                self._mode = SiArxMode.UPDATE_PROJECT
+                self._mode = UvmxMode.UPDATE_PROJECT
                 self._project_id = str(self.rmh.configuration.project.sync_id)
                 self._input_path = self.rmh.project_root_path
-                self.perform_siarx_gen(phase)
+                self.perform_uvmx_gen(phase)
     
     def phase_report(self, phase: Phase):
         if self._success:
@@ -409,10 +409,10 @@ class SiArxCommand(Command):
             if self.rmh.print_trace:
                 self.print_infos()
             self.print_warnings()
-            if self.mode == SiArxMode.NEW_PROJECT:
-                self.rmh.info(f"Initialized Project ID '{self._project_id}' with SiArx successfully.")
-            elif self.mode == SiArxMode.UPDATE_PROJECT:
-                self.rmh.info(f"Updated Project with Datum SiArx successfully.")
+            if self.mode == UvmxMode.NEW_PROJECT:
+                self.rmh.info(f"Initialized Project ID '{self._project_id}' with UVMx successfully.")
+            elif self.mode == UvmxMode.UPDATE_PROJECT:
+                self.rmh.info(f"Updated Project with Datum UVMx successfully.")
             print(banner)
         else:
             banner = f"{'*' * 53}\033[31m\033[4m FAILURE \033[0m{'*' * 54}"
@@ -420,26 +420,26 @@ class SiArxCommand(Command):
             self.print_infos()
             self.print_warnings()
             self.print_errors()
-            if self.mode == SiArxMode.NEW_PROJECT:
-                self.rmh.error(f"Failed to initialize Project '{self.project_id}' with SiArx.")
-            elif self.mode == SiArxMode.UPDATE_PROJECT:
-                self.rmh.error(f"Failed to update project with Datum SiArx.")
+            if self.mode == UvmxMode.NEW_PROJECT:
+                self.rmh.error(f"Failed to initialize Project '{self.project_id}' with UVMx.")
+            elif self.mode == UvmxMode.UPDATE_PROJECT:
+                self.rmh.error(f"Failed to update project with Datum UVMx.")
             print(banner)
-            phase.error = Exception(f"Failed to generate code with SiArx.")
+            phase.error = Exception(f"Failed to generate code with UVMx.")
 
-    def perform_siarx_gen(self, phase: Phase):
-        self.rmh.info(f"Generating code with SiArx ...")
-        self._request = SiArxRequest(
+    def perform_uvmx_gen(self, phase: Phase):
+        self.rmh.info(f"Generating code with UVMx ...")
+        self._request = UvmxRequest(
             input_path=self.input_path,
             mode=self.mode,
             project_id=self._project_id,
             force_update=self._force_update,
             quiet=False
         )
-        self._report = self.siarx_service.gen_project(self._request)
+        self._report = self.uvmx_service.gen_project(self._request)
         self._success = self._report.success
         if not self._success:
-            phase.error = Exception(f"Failed to generate SiArx Project: {len(self._report.errors)}E {len(self._report.warnings)}W")
+            phase.error = Exception(f"Failed to generate UVMx Project: {len(self._report.errors)}E {len(self._report.warnings)}W")
             if self.rmh.print_trace:
                 self.print_infos()
             self.print_warnings()
